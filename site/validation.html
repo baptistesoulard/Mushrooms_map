@@ -43,10 +43,14 @@
     <li>Les observations sont rares (le nombre de cas figure dans chaque tableau) : les
     intervalles sont larges, et un test sur quelques dizaines de cas ne tranche pas.</li>
     <li>Une sortie mycologique est souvent fixée d'avance, quelle que soit la météo, et une
-    exposition rassemble en un week-end des récoltes de plusieurs jours : le test météo est
-    pénalisé par ces dates, il ne peut que sous-estimer le modèle.</li>
-    <li>Les coordonnées sont parfois approchées (jusqu'à 1 km retenu ici), quand la carte
-    raisonne par zones de 250 m.</li>
+    exposition rassemble en un week-end des récoltes de plusieurs jours : ces dates brouillent
+    le test météo, qui tend à sous-estimer le modèle.</li>
+    <li>Les coordonnées sont souvent approchées, beaucoup d'observations publiques étant
+    rattachées à une maille de 10 km. Le test d'habitat ne garde que les positions connues à
+    1 km près, la carte raisonnant par zones de 250 m. Le test météo accepte 10 km : l'altitude
+    d'une observation, et donc la température de son sol, peut alors être fausse de plusieurs
+    centaines de mètres. Quand la température du sol pénalise des jours d'observation, l'erreur
+    peut venir du seuil… ou de la position.</li>
     <li>La météo du passé vient d'une réanalyse (ERA5-Land, maille d'environ 9 km), pas des
     prévisions qu'utilise la carte au quotidien.</li>
     <li>Personne ne publie les sorties bredouilles : on ne peut pas mesurer combien de fois la
