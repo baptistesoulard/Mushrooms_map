@@ -1,0 +1,48 @@
+name: Carte quotidienne
+
+# Chaque matin : météo du jour → indice par espèce → site publié sur GitHub Pages.
+# Rien n'est commité : les données du jour vivent dans l'artefact déployé, pas dans git
+# (40 images par jour gonfleraient l'historique de plusieurs centaines de Mo par an).
+on:
+  schedule:
+    - cron: "20 4 * * *"      # 05 h 20 ou 06 h 20 à Paris selon l'heure d'été
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: python -m pytest tests -q
+      - name: Calculer la carte du jour
+        run: python -m champi.export
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publier:
+    needs: construire
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4

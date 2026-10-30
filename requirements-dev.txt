@@ -1,0 +1,3 @@
+# Tests et validation (pas nécessaires au job quotidien, mais lancés par lui)
+pytest>=8
+pandas>=2.1
