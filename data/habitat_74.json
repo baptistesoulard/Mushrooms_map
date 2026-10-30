@@ -1,0 +1,690 @@
+{
+ "departement": "74",
+ "nom": "Haute-Savoie",
+ "construit_le": "2026-10-30",
+ "grille": {
+  "x0": 644400.0,
+  "y1": 5847840.0,
+  "pas": 72.0,
+  "nx": 1965,
+  "ny": 1665
+ },
+ "essences": {
+  "0": "Hors forêt",
+  "1": "Feuillus en mélange",
+  "2": "Hêtre",
+  "3": "Chênes",
+  "4": "Châtaignier",
+  "5": "Autres feuillus",
+  "6": "Peupleraie",
+  "7": "Forêt mixte (feuillus et conifères)",
+  "8": "Sapin, épicéa",
+  "9": "Mélèze",
+  "10": "Pins",
+  "11": "Douglas",
+  "12": "Conifères en mélange",
+  "13": "Lande",
+  "14": "Coupe ou trouée forestière"
+ },
+ "roches": {
+  "0": "Non renseigné",
+  "1": "Calcaire",
+  "2": "Siliceuse (acide)",
+  "3": "Mixte ou argileuse"
+ },
+ "lithologies_brgm": {
+  "Grès": "Siliceuse (acide)",
+  "Schistes et grès": "Siliceuse (acide)",
+  "Granites": "Siliceuse (acide)",
+  "Gneiss": "Siliceuse (acide)",
+  "Sables": "Siliceuse (acide)",
+  "Argiles": "Mixte ou argileuse",
+  "Calcaires, marnes et gypse": "Calcaire"
+ },
+ "orientations": {
+  "0": "Terrain plat",
+  "1": "Nord",
+  "2": "Nord-est",
+  "3": "Est",
+  "4": "Sud-est",
+  "5": "Sud",
+  "6": "Sud-ouest",
+  "7": "Ouest",
+  "8": "Nord-ouest"
+ },
+ "protections": [
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Périmètre De Protection De La Réserve Naturelle Nationale Du Bout Du Lac D'Annecy"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Contamines-Montjoie"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Haute Chaîne Du Jura"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Roc De Chère"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Aiguilles Rouges"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Passy"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Bout Du Lac D'Annecy"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Sixt-Passy"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Delta De La Dranse"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Carlaveyron"
+  },
+  {
+   "nature": "Réserve naturelle nationale",
+   "nom": "Vallon De Bérard"
+  },
+  {
+   "nature": "Réserve naturelle régionale",
+   "nom": "Galerie Du Pont-Des-Pierres"
+  },
+  {
+   "nature": "Réserve naturelle régionale",
+   "nom": "Tourbière Des Saisies - Beaufortain - Val D'Arly"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Montagne de la Mandallaz"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Tourbière de Balme"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais de la Praux"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais de la Cour"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais de L'Enfer"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais de Cré Bouché et La Léchère"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Montagne de Bise Cornettes Chauffé Arvouin"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Moyenne vallée de l’Arve"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais de Bossenot"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Grand marais d’Orcier"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Plateau des Follières"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais de Fully"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Chalet de La Princesse"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Tourbière de Beauregard"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Crêt du Puits et Teppes de la Repentance"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais de Côte Merle et Bois de la Côte"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais du Pont Neuf"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Grands marais d’Allinges"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Combe à Claudius"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Grands marais de Margencel"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Champ Vautier"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Zones humides et ravins des Crêts de Choisy"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Roselières du lac d'Annecy"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Mont de Grange"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Petit Salève"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais et zones humides de Menthonnex-en-Bornes"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Aulnaie glutineuse nommée marais de Blésy"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Tourbières de Sommand"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais de Grange Vigny et à la Dame"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Protection Des Oiseaux Rupestres"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Le Biolay"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Zone humide de Chez Bourgeois"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Roselières du lac Léman"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Versant ouest du massif du Vuache"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais de Giez"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Combe de Vaconnant et secteur de Lédedian"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Vallée des Usses"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Pointe de Vorlaz"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Montagne de Chevran"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Bois de la Vernaz et les îles d’Arve"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Vigne des Pères"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "La Feuillée"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Plateau de Véry et du Sangle"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Plateau de Loëx"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais et zones humides de Perrignier"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais et zones humides de Marcellaz-Albanais"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais et zones humides du plateau de Laprau"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais du pays de Gavot"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Massif des Voirons"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Ile De Chautagne-Malourdie"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Tourbière Des Creusates"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais Des Villards Et Du Parc"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Tourbière Des Saisies"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Lacs Et Marais De Saint-Jean De Chevelu"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais Du Puits De L'Enfer"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Source Du Château"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Les Aravis"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Col Ratti"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Forêts d'altitude du Haut-Jura"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais Des Broues"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "L'Etournel"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Bois de la Thuliettaz"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais Des Bidonnes"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Marais De Fenières"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "La Vézeronce"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Ecrevisse À Pattes Blanches Et Faune Patrimoniale Associée (39)"
+  },
+  {
+   "nature": "Arrêté de protection de biotope",
+   "nom": "Corniches Calcaires Du Département Du Jura"
+  },
+  {
+   "nature": "Réserve biologique",
+   "nom": "Combe d'Ire (de la)"
+  },
+  {
+   "nature": "Réserve biologique",
+   "nom": "Merdassiers - Nant Pareux (des)"
+  },
+  {
+   "nature": "Réserve biologique",
+   "nom": "Montagne des Frêtes (de la)"
+  },
+  {
+   "nature": "Réserve biologique",
+   "nom": "Haut-Chéran (du)"
+  },
+  {
+   "nature": "Réserve biologique",
+   "nom": "Merdassiers - Nant Pareux (des)"
+  },
+  {
+   "nature": "Réserve biologique",
+   "nom": "Combe d'Ire (de la)"
+  }
+ ],
+ "communes": [
+  "Abondance",
+  "Alby-sur-Chéran",
+  "Alex",
+  "Allèves",
+  "Allinges",
+  "Allonzier-la-Caille",
+  "Amancy",
+  "Ambilly",
+  "Andilly",
+  "Annecy",
+  "Annemasse",
+  "Anthy-sur-Léman",
+  "Arâches-la-Frasse",
+  "Arbusigny",
+  "Archamps",
+  "Arenthon",
+  "Argonay",
+  "Armoy",
+  "Arthaz-Pont-Notre-Dame",
+  "Ayse",
+  "Ballaison",
+  "La Balme-de-Sillingy",
+  "La Balme-de-Thuy",
+  "Bassy",
+  "La Baume",
+  "Beaumont",
+  "Bellevaux",
+  "Bernex",
+  "Le Biot",
+  "Bloye",
+  "Bluffy",
+  "Boëge",
+  "Bogève",
+  "Bonne",
+  "Bonnevaux",
+  "Bonneville",
+  "Bons-en-Chablais",
+  "Bossey",
+  "Le Bouchet-Mont-Charvin",
+  "Boussy",
+  "Brenthonne",
+  "Brizon",
+  "Burdignin",
+  "Cercier",
+  "Cernex",
+  "Cervens",
+  "Chainaz-les-Frasses",
+  "Challonges",
+  "Chamonix-Mont-Blanc",
+  "Champanges",
+  "La Chapelle-d'Abondance",
+  "La Chapelle-Rambaud",
+  "La Chapelle-Saint-Maurice",
+  "Chapeiry",
+  "Charvonnex",
+  "Châtel",
+  "Châtillon-sur-Cluses",
+  "Chaumont",
+  "Chavannaz",
+  "Chavanod",
+  "Chêne-en-Semine",
+  "Chênex",
+  "Chens-sur-Léman",
+  "Chessenaz",
+  "Chevaline",
+  "Chevenoz",
+  "Chevrier",
+  "Chilly",
+  "Choisy",
+  "Clarafond-Arcine",
+  "Clermont",
+  "Les Clefs",
+  "La Clusaz",
+  "Cluses",
+  "Collonges-sous-Salève",
+  "Combloux",
+  "Les Contamines-Montjoie",
+  "Contamine-Sarzin",
+  "Contamine-sur-Arve",
+  "Copponex",
+  "Cordon",
+  "Cornier",
+  "La Côte-d'Arbroz",
+  "Cranves-Sales",
+  "Crempigny-Bonneguête",
+  "Cruseilles",
+  "Cusy",
+  "Cuvat",
+  "Demi-Quartier",
+  "Desingy",
+  "Dingy-en-Vuache",
+  "Dingy-Saint-Clair",
+  "Domancy",
+  "Doussard",
+  "Douvaine",
+  "Draillant",
+  "Droisy",
+  "Duingt",
+  "Éloise",
+  "Entrevernes",
+  "Epagny Metz-Tessy",
+  "Essert-Romand",
+  "Eteaux",
+  "Étercy",
+  "Étrembières",
+  "Évian-les-Bains",
+  "Excenevex",
+  "Faucigny",
+  "Faverges-Seythenex",
+  "Feigères",
+  "Fessy",
+  "Féternes",
+  "Fillinges",
+  "La Forclaz",
+  "Franclens",
+  "Frangy",
+  "Gaillard",
+  "Les Gets",
+  "Giez",
+  "Le Grand-Bornand",
+  "Groisy",
+  "Gruffy",
+  "Habère-Lullin",
+  "Habère-Poche",
+  "Hauteville-sur-Fier",
+  "Héry-sur-Alby",
+  "Les Houches",
+  "Jonzier-Épagny",
+  "Juvigny",
+  "Larringes",
+  "Lathuile",
+  "Leschaux",
+  "Loisin",
+  "Lornay",
+  "Lovagny",
+  "Lucinges",
+  "Lugrin",
+  "Lullin",
+  "Lully",
+  "Lyaud",
+  "Machilly",
+  "Magland",
+  "Manigod",
+  "Marcellaz-Albanais",
+  "Marcellaz",
+  "Margencel",
+  "Marignier",
+  "Marigny-Saint-Marcel",
+  "Marin",
+  "Val de Chaise",
+  "Marlioz",
+  "Marnaz",
+  "Massingy",
+  "Massongy",
+  "Maxilly-sur-Léman",
+  "Megève",
+  "Mégevette",
+  "Meillerie",
+  "Menthon-Saint-Bernard",
+  "Menthonnex-en-Bornes",
+  "Menthonnex-sous-Clermont",
+  "Mésigny",
+  "Messery",
+  "Mieussy",
+  "Minzier",
+  "Monnetier-Mornex",
+  "Montagny-les-Lanches",
+  "Montriond",
+  "Mont-Saxonnex",
+  "Morillon",
+  "Morzine",
+  "Moye",
+  "La Muraz",
+  "Mûres",
+  "Musièges",
+  "Nancy-sur-Cluses",
+  "Nangy",
+  "Nâves-Parmelan",
+  "Nernier",
+  "Neuvecelle",
+  "Neydens",
+  "Nonglard",
+  "Novel",
+  "Onnion",
+  "Orcier",
+  "Passy",
+  "Peillonnex",
+  "Perrignier",
+  "Pers-Jussy",
+  "Glières-Val-de-Borne",
+  "Poisy",
+  "Praz-sur-Arly",
+  "Présilly",
+  "Publier",
+  "Quintal",
+  "Reignier-Ésery",
+  "Le Reposoir",
+  "Reyvroz",
+  "La Rivière-Enverse",
+  "La Roche-sur-Foron",
+  "Rumilly",
+  "Saint-André-de-Boëge",
+  "Saint-Blaise",
+  "Saint-Cergues",
+  "Saint-Eusèbe",
+  "Saint-Eustache",
+  "Saint-Félix",
+  "Saint-Ferréol",
+  "Saint-Germain-sur-Rhône",
+  "Saint-Gervais-les-Bains",
+  "Saint-Gingolph",
+  "Saint-Jean-d'Aulps",
+  "Saint-Jean-de-Sixt",
+  "Saint-Jean-de-Tholome",
+  "Saint-Jeoire",
+  "Saint-Jorioz",
+  "Saint-Julien-en-Genevois",
+  "Saint-Laurent",
+  "Saint-Paul-en-Chablais",
+  "Saint-Pierre-en-Faucigny",
+  "Saint-Sigismond",
+  "Saint-Sixt",
+  "Saint-Sylvestre",
+  "Sales",
+  "Sallanches",
+  "Sallenôves",
+  "Samoëns",
+  "Le Sappey",
+  "Savigny",
+  "Saxel",
+  "Scientrier",
+  "Sciez",
+  "Scionzier",
+  "Serraval",
+  "Servoz",
+  "Sevrier",
+  "Seyssel",
+  "Seytroux",
+  "Sillingy",
+  "Sixt-Fer-à-Cheval",
+  "Talloires-Montmin",
+  "Taninges",
+  "Thyez",
+  "Thollon-les-Mémises",
+  "Thônes",
+  "Thonon-les-Bains",
+  "Fillière",
+  "Thusy",
+  "La Tour",
+  "Usinens",
+  "Vacheresse",
+  "Vailly",
+  "Valleiry",
+  "Vallières-sur-Fier",
+  "Vallorcine",
+  "Vanzy",
+  "Vaulx",
+  "Veigy-Foncenex",
+  "Verchaix",
+  "La Vernaz",
+  "Vers",
+  "Versonnex",
+  "Vétraz-Monthoux",
+  "Veyrier-du-Lac",
+  "Villard",
+  "Les Villards-sur-Thônes",
+  "Villaz",
+  "Ville-en-Sallaz",
+  "Ville-la-Grand",
+  "Villy-le-Bouveret",
+  "Villy-le-Pelloux",
+  "Vinzier",
+  "Viry",
+  "Viuz-la-Chiésaz",
+  "Viuz-en-Sallaz",
+  "Vougy",
+  "Vovray-en-Bornes",
+  "Vulbens",
+  "Yvoire"
+ ],
+ "sources": {
+  "relief": "IGN, RGE ALTI (Géoplateforme, ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES), Licence Ouverte",
+  "forets": "IGN, BD Forêt V2 (LANDCOVER.FORESTINVENTORY.V2), Licence Ouverte",
+  "roches": "BRGM, lithologie simplifiée au 1/1 000 000 (LITHO_1M_SIMPLIFIEE), Licence Ouverte",
+  "protections": "INPN / PatriNat, via la Géoplateforme (RNN, RNR, APB, RB)",
+  "forets_publiques": "IGN, BD TOPO V3 (foret_publique), Licence Ouverte",
+  "communes": "geo.api.gouv.fr (IGN, ADMIN EXPRESS), Licence Ouverte"
+ }
+}
