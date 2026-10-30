@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Méthode — Champignons en Haute-Savoie</title>
+<meta name="description" content="Comment l'indice de pousse est calculé : habitat (essence, roche, altitude, pente) multiplié par la météo (saison, pluie, température du sol, gel), les règles espèce par espèce et leurs limites.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <header><a href="./">← Retour à la carte</a></header>
+  <h1>Comment la carte est calculée</h1>
+  <p>Chaque matin, le site recalcule pour chaque espèce un indice entre 0 et 1, sur toutes les
+  forêts du département découpées en cases de 50 m, pour aujourd'hui et les sept jours suivants.
+  Les cases sont ensuite regroupées en zones de 250 m avant d'être publiées : la carte montre des
+  secteurs favorables, pas des coins.</p>
+
+  <h2>Un produit de deux familles de facteurs</h2>
+  <p><strong>Indice = habitat × météo.</strong> Un produit et non une moyenne : chaque facteur
+  peut à lui seul fermer la porte. Une forêt idéale sous une gelée ne donne rien, une semaine
+  idéale dans un pré non plus.</p>
+  <ul>
+    <li><strong>Habitat</strong> (ne change pas d'un jour à l'autre) : affinité de l'espèce pour
+    l'essence dominante de la forêt, pour la roche, pour l'altitude, et une pénalité pour les
+    pentes fortes, où le sol est mince et le terrain dangereux.</li>
+    <li><strong>Météo</strong> (recalculée chaque jour) : la saison de l'espèce, la pluie tombée
+    pendant une fenêtre de quelques jours à trois semaines avant (la pousse suit la pluie avec un
+    délai), la température moyenne du sol sur la semaine précédente, et le nombre de jours de
+    gel.</li>
+  </ul>
+  <p>Ce n'est pas une probabilité. Personne ne recense les endroits où les champignons ne
+  poussent pas, et aucune base de données ne permettrait d'en calibrer une. L'indice classe les
+  forêts entre elles et d'un jour à l'autre ; la page <a href="validation.html">Face aux
+  observations</a> mesure s'il le fait mieux que le hasard.</p>
+
+  <h2>Le relief corrige la météo</h2>
+  <p>La météo vient d'une grille de points espacés d'environ 5 km. En Haute-Savoie, deux forêts
+  séparées de 2 km peuvent avoir 1 000 m d'écart d'altitude : la température y est donc
+  recalculée case par case, avec la baisse habituelle de la température avec l'altitude.
+  L'exposition compte aussi : un versant sud a un sol un peu plus chaud et sèche plus vite, un
+  versant nord reste frais et humide. C'est ce qui fait « descendre » la zone de pousse à mesure
+  que l'automne avance, et la fait remonter en été quand le sol de plaine est trop chaud.</p>
+  <p>Grâce au délai entre la pluie et la pousse, la carte des jours suivants repose surtout sur
+  la pluie déjà tombée : la prévision ne pèse vraiment que sur la température et le gel.</p>
+
+  <h2>Les règles, espèce par espèce</h2>
+  <p>Les seuils sont des ordres de grandeur tirés des guides de terrain et de la littérature sur
+  la fructification. Ils n'ont pas été ajustés sur les observations, qui sont trop peu
+  nombreuses pour cela : elles servent à vérifier, pas à régler.</p>
+  <div id="especes"><p class="muet">Chargement des règles…</p></div>
+
+  <h2>Communs à toutes les espèces</h2>
+  <div id="communs"></div>
+
+  <h2>Ce que la carte ne sait pas</h2>
+  <ul>
+    <li><strong>L'essence est souvent floue.</strong> La BD Forêt de l'IGN ne nomme une essence
+    que lorsqu'elle domine nettement. En Haute-Savoie, la plupart des forêts sont « feuillus en
+    mélange » ou « mixtes » : le hêtre, si important pour la trompette, n'est identifié que sur
+    une petite part du département.</li>
+    <li><strong>La roche est grossière.</strong> La carte géologique utilisée est au
+    1/1 000 000 : elle distingue les grands ensembles (massifs calcaires, cristallin, molasse),
+    pas les variations locales du sol, ni l'acidification de l'humus sous les résineux.</li>
+    <li><strong>La forêt n'est pas datée finement.</strong> Coupes récentes, chablis, plantations :
+    la BD Forêt date de plusieurs années.</li>
+    <li><strong>Ni la mousse, ni le bois mort, ni l'âge des arbres</strong>, qui comptent pour
+    beaucoup d'espèces, ne sont connus.</li>
+    <li><strong>La météo est modélisée</strong>, pas mesurée sur place : un orage local peut
+    manquer.</li>
+  </ul>
+
+  <h2>Références</h2>
+  <ul id="references"></ul>
+</div>
+<script type="module" src="pages.js"></script>
+</body>
+</html>

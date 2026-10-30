@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Face aux observations — Champignons en Haute-Savoie</title>
+<meta name="description" content="L'indice de pousse confronté aux observations publiques de champignons en Haute-Savoie : l'habitat et la météo font-ils mieux que le hasard et que les références naïves ?">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <header><a href="./">← Retour à la carte</a></header>
+  <h1>Le modèle face aux observations</h1>
+  <p>Les règles de la carte ont été écrites avant de regarder les observations. Cette page
+  mesure si elles tiennent, avec les observations publiques de champignons du département
+  (GBIF, qui rassemble notamment les inventaires des sociétés mycologiques et l'INPN). Rien
+  n'a été réglé sur ces données : ajuster des seuils sur une centaine d'observations
+  reviendrait à apprendre le bruit par cœur.</p>
+
+  <h2>Comment lire les chiffres</h2>
+  <p>Chaque test oppose des <em>cas</em> (une observation de l'espèce) à des <em>témoins</em>
+  et donne la probabilité qu'un cas soit mieux noté qu'un témoin. 50 % : le modèle ne fait pas
+  mieux que le hasard. 100 % : il les sépare parfaitement. Entre crochets, l'intervalle à 95 % :
+  s'il contient 50 %, le test ne conclut pas.</p>
+  <ul>
+    <li><strong>Habitat</strong> : les zones où l'espèce a été vue, contre les zones où
+    <em>d'autres</em> champignons ont été vus. Mêmes observateurs, mêmes sentiers : ce fond
+    neutralise le fait qu'on observe surtout près des chemins. Référence naïve : la seule part
+    de forêt de la zone.</li>
+    <li><strong>Météo, à mois égal</strong> : l'indice météo le jour de l'observation, contre les
+    autres jours du même mois, au même endroit et le même jour de la semaine (on sort surtout
+    le week-end). La saison ne joue plus : seule la météo peut faire la différence.</li>
+    <li><strong>Météo, sur la saison</strong> : même comparaison sur toute la saison de
+    l'espèce, pour l'indice complet et pour le seul calendrier. Si l'indice ne bat pas le
+    calendrier, la météo n'apporte rien de plus que « c'est la saison ».</li>
+  </ul>
+
+  <div id="resultats"><p class="muet">Chargement des résultats…</p></div>
+
+  <h2>Les limites de l'exercice</h2>
+  <ul>
+    <li>Les observations sont rares (le nombre de cas figure dans chaque tableau) : les
+    intervalles sont larges, et un test sur quelques dizaines de cas ne tranche pas.</li>
+    <li>Une sortie mycologique est souvent fixée d'avance, quelle que soit la météo, et une
+    exposition rassemble en un week-end des récoltes de plusieurs jours : le test météo est
+    pénalisé par ces dates, il ne peut que sous-estimer le modèle.</li>
+    <li>Les coordonnées sont parfois approchées (jusqu'à 1 km retenu ici), quand la carte
+    raisonne par zones de 250 m.</li>
+    <li>La météo du passé vient d'une réanalyse (ERA5-Land, maille d'environ 9 km), pas des
+    prévisions qu'utilise la carte au quotidien.</li>
+    <li>Personne ne publie les sorties bredouilles : on ne peut pas mesurer combien de fois la
+    carte annonce une pousse qui n'a pas lieu.</li>
+  </ul>
+</div>
+<script type="module" src="pages.js"></script>
+</body>
+</html>

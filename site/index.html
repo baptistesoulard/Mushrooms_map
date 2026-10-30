@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Champignons en Haute-Savoie</title>
+<meta name="description" content="Carte des forêts de Haute-Savoie où les conditions sont favorables aux cèpes, girolles, trompettes, pieds-de-mouton et morilles, aujourd'hui et pour les sept prochains jours. Météo, essences, roche, altitude et exposition, à partir de données publiques.">
+<meta property="og:title" content="Champignons en Haute-Savoie">
+<meta property="og:description" content="Où les conditions sont favorables aux champignons, forêt par forêt, aujourd'hui et pour les sept prochains jours.">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="appli">
+  <aside class="panneau">
+    <div class="entete">
+      <h1>Champignons en Haute-Savoie</h1>
+      <p>Les forêts où la météo, l'essence, la roche, l'altitude et l'exposition sont
+      réunies pour une pousse, aujourd'hui et pour les sept prochains jours. C'est un
+      indice de conditions favorables, pas la promesse d'un panier : la carte dit où
+      chercher, jamais quoi ramasser.</p>
+    </div>
+
+    <div id="perime" class="alerte perime" hidden></div>
+
+    <fieldset>
+      <legend>Espèce</legend>
+      <div class="choix" id="choix-espece"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Jour</legend>
+      <div class="choix" id="choix-jour"></div>
+    </fieldset>
+
+    <div class="verdict" aria-live="polite">
+      <div class="jour" id="verdict-jour"></div>
+      <h2 id="verdict-titre">Chargement…</h2>
+      <div id="verdict-texte"></div>
+    </div>
+
+    <div class="section">
+      <h3>Par altitude</h3>
+      <div class="tranches" id="tranches"></div>
+      <p class="muet">Indice moyen des forêts de chaque tranche de 200 m.</p>
+    </div>
+
+    <div class="section">
+      <h3>Communes les mieux placées</h3>
+      <ul class="communes" id="communes"></ul>
+      <p class="muet">Moyenne sur les forêts de la commune. Un clic centre la carte.</p>
+    </div>
+
+    <div class="section">
+      <h3>Légende</h3>
+      <div class="legende" id="legende"></div>
+    </div>
+
+    <div class="alerte">
+      <p><strong>Ne mangez jamais un champignon sans identification certaine.</strong>
+      Faites contrôler votre récolte par un pharmacien ou une société mycologique. En cas de
+      malaise après un repas de champignons : le 15, ou le centre antipoison.</p>
+      <p>En forêt privée, les champignons appartiennent au propriétaire. Pendant la chasse,
+      portez une couleur vive. <a href="avant-de-partir.html">Avant de partir</a>.</p>
+    </div>
+
+    <nav class="pied">
+      <a href="methode.html">Méthode</a>
+      <a href="validation.html">Face aux observations</a>
+      <a href="avant-de-partir.html">Avant de partir</a>
+      <a href="a-propos.html">Sources et mentions</a>
+    </nav>
+    <p class="muet" id="maj"></p>
+  </aside>
+  <main id="carte" aria-label="Carte de l'indice de pousse"></main>
+</div>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script type="module" src="carte.js"></script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sources et mentions — Champignons en Haute-Savoie</title>
+<meta name="description" content="Sources des données (IGN, BRGM, INPN, Open-Meteo, GBIF), licences, données conservées dans le navigateur et mentions légales de la carte des champignons de Haute-Savoie.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <header><a href="./">← Retour à la carte</a></header>
+  <h1>Sources et mentions</h1>
+  <p>Toutes les données utilisées sont publiques et réutilisables. Le code qui les assemble
+  est ouvert : <a href="https://github.com/baptistesoulard/Mushrooms_map">github.com/baptistesoulard/Mushrooms_map</a>.</p>
+
+  <h2>Données</h2>
+  <div class="tableau">
+  <table>
+    <tr><th>Donnée</th><th>Source</th><th>Mise à jour</th></tr>
+    <tr><td>Altitude, pente, exposition</td><td>IGN, RGE ALTI, via la Géoplateforme (Licence Ouverte)</td><td>à la construction de l'habitat</td></tr>
+    <tr><td>Forêts et essences</td><td>IGN, BD Forêt V2 (Licence Ouverte)</td><td>à la construction de l'habitat</td></tr>
+    <tr><td>Forêts publiques</td><td>IGN, BD TOPO (Licence Ouverte)</td><td>à la construction de l'habitat</td></tr>
+    <tr><td>Roche</td><td>BRGM, lithologie simplifiée au 1/1 000 000 (Licence Ouverte)</td><td>à la construction de l'habitat</td></tr>
+    <tr><td>Zones protégées</td><td>INPN / PatriNat, via la Géoplateforme</td><td>à la construction de l'habitat</td></tr>
+    <tr><td>Communes</td><td>IGN, ADMIN EXPRESS, via geo.api.gouv.fr (Licence Ouverte)</td><td>à la construction de l'habitat</td></tr>
+    <tr><td>Météo des derniers jours et prévisions</td><td><a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), modèles de Météo-France, du DWD et du CEPMMT</td><td>chaque matin</td></tr>
+    <tr><td>Météo passée (validation)</td><td>Open-Meteo, réanalyse ERA5-Land de Copernicus</td><td>à chaque validation</td></tr>
+    <tr><td>Observations (validation)</td><td><a href="https://www.gbif.org/">GBIF</a>, dont l'INPN et les sociétés mycologiques</td><td>à chaque validation</td></tr>
+    <tr><td>Fonds de carte</td><td>IGN, Plan IGN et photographies aériennes (Géoplateforme)</td><td>en direct</td></tr>
+  </table>
+  </div>
+  <p class="muet" id="dates"></p>
+
+  <h2>Ce que le site garde et ce qu'il appelle</h2>
+  <ul>
+    <li>Le site ne dépose aucun cookie et ne mesure pas l'audience.</li>
+    <li>Il garde dans votre navigateur une seule information : la dernière espèce consultée
+    (clé <code>champi-espece</code>), pour la rouvrir à la visite suivante. Elle ne quitte
+    jamais votre appareil.</li>
+    <li>Les fonds de carte sont chargés directement depuis les serveurs de l'IGN
+    (<code>data.geopf.fr</code>), qui reçoivent donc votre adresse IP, comme pour toute carte
+    en ligne. La bibliothèque de carte (Leaflet) est servie par le site lui-même.</li>
+  </ul>
+
+  <h2>Mentions légales</h2>
+  <p>Site personnel, non commercial, publié par l'auteur du dépôt GitHub
+  <a href="https://github.com/baptistesoulard">baptistesoulard</a>. Hébergement : GitHub Pages,
+  GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis.</p>
+  <p>Contact, erreur à signaler, coin bredouille ou panier plein qui contredit la carte :
+  <a href="https://github.com/baptistesoulard/Mushrooms_map/issues">ouvrir un ticket</a>.</p>
+  <p>L'indice est fourni à titre indicatif, sans garantie. Il ne vaut ni autorisation de
+  cueillir, ni identification, ni avis sur la comestibilité d'un champignon.</p>
+</div>
+<script type="module">
+  fetch("data/carte.json").then((r) => r.json()).then((c) => {
+    const d = (iso) => new Date(iso).toLocaleDateString("fr-FR", { dateStyle: "long" });
+    document.getElementById("dates").textContent =
+      `Habitat construit le ${d(c.habitat_construit_le)} ; météo du ${d(c.genere_le)}.`;
+  }).catch(() => {});
+</script>
+</body>
+</html>
