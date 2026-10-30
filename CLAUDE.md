@@ -26,7 +26,8 @@ champi.validation (à la main) → data/validation.json (versionné) → copié 
 - **Classes à seuils fixes** (`modele.CLASSES`), jamais des quantiles : un jour sans pousse
   doit donner une carte pâle.
 - **On publie des zones de 250 m, pas des coins.** Ne pas publier la grille de 50 m, ni
-  aucune observation ponctuelle.
+  afficher d'observation ponctuelle sur le site (le cache GBIF de `data/validation/` ne
+  contient que des données déjà publiques, et ne sert qu'à la validation).
 - **Zones protégées : hachurées, sans indice.** Leur règlement varie ; le site ne dit
   jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur
