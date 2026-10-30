@@ -102,6 +102,28 @@ def rediger(esp: dict, faits: dict) -> dict:
     return {"niveau": n, "verdict": NIVEAUX[n], "phrases": phrases}
 
 
+def fiabilite(meteo: dict) -> dict:
+    """Ce que la validation dit de l'indice météo d'une espèce, face au seul calendrier.
+
+    `meteo` : le bloc « meteo » d'une espèce dans data/validation.json.
+    """
+    if "ic_ecart" not in meteo:
+        return {"sens": "inconnu",
+                "texte": "Trop peu d'observations datées pour vérifier l'indice météo de cette espèce."}
+    bas, haut = meteo["ic_ecart"]
+    if bas > 0:
+        return {"sens": "mieux",
+                "texte": "Vérifié sur les observations passées : l'indice météo repère mieux les jours "
+                         "de pousse que le seul calendrier."}
+    if haut < 0:
+        return {"sens": "moins",
+                "texte": "Attention : sur les observations passées, l'indice météo repère moins bien "
+                         "les jours de pousse que le seul calendrier. Fiez-vous d'abord à la saison."}
+    return {"sens": "pareil",
+            "texte": "Sur les observations passées, l'indice météo ne fait pas nettement mieux que le "
+                     "seul calendrier."}
+
+
 def _date_courte(mmjj: str) -> str:
     m, j = (int(v) for v in mmjj.split("-"))
     return f"{'1er' if j == 1 else j} {MOIS[m - 1]}"

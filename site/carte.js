@@ -222,6 +222,11 @@ async function demarrer() {
     $("verdict-jour").textContent = `${e.nom}, ${carte.jours[etat.jour].libelle}`;
     $("verdict-titre").textContent = r.verdict;
     $("verdict-texte").replaceChildren(...r.phrases.map((p) => el("p", {}, p)));
+    const f = (carte.fiabilite || {})[etat.espece];
+    if (f) {
+      $("verdict-texte").append(el("p", { class: `fiabilite ${f.sens}` }, `${f.texte} `,
+        el("a", { href: "validation.html" }, "Détails")));
+    }
 
     const tr = $("tranches");
     tr.replaceChildren();

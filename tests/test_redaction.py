@@ -54,6 +54,14 @@ def test_jamais_de_zero_signe():
     assert R.nombre(1234) == f"1{NBSP}234"
 
 
+def test_fiabilite_suit_l_intervalle_de_l_ecart():
+    assert R.fiabilite({"ic_ecart": [0.01, 0.1]})["sens"] == "mieux"
+    assert R.fiabilite({"ic_ecart": [-0.2, -0.05]})["sens"] == "moins"
+    assert R.fiabilite({"ic_ecart": [-0.05, 0.02]})["sens"] == "pareil"
+    assert R.fiabilite({"n": 4})["sens"] == "inconnu"
+    assert "moins bien" in R.fiabilite({"ic_ecart": [-0.2, -0.05]})["texte"]
+
+
 def test_libelles_de_jours():
     a = date(2026, 10, 30)
     assert R.libelle_jour(a, a) == "aujourd'hui, vendredi 30 octobre"

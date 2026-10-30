@@ -298,6 +298,13 @@ def exporter(meteo: Meteo | None = None) -> dict:
             resumes[esp.code].append({**faits, **texte})
         print(f"  {esp.nom} : {[r['niveau'] for r in resumes[esp.code]]}  ({time.time() - t0:.0f} s)")
 
+    # Validation calculée à la main, rarement (champi.validation) : relue, jamais recalculée ici.
+    chemin_validation = DATA / "validation.json"
+    validation = (json.loads(chemin_validation.read_text(encoding="utf-8"))
+                  if chemin_validation.exists() else None)
+    fiabilite = ({code: redaction.fiabilite(r["meteo"]) for code, r in validation["especes"].items()}
+                 if validation else {})
+
     publie = agregat.publie
     carte = {
         "genere_le": datetime.now(timezone.utc).isoformat(timespec="minutes"),
@@ -312,15 +319,15 @@ def exporter(meteo: Meteo | None = None) -> dict:
                   for k in range(JOURS_FUTURS)],
         "especes": [{"code": e.code, "nom": e.nom, "latin": e.latin} for e in E.ESPECES],
         "resumes": resumes,
+        "fiabilite": fiabilite,
         "legendes": {k: meta[k] for k in ("essences", "roches", "orientations", "communes", "protections")},
         "sources": meta["sources"],
         "habitat_construit_le": meta["construit_le"],
     }
     ecrire_json(SITE_DATA / "carte.json", carte)
     ecrire_json(SITE_DATA / "especes.json", regles)
-    validation = DATA / "validation.json"   # calculée à la main, rarement (champi.validation)
-    if validation.exists():
-        (SITE_DATA / "validation.json").write_bytes(validation.read_bytes())
+    if validation:
+        ecrire_json(SITE_DATA / "validation.json", validation)
     print(f"Écrit site/data/ en {time.time() - t0:.0f} s")
     return carte
 
