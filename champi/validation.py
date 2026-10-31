@@ -445,8 +445,10 @@ def meteo_passee(cles: set[tuple[float, float, int]]) -> dict:
     chemin = DOSSIER / "meteo_passee.npz"
     series: dict = {}
     if chemin.exists():
-        z = np.load(chemin, allow_pickle=False)
-        for k, alt, v in zip(z["cles"], z["altitudes"], z["valeurs"]):
+        # Fermé aussitôt lu : sous Windows, un fichier ouvert ne peut pas être remplacé.
+        with np.load(chemin, allow_pickle=False) as z:
+            cles_c, altitudes, valeurs = z["cles"], z["altitudes"], z["valeurs"]
+        for k, alt, v in zip(cles_c, altitudes, valeurs):
             la, lo, an = k.split("|")
             n = (date(int(an) + 1, 1, 1) - date(int(an), 1, 1)).days
             series[(float(la), float(lo), int(an))] = {
