@@ -34,8 +34,14 @@ champi.validation (à la main, Haute-Savoie) → data/validation.json (versionn�
 - **Site à usage personnel (décision du 2026-10-31) : l'indice est publié à 50 m**, la
   résolution de calcul, et le site n'est pas indexé (`noindex`). Le repasser en public
   (partage, indexation) obligerait à revenir à des zones de 250 m au moins : une carte
-  publique à 50 m enverrait tout le monde aux mêmes coins. Aucune observation ponctuelle
-  n'est affichée.
+  publique à 50 m enverrait tout le monde aux mêmes coins. Aucune observation publique
+  ponctuelle n'est affichée.
+- **Mes coins (`site/coins.js`) : les trouvailles de l'utilisateur restent dans SON
+  navigateur** (`champi-coins`). Pas de serveur, pas de carte communautaire (décision du
+  2026-10-31) : elle demanderait comptes, modération et données personnelles, et
+  enverrait tout le monde aux mêmes coins, souvent en forêt privée. Le partage passe par un
+  fichier que l'utilisateur envoie lui-même, et ne contient que SES coins : jamais ceux
+  qu'un ami lui a confiés (la sauvegarde, elle, garde tout).
 - **Zones protégées : hachurées, sans indice** (réserves, arrêtés de biotope, cœurs de parcs
   nationaux). Leur règlement varie ; le site ne dit jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur

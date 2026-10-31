@@ -38,6 +38,24 @@
       <div class="choix" id="choix-jour"></div>
     </fieldset>
 
+    <div class="section coins">
+      <h3>Mes coins</h3>
+      <p class="muet" id="coins-resume"></p>
+      <ul class="communes" id="coins-liste"></ul>
+      <div class="coins-actions">
+        <button type="button" id="coin-ici">Noter une trouvaille à ma position</button>
+        <button type="button" id="coins-partager">Partager mes coins</button>
+        <button type="button" id="coins-sauver">Sauvegarder</button>
+        <label class="bouton">Importer un fichier<input type="file" id="coins-importer" accept=".json,application/json" hidden></label>
+      </div>
+      <label class="case"><input type="checkbox" id="coins-voir" checked> Afficher les coins sur la carte</label>
+      <ul class="muet" id="coins-sources"></ul>
+      <p class="muet" id="coins-message" aria-live="polite"></p>
+      <p class="muet">Un appui long (ou un clic droit) sur la carte note une trouvaille à cet
+      endroit. Vos coins restent dans ce navigateur : rien n'est envoyé. Le partage crée un
+      fichier de vos seuls coins, à envoyer à qui vous voulez ; la sauvegarde les garde tous.</p>
+    </div>
+
     <div class="section">
       <h3>Où chercher en France</h3>
       <ol class="communes" id="classement"></ol>

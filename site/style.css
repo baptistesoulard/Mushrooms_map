@@ -130,6 +130,31 @@ legend { font-weight: 600; font-size: .85rem; color: var(--texte-2); padding: 0;
 button.lien { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; }
 ol.communes { counter-reset: rang; }
 
+/* --- Mes coins --------------------------------------------------------------- */
+.coins-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.coins-actions button, .coins-actions .bouton, .coin-form button {
+  font: inherit; font-size: .85rem; color: var(--texte); background: var(--surface);
+  border: 1px solid var(--trait); border-radius: 8px; padding: 5px 10px; cursor: pointer;
+}
+.coins-actions button:hover, .coins-actions .bouton:hover { background: var(--surface-2); }
+.coins-actions .bouton:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+label.case { display: flex; gap: 6px; align-items: center; font-size: .85rem; color: var(--texte-2); }
+#coins-sources { list-style: none; padding: 0; margin: 6px 0 0; }
+#coins-message:empty { display: none; }
+.coin {
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--surface); color: var(--texte); border: 2px solid var(--texte);
+  font: 700 12px/1 var(--police); box-shadow: 0 1px 3px rgb(0 0 0 / .35);
+}
+.coin.partage { border-style: dashed; background: var(--surface-2); }
+.coin-form { display: grid; gap: 6px; font-size: .85rem; }
+.coin-form label { display: grid; gap: 2px; }
+.coin-form select, .coin-form input { font: inherit; padding: 3px 5px; }
+.coin-form button { justify-self: start; border-color: var(--accent); }
+.coin-bulle h4 { margin: 0 0 4px; }
+.coin-bulle ul { margin: 6px 0 0; padding-left: 18px; }
+.coin-bulle .pastille { margin-right: 6px; }
+
 .fiche { margin-top: 12px; font-size: .86rem; color: var(--texte-2); }
 .fiche details { border: 1px solid var(--trait); border-radius: var(--rayon); padding: 8px 12px; }
 .fiche summary { cursor: pointer; color: var(--texte); font-size: .92rem; }

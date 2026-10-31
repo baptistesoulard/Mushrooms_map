@@ -2,6 +2,7 @@
 // Vue large (zoom < DETAIL) : l'aperçu national calculé chaque matin (pixels de 1,15 km).
 // Vue rapprochée : le navigateur calcule lui-même l'indice des cases de 50 m, bloc par bloc
 // (habitat/blocs/*.png, data/meteo/*.bin, modele.js), à la résolution de calcul.
+import { installerCoins } from "./coins.js";
 import { evaluer, indices, preparer } from "./modele.js";
 
 const R = 6378137;
@@ -349,6 +350,37 @@ async function demarrer() {
   });
   const calqueDetail = new Detail({ pane: "overlayPane", minZoom: DETAIL, updateWhenZooming: false, keepBuffer: 1 }).addTo(map);
 
+  // Indice d'un coin noté par l'utilisateur, pour le jour affiché : moyenne des cases boisées
+  // à moins de 75 m (3 × 3 cases), tirée des mêmes codes que la carte.
+  async function indiceEn(lat, lon, code) {
+    const [x, y] = versMerc(lat, lon);
+    const bx = Math.floor(x / B.cote), by = Math.floor(y / B.cote);
+    const nom = `${bx}_${by}`;
+    if (!blocsPresents.has(nom)) return null;
+    const [h, codes, communes] = await Promise.all([
+      habitats(nom), codesBlocs(`${nom}|${code}|${etat.jour}`), annexes("habitat/communes.json")]);
+    const col = Math.floor((x - bx * B.cote) / B.pas), lig = Math.floor(((by + 1) * B.cote - y) / B.pas);
+    let s = 0, n = 0, protege = false;
+    for (let l = Math.max(0, lig - 1); l <= Math.min(B.taille - 1, lig + 1); l++) {
+      for (let c = Math.max(0, col - 1); c <= Math.min(B.taille - 1, col + 1); c++) {
+        const i = l * B.taille + c;
+        if (h.protege[i]) protege = true;
+        else if (h.essence[i] > 0) { s += codes[i] / carte.echelle; n++; }
+      }
+    }
+    return { indice: n ? s / n : null, protege, commune: communes[h.commune[lig * B.taille + col] - 1]?.nom };
+  }
+
+  const coins = installerCoins({
+    map, especes, ordre: carte.especes.map((e) => e.code),
+    etat: () => ({ espece: etat.espece, libelle: carte.jours[etat.jour].libelle }),
+    indiceEn,
+    decrire: (v) => {
+      const k = classeDe(v, carte.classes);
+      return { nom: carte.classes[k].nom, couleur: k > 0 ? `rgb(${pal.classes[k].join(",")})` : null };
+    },
+  });
+
   async function rafraichirCalques() {
     const demande = `${etat.espece}_${etat.jour}`;
     const a = await apercus(demande);
@@ -550,7 +582,7 @@ async function demarrer() {
     }
     const f = h.foret.indexOf(i);
     if (f < 0) {
-      div.append(el("p", {}, "Hors forêt : pas d'indice."));
+      div.append(el("p", {}, "Hors forêt : pas d'indice."), boutonCoin(ll));
       return div;
     }
     const k = h.cases;
@@ -594,8 +626,12 @@ async function demarrer() {
     div.append(el("a", {
       href: `https://www.geoportail.gouv.fr/carte?c=${ll.lng.toFixed(5)},${ll.lat.toFixed(5)}&z=16&permalink=yes`,
       target: "_blank", rel: "noopener",
-    }, "Voir le lieu sur le Géoportail (IGN)"));
+    }, "Voir le lieu sur le Géoportail (IGN)"), " ", boutonCoin(ll));
     return div;
+  }
+
+  function boutonCoin(ll) {
+    return el("button", { type: "button", class: "lien", onclick: () => coins.formulaire(ll) }, "Noter une trouvaille ici");
   }
 
   function panneau() {
@@ -610,6 +646,7 @@ async function demarrer() {
     choixJours();
     panneau();
     rafraichirCalques();
+    coins.rafraichir();
   }
 
   legende();
