@@ -381,6 +381,114 @@ async function demarrer() {
     },
   });
 
+  // --- Ma position ------------------------------------------------------------------
+  // Un bouton la montre et la suit tant que la page est visible ; elle ne quitte jamais
+  // l'appareil. À l'ouverture, elle choisit le département, mais seulement si le navigateur
+  // l'a déjà autorisée : la carte ne la demande jamais d'elle-même.
+  const calquePosition = L.layerGroup().addTo(map);
+  let suivi = null, actif = false, derniere = null, aCentrer = false, depAuto = false, depOuverture = null;
+
+  async function departementEn(lat, lon) {
+    const [x, y] = versMerc(lat, lon);
+    const bx = Math.floor(x / B.cote), by = Math.floor(y / B.cote);
+    const nom = `${bx}_${by}`;
+    if (!blocsPresents.has(nom)) return null;
+    const [h, communes] = await Promise.all([habitats(nom), annexes("habitat/communes.json")]);
+    const col = Math.floor((x - bx * B.cote) / B.pas), lig = Math.floor(((by + 1) * B.cote - y) / B.pas);
+    const com = communes[h.commune[lig * B.taille + col] - 1];
+    return com && deps[com.dep]?.centre ? com.dep : null;
+  }
+
+  function vue(pos) {
+    const ll = L.latLng(pos.coords.latitude, pos.coords.longitude);
+    const premiere = !derniere;
+    derniere = ll;
+    calquePosition.clearLayers();
+    L.circle(ll, { radius: pos.coords.accuracy, interactive: false, color: "#1a73e8", weight: 1,
+                   fillOpacity: 0.1 }).addTo(calquePosition);
+    L.circleMarker(ll, { radius: 7, interactive: false, color: "#fff", weight: 3, fillColor: "#1a73e8",
+                         fillOpacity: 1 }).addTo(calquePosition);
+    if (aCentrer) { aCentrer = false; map.setView(ll, Math.max(map.getZoom(), 14)); }
+    if (premiere) {
+      departementEn(ll.lat, ll.lng).then((dep) => {
+        // À l'ouverture, un département choisi entre-temps par l'utilisateur l'emporte.
+        if (depAuto && etat.departement !== depOuverture) return;
+        if (dep && dep !== etat.departement) allerDepartement(dep, depAuto);
+      }).catch((err) => console.error(err));
+    }
+  }
+
+  function erreurPosition(err) {
+    arreter();
+    if (depAuto) return;   // à l'ouverture, rien à dire : la carte garde le dernier département
+    L.popup().setLatLng(map.getCenter()).setContent(err.code === err.PERMISSION_DENIED
+      ? "Position refusée : autorisez-la pour ce site dans le navigateur."
+      : "Position introuvable pour l'instant. Réessayez à découvert.").openOn(map);
+  }
+
+  function suivre() {
+    if (suivi === null) {
+      suivi = navigator.geolocation.watchPosition(vue, erreurPosition,
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 });
+    }
+  }
+  function pause() {
+    if (suivi !== null) navigator.geolocation.clearWatch(suivi);
+    suivi = null;
+  }
+  function arreter() {
+    pause();
+    actif = false;
+    derniere = null;
+    calquePosition.clearLayers();
+    boutonPosition.classList.remove("actif");
+  }
+  function activer({ centrer, auto }) {
+    actif = true;
+    aCentrer = centrer;
+    depAuto = auto;
+    depOuverture = etat.departement;
+    boutonPosition.classList.add("actif");
+    suivre();
+  }
+
+  const boutonPosition = L.DomUtil.create("button", "bouton-position");
+  boutonPosition.type = "button";
+  boutonPosition.title = "Ma position";
+  boutonPosition.setAttribute("aria-label", "Ma position");
+  boutonPosition.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">' +
+    '<circle cx="12" cy="12" r="4" fill="currentColor"/><circle cx="12" cy="12" r="8" fill="none" ' +
+    'stroke="currentColor" stroke-width="2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="currentColor" ' +
+    'stroke-width="2"/></svg>';
+  L.DomEvent.disableClickPropagation(boutonPosition);
+  boutonPosition.addEventListener("click", () => {
+    if (!navigator.geolocation) { erreurPosition({ code: 0 }); return; }
+    if (!actif) { activer({ centrer: true, auto: false }); return; }
+    // Déjà suivie : un appui recentre ; un appui quand la carte y est déjà centrée l'arrête.
+    if (derniere && map.getCenter().distanceTo(derniere) > 30) map.setView(derniere, Math.max(map.getZoom(), 14));
+    else arreter();
+  });
+  const Controle = L.Control.extend({
+    onAdd() {
+      const div = L.DomUtil.create("div", "leaflet-bar");
+      div.append(boutonPosition);
+      return div;
+    },
+  });
+  new Controle({ position: "topleft" }).addTo(map);
+  document.addEventListener("visibilitychange", () => {
+    if (!actif) return;
+    if (document.visibilityState === "visible") suivre(); else pause();
+  });
+
+  async function positionOuverture() {
+    if (!navigator.geolocation || !navigator.permissions) return;
+    try {
+      if ((await navigator.permissions.query({ name: "geolocation" })).state !== "granted") return;
+    } catch { return; }
+    activer({ centrer: false, auto: true });
+  }
+
   async function rafraichirCalques() {
     const demande = `${etat.espece}_${etat.jour}`;
     const a = await apercus(demande);
@@ -684,6 +792,7 @@ async function demarrer() {
     etat.espece = meilleure.code;
   }
   tout();
+  positionOuverture();
   const genere = new Date(carte.genere_le);
   $("maj").textContent = `Calculée le ${genere.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Paris" })}.`
     + (carte.blocs_manquants ? ` Habitat en cours de construction : ${carte.blocs_manquants} carrés de 25 km encore vides.` : "");

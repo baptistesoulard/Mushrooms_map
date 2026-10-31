@@ -228,6 +228,14 @@ label.case { display: flex; gap: 6px; align-items: center; font-size: .85rem; co
 }
 .pastille.vide { background: transparent; }
 
+/* Bouton « Ma position », sous le zoom. */
+.bouton-position {
+  display: flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+  padding: 0; border: 0; border-radius: 4px; background: #fff; color: #333; cursor: pointer;
+}
+.bouton-position:hover { background: #f4f4f4; }
+.bouton-position.actif { color: #1a73e8; }
+
 /* La semaine d'un département : niveau du verdict, espèce par espèce et jour par jour. */
 .tableau-semaine { overflow-x: auto; }
 .semaine { border-collapse: separate; border-spacing: 2px; font-size: .8rem; width: 100%; }
