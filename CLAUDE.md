@@ -13,7 +13,7 @@ Né en Haute-Savoie (2026-10-30), étendu à la France le 2026-10-31.
 champi.france (habitat.yml, rarement) → release « habitat » (blocs PNG, échantillon) — jamais dans git
 champi.depot + champi.export_france (carte.yml, chaque matin) → site/data/ → GitHub Pages
 site/modele.js : le navigateur calcule l'indice des blocs affichés
-champi.validation (à la main, Haute-Savoie) → data/validation.json (versionné) → copié par l'export
+champi.validation (à la main, France et trois régions) → data/validation.json (versionné) → copié par l'export
 ```
 
 ## Règles
@@ -88,19 +88,31 @@ champi.validation (à la main, Haute-Savoie) → data/validation.json (versionn�
 - **Latitude** : saisons et plafonds d'altitude sont écrits à 46° N (la Haute-Savoie) et
   décalés ailleurs par la loi de Hopkins (`modele.dates_saison`, `modele.plafond_altitude`) :
   jamais de dates ou d'altitudes régionales en dur. Pas de plancher d'altitude.
-- **GBIF** : paginer année par année ; une pagination profonde sur une grosse requête se
-  bloque plusieurs minutes. La validation lit encore l'API Open-Meteo (ERA5-Land) : 10 000
-  appels pondérés par jour au plus.
+- **GBIF** : paginer par périodes de moins de 8 000 observations, coupées en deux tant
+  qu'il le faut (`validation._pages`) : au-delà d'environ 10 000, une page met plusieurs
+  minutes à venir. Seules les incertitudes
+  DÉCLARÉES comptent, filtrées chez GBIF, pour les cas comme pour le fond : sans elle, une
+  donnée peut être le centre d'une maille de 10 km.
+- **Météo passée de la validation** : le dépôt AWS d'Open-Meteo, lu à distance par plages
+  d'octets (`validation.Distant`, `omfiles.from_fsspec`) : seuls les points utiles sont
+  téléchargés. Températures d'ERA5-Land (0,1°), pluie d'ERA5 (0,25° ; le dépôt n'a pas celle
+  d'ERA5-Land). Un fichier par année jusqu'en 2021, des morceaux de 21 jours ensuite. Relief
+  du modèle (`static/HSURF.om`) pour ramener les températures à la case. Caches dans
+  `cache/validation/` (hors git) ; la validation ne passe plus par l'API (quota).
+- **Régions de la validation** (`validation.REGIONS`) : chacune face à son propre fond. Le
+  département vient de la commune de la case, dans les blocs de la release.
 
 ## Limites connues (dites sur le site)
 
 - BD Forêt : beaucoup de forêts sont « feuillus en mélange » ou « mixtes » ; le hêtre est
   souvent invisible. Trompette et morille en pâtissent.
 - Affinités pour les essences du Midi (pin d'Alep, chênes verts, pin maritime) : moins sûres ;
-  la validation n'a été faite qu'en Haute-Savoie.
+  vérifiées à part (pourtour méditerranéen) ; les Landes de Gascogne, trop peu observées,
+  ne se jugent pas.
 - Roche au 1/1 000 000 : la BD Charm-50 (1/50 000) demande un formulaire, pas scriptable.
 - Observations GBIF : la plupart sont localisées à la maille de 10 km (INPN) ; seules les
-  positions à moins d'1 km servent au test d'habitat, à moins de 10 km au test météo.
+  positions de précision déclarée à moins d'1 km servent au test d'habitat, à moins de
+  10 km au test météo.
 
 ## Commandes
 
@@ -109,7 +121,8 @@ python -m pytest tests -q
 python -m champi.depot                  # réseau ~3 min ; gardé 3 h dans cache/
 python -m champi.export_france          # demande site/habitat/ (asset de la release « habitat »)
 python -m champi.france bloc 18_156     # un bloc, pour essayer (habitat/)
-python -m champi.validation             # réseau ; caches dans data/validation/
+python -m champi.validation meteo       # réseau ; la météo passée des cas, sans attendre le fond
+python -m champi.validation             # réseau (~1 h la 1re fois) ; demande site/habitat/ ; caches dans cache/validation/
 python -m http.server 8765 --directory site
 ```
 

@@ -323,7 +323,9 @@ def exporter(meteo: Meteo | None = None) -> dict:
     chemin_validation = DATA / "validation.json"
     validation = (json.loads(chemin_validation.read_text(encoding="utf-8"))
                   if chemin_validation.exists() else None)
-    fiabilite = ({code: redaction.fiabilite(r["meteo"]) for code, r in validation["especes"].items()}
+    # La fiabilité affichée est celle de la France entière ; les régions sont sur la page.
+    fiabilite = ({code: redaction.fiabilite(r["meteo"])
+                  for code, r in validation["regions"]["france"]["especes"].items()}
                  if validation else {})
     b = g_apercu.bornes_lonlat()
     carte = {

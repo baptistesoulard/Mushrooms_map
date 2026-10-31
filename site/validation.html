@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Face aux observations — Champignons en France</title>
-<meta name="description" content="L'indice de pousse confronté aux observations publiques de champignons en Haute-Savoie : l'habitat et la météo font-ils mieux que le hasard et que les références naïves ?">
+<meta name="description" content="L'indice de pousse confronté aux observations publiques de champignons de toute la France, et à part dans le Midi : l'habitat et la météo font-ils mieux que le hasard et que les références naïves ?">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -14,11 +14,14 @@
   <header><a href="./">← Retour à la carte</a></header>
   <h1>Le modèle face aux observations</h1>
   <p>Les règles de la carte ont été écrites avant de regarder les observations. Cette page
-  mesure si elles tiennent, avec les observations publiques de champignons de Haute-Savoie,
-  où la carte est née (GBIF, qui rassemble notamment les inventaires des sociétés mycologiques
-  et l'INPN). La même vérification sur toute la France reste à faire. Rien
-  n'a été réglé sur ces données : ajuster des seuils sur une centaine d'observations
-  reviendrait à apprendre le bruit par cœur.</p>
+  mesure si elles tiennent, avec les observations publiques de champignons de toute la France
+  (GBIF, qui rassemble notamment iNaturalist, Observation.org, l'application INPN Espèces et
+  des inventaires naturalistes). Rien n'a été réglé sur ces données : ajuster des seuils sur
+  quelques centaines d'observations reviendrait à apprendre le bruit par cœur.</p>
+  <p>Les règles sont nées dans les Alpes. Celles des forêts du Midi (pin d'Alep, chênes verts,
+  pin maritime) sont les moins sûres : le pourtour méditerranéen et les Landes de Gascogne sont
+  donc vérifiés à part, chacun face à ses propres observations. La Haute-Savoie, où la carte
+  est née, reste comme point de comparaison.</p>
 
   <h2>Comment lire les chiffres</h2>
   <p>Chaque test oppose des <em>cas</em> (une observation de l'espèce) à des <em>témoins</em>
@@ -48,13 +51,17 @@
     exposition rassemble en un week-end des récoltes de plusieurs jours : ces dates brouillent
     le test météo, qui tend à sous-estimer le modèle.</li>
     <li>Les coordonnées sont souvent approchées, beaucoup d'observations publiques étant
-    rattachées à une maille de 10 km. Le test d'habitat ne garde que les positions connues à
-    1 km près, la carte raisonnant par zones de 250 m. Le test météo accepte 10 km : l'altitude
+    rattachées à une maille de 10 km. Seules comptent les observations dont la précision est
+    déclarée. Le test d'habitat ne garde que les positions connues à 1 km près, et juge la
+    zone de 250 m qui les entoure. Le test météo accepte 10 km : l'altitude
     d'une observation, et donc la température de son sol, peut alors être fausse de plusieurs
     centaines de mètres. Quand la température du sol pénalise des jours d'observation, l'erreur
     peut venir du seuil… ou de la position.</li>
-    <li>La météo du passé vient d'une réanalyse (ERA5-Land, maille d'environ 9 km), pas des
-    prévisions qu'utilise la carte au quotidien.</li>
+    <li>La météo du passé vient de réanalyses de Copernicus (températures d'ERA5-Land, maille
+    d'environ 9 km ; pluie d'ERA5, environ 25 km), pas des prévisions qu'utilise la carte au
+    quotidien.</li>
+    <li>Les observations ne sont pas réparties comme les forêts : elles se concentrent près des
+    villes et des sociétés mycologiques actives. Une région peu observée ne se juge pas.</li>
     <li>Personne ne publie les sorties bredouilles : on ne peut pas mesurer combien de fois la
     carte annonce une pousse qui n'a pas lieu.</li>
   </ul>

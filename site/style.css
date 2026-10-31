@@ -282,3 +282,7 @@ nav.pied { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 4px 14px; font
 .carte-espece h3 { font-size: 1.05rem; }
 .carte-espece .latin { font-style: italic; color: var(--texte-3); font-weight: 400; }
 code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-size: .9em; }
+
+/* Face aux observations : une région par volet */
+.region { border: 1px solid var(--trait); border-radius: var(--rayon); padding: 8px 12px; margin: 12px 0; }
+.region summary { cursor: pointer; }

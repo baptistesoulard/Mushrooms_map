@@ -6,175 +6,657 @@
  ],
  "incertitude_habitat_m": 1000,
  "incertitude_meteo_m": 10000,
- "fond": 4413,
  "min_cas": 20,
- "especes": {
-  "cepe": {
-   "nom": "Cèpe",
-   "observations": 175,
-   "habitat": {
-    "n": 28,
-    "n_fond": 1937,
-    "auc": 0.588,
-    "ic": [
-     0.51,
-     0.675
-    ],
-    "auc_foret": 0.551,
-    "ic_foret": [
-     0.47,
-     0.647
-    ],
-    "ic_ecart": [
-     -0.062,
-     0.131
-    ],
-    "part_bonnes_zones": 0.821,
-    "part_bonnes_zones_fond": 0.63,
-    "part_hors_foret": 0.036
-   },
-   "meteo": {
-    "n": 132,
-    "n_brut": 121,
-    "auc_mois": 0.526,
-    "ic_mois": [
-     0.461,
-     0.587
-    ],
-    "auc_saison": 0.638,
-    "ic_saison": [
-     0.593,
-     0.683
-    ],
-    "auc_calendrier": 0.658,
-    "ic_calendrier": [
-     0.622,
-     0.688
-    ],
-    "ic_ecart": [
-     -0.067,
-     0.025
-    ]
+ "regions": {
+  "france": {
+   "nom": "France métropolitaine",
+   "fond": 66557,
+   "especes": {
+    "cepe": {
+     "nom": "Cèpe",
+     "observations": 2936,
+     "habitat": {
+      "n": 669,
+      "n_fond": 66557,
+      "auc": 0.614,
+      "ic": [
+       0.594,
+       0.636
+      ],
+      "auc_foret": 0.606,
+      "ic_foret": [
+       0.586,
+       0.626
+      ],
+      "ic_ecart": [
+       -0.013,
+       0.027
+      ],
+      "part_bonnes_zones": 0.77,
+      "part_bonnes_zones_fond": 0.621,
+      "part_hors_foret": 0.105
+     },
+     "meteo": {
+      "n": 1314,
+      "auc_mois": 0.551,
+      "ic_mois": [
+       0.532,
+       0.57
+      ],
+      "auc_saison": 0.648,
+      "ic_saison": [
+       0.633,
+       0.662
+      ],
+      "auc_calendrier": 0.577,
+      "ic_calendrier": [
+       0.563,
+       0.589
+      ],
+      "ic_ecart": [
+       0.057,
+       0.086
+      ]
+     }
+    },
+    "girolle": {
+     "nom": "Girolle",
+     "observations": 1698,
+     "habitat": {
+      "n": 317,
+      "n_fond": 66557,
+      "auc": 0.664,
+      "ic": [
+       0.637,
+       0.694
+      ],
+      "auc_foret": 0.661,
+      "ic_foret": [
+       0.636,
+       0.684
+      ],
+      "ic_ecart": [
+       -0.025,
+       0.032
+      ],
+      "part_bonnes_zones": 0.789,
+      "part_bonnes_zones_fond": 0.572,
+      "part_hors_foret": 0.054
+     },
+     "meteo": {
+      "n": 767,
+      "auc_mois": 0.518,
+      "ic_mois": [
+       0.497,
+       0.54
+      ],
+      "auc_saison": 0.595,
+      "ic_saison": [
+       0.577,
+       0.614
+      ],
+      "auc_calendrier": 0.554,
+      "ic_calendrier": [
+       0.537,
+       0.571
+      ],
+      "ic_ecart": [
+       0.026,
+       0.057
+      ]
+     }
+    },
+    "trompette": {
+     "nom": "Trompette de la mort",
+     "observations": 617,
+     "habitat": {
+      "n": 150,
+      "n_fond": 66557,
+      "auc": 0.687,
+      "ic": [
+       0.651,
+       0.72
+      ],
+      "auc_foret": 0.709,
+      "ic_foret": [
+       0.674,
+       0.738
+      ],
+      "ic_ecart": [
+       -0.063,
+       0.016
+      ],
+      "part_bonnes_zones": 0.7,
+      "part_bonnes_zones_fond": 0.442,
+      "part_hors_foret": 0.04
+     },
+     "meteo": {
+      "n": 303,
+      "auc_mois": 0.593,
+      "ic_mois": [
+       0.558,
+       0.632
+      ],
+      "auc_saison": 0.665,
+      "ic_saison": [
+       0.632,
+       0.693
+      ],
+      "auc_calendrier": 0.583,
+      "ic_calendrier": [
+       0.554,
+       0.611
+      ],
+      "ic_ecart": [
+       0.051,
+       0.113
+      ]
+     }
+    },
+    "pied_de_mouton": {
+     "nom": "Pied-de-mouton",
+     "observations": 1853,
+     "habitat": {
+      "n": 227,
+      "n_fond": 66557,
+      "auc": 0.673,
+      "ic": [
+       0.642,
+       0.708
+      ],
+      "auc_foret": 0.693,
+      "ic_foret": [
+       0.667,
+       0.719
+      ],
+      "ic_ecart": [
+       -0.052,
+       0.011
+      ],
+      "part_bonnes_zones": 0.912,
+      "part_bonnes_zones_fond": 0.709,
+      "part_hors_foret": 0.053
+     },
+     "meteo": {
+      "n": 760,
+      "auc_mois": 0.549,
+      "ic_mois": [
+       0.526,
+       0.574
+      ],
+      "auc_saison": 0.64,
+      "ic_saison": [
+       0.619,
+       0.659
+      ],
+      "auc_calendrier": 0.608,
+      "ic_calendrier": [
+       0.592,
+       0.624
+      ],
+      "ic_ecart": [
+       0.013,
+       0.05
+      ]
+     }
+    },
+    "morille": {
+     "nom": "Morille",
+     "observations": 533,
+     "habitat": {
+      "n": 150,
+      "n_fond": 66557,
+      "auc": 0.566,
+      "ic": [
+       0.519,
+       0.616
+      ],
+      "auc_foret": 0.462,
+      "ic_foret": [
+       0.42,
+       0.504
+      ],
+      "ic_ecart": [
+       0.052,
+       0.153
+      ],
+      "part_bonnes_zones": 0.387,
+      "part_bonnes_zones_fond": 0.253,
+      "part_hors_foret": 0.16
+     },
+     "meteo": {
+      "n": 239,
+      "auc_mois": 0.598,
+      "ic_mois": [
+       0.56,
+       0.636
+      ],
+      "auc_saison": 0.674,
+      "ic_saison": [
+       0.644,
+       0.704
+      ],
+      "auc_calendrier": 0.704,
+      "ic_calendrier": [
+       0.679,
+       0.728
+      ],
+      "ic_ecart": [
+       -0.067,
+       0.006
+      ]
+     }
+    }
    }
   },
-  "girolle": {
-   "nom": "Girolle",
-   "observations": 85,
-   "habitat": {
-    "n": 3
-   },
-   "meteo": {
-    "n": 73,
-    "n_brut": 69,
-    "auc_mois": 0.432,
-    "ic_mois": [
-     0.37,
-     0.502
-    ],
-    "auc_saison": 0.547,
-    "ic_saison": [
-     0.484,
-     0.609
-    ],
-    "auc_calendrier": 0.619,
-    "ic_calendrier": [
-     0.573,
-     0.662
-    ],
-    "ic_ecart": [
-     -0.128,
-     -0.017
-    ]
+  "mediterranee": {
+   "nom": "Pourtour méditerranéen",
+   "fond": 8965,
+   "especes": {
+    "cepe": {
+     "nom": "Cèpe",
+     "observations": 149,
+     "habitat": {
+      "n": 62,
+      "n_fond": 8965,
+      "auc": 0.705,
+      "ic": [
+       0.641,
+       0.77
+      ],
+      "auc_foret": 0.606,
+      "ic_foret": [
+       0.546,
+       0.66
+      ],
+      "ic_ecart": [
+       0.035,
+       0.163
+      ],
+      "part_bonnes_zones": 0.823,
+      "part_bonnes_zones_fond": 0.644,
+      "part_hors_foret": 0.032
+     },
+     "meteo": {
+      "n": 101,
+      "auc_mois": 0.568,
+      "ic_mois": [
+       0.506,
+       0.629
+      ],
+      "auc_saison": 0.7,
+      "ic_saison": [
+       0.651,
+       0.75
+      ],
+      "auc_calendrier": 0.628,
+      "ic_calendrier": [
+       0.584,
+       0.668
+      ],
+      "ic_ecart": [
+       0.015,
+       0.134
+      ]
+     }
+    },
+    "girolle": {
+     "nom": "Girolle",
+     "observations": 101,
+     "habitat": {
+      "n": 32,
+      "n_fond": 8965,
+      "auc": 0.675,
+      "ic": [
+       0.575,
+       0.769
+      ],
+      "auc_foret": 0.556,
+      "ic_foret": [
+       0.461,
+       0.642
+      ],
+      "ic_ecart": [
+       0.026,
+       0.202
+      ],
+      "part_bonnes_zones": 0.75,
+      "part_bonnes_zones_fond": 0.552,
+      "part_hors_foret": 0.031
+     },
+     "meteo": {
+      "n": 57,
+      "auc_mois": 0.459,
+      "ic_mois": [
+       0.367,
+       0.554
+      ],
+      "auc_saison": 0.575,
+      "ic_saison": [
+       0.508,
+       0.639
+      ],
+      "auc_calendrier": 0.419,
+      "ic_calendrier": [
+       0.352,
+       0.484
+      ],
+      "ic_ecart": [
+       0.064,
+       0.241
+      ]
+     }
+    },
+    "trompette": {
+     "nom": "Trompette de la mort",
+     "observations": 32,
+     "habitat": {
+      "n": 10
+     },
+     "meteo": {
+      "n": 19
+     }
+    },
+    "pied_de_mouton": {
+     "nom": "Pied-de-mouton",
+     "observations": 77,
+     "habitat": {
+      "n": 28,
+      "n_fond": 8965,
+      "auc": 0.689,
+      "ic": [
+       0.595,
+       0.783
+      ],
+      "auc_foret": 0.648,
+      "ic_foret": [
+       0.592,
+       0.703
+      ],
+      "ic_ecart": [
+       -0.062,
+       0.147
+      ],
+      "part_bonnes_zones": 0.929,
+      "part_bonnes_zones_fond": 0.712,
+      "part_hors_foret": 0.0
+     },
+     "meteo": {
+      "n": 47,
+      "auc_mois": 0.525,
+      "ic_mois": [
+       0.431,
+       0.626
+      ],
+      "auc_saison": 0.69,
+      "ic_saison": [
+       0.616,
+       0.76
+      ],
+      "auc_calendrier": 0.644,
+      "ic_calendrier": [
+       0.586,
+       0.694
+      ],
+      "ic_ecart": [
+       -0.035,
+       0.132
+      ]
+     }
+    },
+    "morille": {
+     "nom": "Morille",
+     "observations": 75,
+     "habitat": {
+      "n": 23,
+      "n_fond": 8965,
+      "auc": 0.501,
+      "ic": [
+       0.365,
+       0.626
+      ],
+      "auc_foret": 0.432,
+      "ic_foret": [
+       0.315,
+       0.545
+      ],
+      "ic_ecart": [
+       -0.033,
+       0.172
+      ],
+      "part_bonnes_zones": 0.304,
+      "part_bonnes_zones_fond": 0.221,
+      "part_hors_foret": 0.217
+     },
+     "meteo": {
+      "n": 46,
+      "auc_mois": 0.736,
+      "ic_mois": [
+       0.63,
+       0.832
+      ],
+      "auc_saison": 0.81,
+      "ic_saison": [
+       0.743,
+       0.865
+      ],
+      "auc_calendrier": 0.752,
+      "ic_calendrier": [
+       0.702,
+       0.79
+      ],
+      "ic_ecart": [
+       -0.009,
+       0.123
+      ]
+     }
+    }
    }
   },
-  "trompette": {
-   "nom": "Trompette de la mort",
-   "observations": 51,
-   "habitat": {
-    "n": 11
-   },
-   "meteo": {
-    "n": 42,
-    "n_brut": 42,
-    "auc_mois": 0.605,
-    "ic_mois": [
-     0.51,
-     0.687
-    ],
-    "auc_saison": 0.711,
-    "ic_saison": [
-     0.64,
-     0.775
-    ],
-    "auc_calendrier": 0.67,
-    "ic_calendrier": [
-     0.616,
-     0.724
-    ],
-    "ic_ecart": [
-     -0.015,
-     0.095
-    ]
+  "landes": {
+   "nom": "Landes de Gascogne",
+   "fond": 1920,
+   "especes": {
+    "cepe": {
+     "nom": "Cèpe",
+     "observations": 27,
+     "habitat": {
+      "n": 17
+     },
+     "meteo": {
+      "n": 12
+     }
+    },
+    "girolle": {
+     "nom": "Girolle",
+     "observations": 11,
+     "habitat": {
+      "n": 11
+     },
+     "meteo": {
+      "n": 1
+     }
+    },
+    "trompette": {
+     "nom": "Trompette de la mort",
+     "observations": 2,
+     "habitat": {
+      "n": 2
+     },
+     "meteo": {
+      "n": 1
+     }
+    },
+    "pied_de_mouton": {
+     "nom": "Pied-de-mouton",
+     "observations": 2,
+     "habitat": {
+      "n": 1
+     },
+     "meteo": {
+      "n": 2
+     }
+    },
+    "morille": {
+     "nom": "Morille",
+     "observations": 2,
+     "habitat": {
+      "n": 2
+     },
+     "meteo": {
+      "n": 1
+     }
+    }
    }
   },
-  "pied_de_mouton": {
-   "nom": "Pied-de-mouton",
-   "observations": 91,
-   "habitat": {
-    "n": 4
-   },
-   "meteo": {
-    "n": 72,
-    "n_brut": 62,
-    "auc_mois": 0.567,
-    "ic_mois": [
-     0.491,
-     0.635
-    ],
-    "auc_saison": 0.693,
-    "ic_saison": [
-     0.636,
-     0.748
-    ],
-    "auc_calendrier": 0.632,
-    "ic_calendrier": [
-     0.583,
-     0.68
-    ],
-    "ic_ecart": [
-     0.012,
-     0.103
-    ]
-   }
-  },
-  "morille": {
-   "nom": "Morille",
-   "observations": 38,
-   "habitat": {
-    "n": 6
-   },
-   "meteo": {
-    "n": 27,
-    "n_brut": 30,
-    "auc_mois": 0.5,
-    "ic_mois": [
-     0.39,
-     0.599
-    ],
-    "auc_saison": 0.579,
-    "ic_saison": [
-     0.479,
-     0.683
-    ],
-    "auc_calendrier": 0.733,
-    "ic_calendrier": [
-     0.665,
-     0.793
-    ],
-    "ic_ecart": [
-     -0.245,
-     -0.065
-    ]
+  "haute_savoie": {
+   "nom": "Haute-Savoie",
+   "fond": 1544,
+   "especes": {
+    "cepe": {
+     "nom": "Cèpe",
+     "observations": 174,
+     "habitat": {
+      "n": 27,
+      "n_fond": 1544,
+      "auc": 0.662,
+      "ic": [
+       0.59,
+       0.736
+      ],
+      "auc_foret": 0.543,
+      "ic_foret": [
+       0.458,
+       0.634
+      ],
+      "ic_ecart": [
+       0.012,
+       0.219
+      ],
+      "part_bonnes_zones": 0.926,
+      "part_bonnes_zones_fond": 0.667,
+      "part_hors_foret": 0.0
+     },
+     "meteo": {
+      "n": 87,
+      "auc_mois": 0.529,
+      "ic_mois": [
+       0.455,
+       0.604
+      ],
+      "auc_saison": 0.644,
+      "ic_saison": [
+       0.592,
+       0.697
+      ],
+      "auc_calendrier": 0.671,
+      "ic_calendrier": [
+       0.635,
+       0.703
+      ],
+      "ic_ecart": [
+       -0.079,
+       0.017
+      ]
+     }
+    },
+    "girolle": {
+     "nom": "Girolle",
+     "observations": 84,
+     "habitat": {
+      "n": 3
+     },
+     "meteo": {
+      "n": 41,
+      "auc_mois": 0.45,
+      "ic_mois": [
+       0.368,
+       0.535
+      ],
+      "auc_saison": 0.574,
+      "ic_saison": [
+       0.486,
+       0.66
+      ],
+      "auc_calendrier": 0.618,
+      "ic_calendrier": [
+       0.552,
+       0.679
+      ],
+      "ic_ecart": [
+       -0.114,
+       0.024
+      ]
+     }
+    },
+    "trompette": {
+     "nom": "Trompette de la mort",
+     "observations": 43,
+     "habitat": {
+      "n": 5
+     },
+     "meteo": {
+      "n": 23,
+      "auc_mois": 0.612,
+      "ic_mois": [
+       0.467,
+       0.748
+      ],
+      "auc_saison": 0.688,
+      "ic_saison": [
+       0.584,
+       0.781
+      ],
+      "auc_calendrier": 0.65,
+      "ic_calendrier": [
+       0.557,
+       0.733
+      ],
+      "ic_ecart": [
+       -0.066,
+       0.132
+      ]
+     }
+    },
+    "pied_de_mouton": {
+     "nom": "Pied-de-mouton",
+     "observations": 90,
+     "habitat": {
+      "n": 3
+     },
+     "meteo": {
+      "n": 42,
+      "auc_mois": 0.614,
+      "ic_mois": [
+       0.526,
+       0.706
+      ],
+      "auc_saison": 0.719,
+      "ic_saison": [
+       0.641,
+       0.786
+      ],
+      "auc_calendrier": 0.647,
+      "ic_calendrier": [
+       0.587,
+       0.697
+      ],
+      "ic_ecart": [
+       -0.0,
+       0.135
+      ]
+     }
+    },
+    "morille": {
+     "nom": "Morille",
+     "observations": 37,
+     "habitat": {
+      "n": 6
+     },
+     "meteo": {
+      "n": 16
+     }
+    }
    }
   }
  }

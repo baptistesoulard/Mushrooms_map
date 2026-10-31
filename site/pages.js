@@ -102,34 +102,51 @@ async function validation() {
     `Calculé le ${new Date(v.calcule_le).toLocaleDateString("fr-FR", { dateStyle: "long" })}, ` +
     `observations de ${v.periode[0]} à ${v.periode[1]}. Habitat : positions connues à ` +
     `${fr.format(v.incertitude_habitat_m / 1000)} km près ; météo : à ${fr.format(v.incertitude_meteo_m / 1000)} km près.`));
-  for (const e of Object.values(v.especes)) {
-    const s = el("section", { class: "carte-espece" }, el("h3", {}, e.nom));
-    const h = e.habitat;
-    const m = e.meteo;
-    const t = el("table", {}, el("tr", {}, el("th", {}, "Test"), el("th", { class: "num" }, "Cas"),
-      el("th", {}, "Résultat"), el("th", {}, "Lecture")));
-    const ligne = (test, n, res, lec) => t.append(el("tr", {}, el("td", {}, test),
-      el("td", { class: "num" }, String(n)), el("td", {}, res), el("td", {}, lec)));
-    if (h.auc !== undefined) {
-      ligne("Habitat", h.n, auc(h.auc, h.ic), lecture(h.auc, h.ic));
-      ligne("Forêt seule (référence)", h.n, auc(h.auc_foret, h.ic_foret),
-        `habitat : ${ecart(h.ic_ecart, "mieux que la forêt seule", "moins bien que la forêt seule")}`);
+  for (const [code, r] of Object.entries(v.regions)) {
+    const fond = el("p", { class: "muet" }, `Fond de comparaison : ${r.fond.toLocaleString("fr-FR")} sorties ` +
+      "où d'autres champignons ont été observés dans cette zone.");
+    const sections = Object.values(r.especes).map((e) => espece(e, v.min_cas, code === "france" ? "en France" : "dans cette zone"));
+    if (code === "france") {
+      zone.append(el("h2", {}, r.nom), fond, ...sections);
     } else {
-      ligne("Habitat", h.n, "—", `trop peu de cas (moins de ${v.min_cas})`);
+      const testees = Object.values(r.especes).filter((e) => e.habitat.auc !== undefined || e.meteo.auc_mois !== undefined).length;
+      zone.append(el("details", { class: "region" },
+        el("summary", {}, el("strong", {}, r.nom), testees
+          ? ` — ${testees} espèce${testees > 1 ? "s" : ""} sur 5 avec assez de cas`
+          : " — trop peu d'observations pour conclure"),
+        fond, ...sections));
     }
-    if (m.auc_mois !== undefined) {
-      ligne("Météo, à mois égal", m.n, auc(m.auc_mois, m.ic_mois), lecture(m.auc_mois, m.ic_mois));
-      ligne("Météo, sur la saison", m.n, auc(m.auc_saison, m.ic_saison), lecture(m.auc_saison, m.ic_saison));
-      ligne("Calendrier seul (référence)", m.n, auc(m.auc_calendrier, m.ic_calendrier),
-        `indice : ${ecart(m.ic_ecart, "mieux que le calendrier", "moins bien que le calendrier")}`);
-    } else {
-      ligne("Météo", m.n, "—", `trop peu de cas datés en saison (moins de ${v.min_cas})`);
-    }
-    s.append(el("div", { class: "tableau" }, t));
-    s.append(el("p", { class: "muet" }, `${e.observations} observations datées au jour dans le département.` +
-      (h.part_hors_foret !== undefined ? ` ${pct(h.part_hors_foret)} des cas d'habitat tombent hors forêt selon la BD Forêt.` : "")));
-    zone.append(s);
   }
+}
+
+// Les tests d'une espèce dans une zone.
+function espece(e, minCas, ou) {
+  const s = el("section", { class: "carte-espece" }, el("h3", {}, e.nom));
+  const h = e.habitat;
+  const m = e.meteo;
+  const t = el("table", {}, el("tr", {}, el("th", {}, "Test"), el("th", { class: "num" }, "Cas"),
+    el("th", {}, "Résultat"), el("th", {}, "Lecture")));
+  const ligne = (test, n, res, lec) => t.append(el("tr", {}, el("td", {}, test),
+    el("td", { class: "num" }, String(n)), el("td", {}, res), el("td", {}, lec)));
+  if (h.auc !== undefined) {
+    ligne("Habitat", h.n, auc(h.auc, h.ic), lecture(h.auc, h.ic));
+    ligne("Forêt seule (référence)", h.n, auc(h.auc_foret, h.ic_foret),
+      `habitat : ${ecart(h.ic_ecart, "mieux que la forêt seule", "moins bien que la forêt seule")}`);
+  } else {
+    ligne("Habitat", h.n, "—", `trop peu de cas (moins de ${minCas})`);
+  }
+  if (m.auc_mois !== undefined) {
+    ligne("Météo, à mois égal", m.n, auc(m.auc_mois, m.ic_mois), lecture(m.auc_mois, m.ic_mois));
+    ligne("Météo, sur la saison", m.n, auc(m.auc_saison, m.ic_saison), lecture(m.auc_saison, m.ic_saison));
+    ligne("Calendrier seul (référence)", m.n, auc(m.auc_calendrier, m.ic_calendrier),
+      `indice : ${ecart(m.ic_ecart, "mieux que le calendrier", "moins bien que le calendrier")}`);
+  } else {
+    ligne("Météo", m.n, "—", `trop peu de cas datés en saison (moins de ${minCas})`);
+  }
+  s.append(el("div", { class: "tableau" }, t));
+  s.append(el("p", { class: "muet" }, `${e.observations.toLocaleString("fr-FR")} observations datées au jour ${ou}.` +
+    (h.part_hors_foret !== undefined ? ` ${pct(h.part_hors_foret)} des cas d'habitat tombent hors forêt selon la BD Forêt.` : "")));
+  return s;
 }
 
 if (document.getElementById("especes")) methode();

@@ -17,7 +17,7 @@ données publiques uniquement.
 
 C'est un indice de conditions favorables, pas une probabilité, et la page « Face aux
 observations » mesure s'il fait mieux que le hasard et que des références naïves, avec
-les observations publiques de GBIF (Haute-Savoie pour l'instant).
+les observations publiques de GBIF, sur toute la France et à part dans le Midi.
 
 ## Organisation
 
@@ -30,7 +30,7 @@ site/coins.js            mes coins : trouvailles gardées dans le navigateur, pa
 champi/especes.py        les règles, espèce par espèce : le seul fichier à toucher pour changer un seuil
 champi/modele.py         le même calcul en Python (export, validation), sans entrée-sortie
 champi/redaction.py      les phrases du panneau, à partir de faits
-champi/validation.py     (à la main) GBIF + météo passée → data/validation.json (Haute-Savoie)
+champi/validation.py     (à la main) GBIF + météo passée → data/validation.json (France, régions)
 site/                    le site statique (HTML, CSS, JS, Leaflet servi localement)
 ```
 
@@ -46,7 +46,7 @@ python -m champi.depot                    # réseau : météo de la France, ~3 m
 python -m champi.export_france            # demande site/habitat/ (release « habitat ») ; écrit site/data/
 python -m http.server 8765 --directory site
 python -m champi.france bloc 18_156       # réseau : construit un bloc (essai) dans habitat/
-python -m champi.validation               # réseau : GBIF et météo passée, ~15 min la première fois
+python -m champi.validation               # réseau : GBIF et météo passée, ~1 h la première fois
 ```
 
 Pour travailler en local, récupérer l'habitat publié :

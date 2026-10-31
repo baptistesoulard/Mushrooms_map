@@ -314,7 +314,8 @@ def exporter(meteo: Meteo | None = None) -> dict:
     chemin_validation = DATA / "validation.json"
     validation = (json.loads(chemin_validation.read_text(encoding="utf-8"))
                   if chemin_validation.exists() else None)
-    fiabilite = ({code: redaction.fiabilite(r["meteo"]) for code, r in validation["especes"].items()}
+    fiabilite = ({code: redaction.fiabilite(r["meteo"])
+                  for code, r in validation["regions"]["haute_savoie"]["especes"].items()}
                  if validation else {})
 
     carte = {
