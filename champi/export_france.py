@@ -315,7 +315,10 @@ def exporter(meteo: Meteo | None = None) -> dict:
             dep["centre"] = [round(float(np.median(ech.lat[sel])), 4), round(float(np.median(ech.lon[sel])), 4)]
             dep["bornes"] = [round(float(ech.lat[sel].min()), 3), round(float(ech.lon[sel].min()), 3),
                              round(float(ech.lat[sel].max()), 3), round(float(ech.lon[sel].max()), 3)]
-        ecrire_json(SITE_DATA / "resumes" / f"{dep['code']}.json", resumes[dep["code"]])
+            ecrire_json(SITE_DATA / "resumes" / f"{dep['code']}.json", resumes[dep["code"]])
+    # Un « département » sans forêt échantillonnée n'est pas à proposer : Saint-Pierre-et-
+    # Miquelon (« NR » dans ADMIN EXPRESS) dans les listes de communes d'avant le 2026-10-31.
+    departements = [d for d in departements if "centre" in d]
 
     chemin_validation = DATA / "validation.json"
     validation = (json.loads(chemin_validation.read_text(encoding="utf-8"))

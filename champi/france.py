@@ -93,8 +93,9 @@ def communes_nationales() -> list[dict]:
     """Communes de métropole (Corse comprise), triées par code INSEE : l'index national est
     la position + 1 (0 = hors de France)."""
     brut = _wfs_attributs(COMMUNES, "code_insee,nom_officiel,code_insee_du_departement")
+    # Outre-mer exclu, Saint-Pierre-et-Miquelon compris (département « NR », code INSEE 975..).
     garde = [{"insee": c["code_insee"], "nom": c["nom_officiel"], "dep": c["code_insee_du_departement"]}
-             for c in brut if not c["code_insee_du_departement"].startswith("97")]
+             for c in brut if not c["code_insee"].startswith("97")]
     return sorted(garde, key=lambda c: c["insee"])
 
 
