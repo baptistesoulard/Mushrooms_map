@@ -1,18 +1,24 @@
 name: Habitat de la France
 
-# À la main, rarement (les sources changent tous les quelques ans) : forêts, relief, roche,
-# zones protégées et communes, bloc par bloc, publiés comme asset de la release « habitat ».
-# Le job quotidien télécharge cet asset ; rien de tout cela n'entre dans git.
+# Forêts, relief, roche, zones protégées et communes, bloc par bloc, publiés comme asset de
+# la release « habitat ». Le job quotidien télécharge cet asset ; rien n'entre dans git.
+# Incrémental : seuls les blocs qui manquent à la release sont construits (une construction
+# interrompue publie ce qu'elle a fait). Changer champi.france.FORMAT reconstruit tout.
 on:
-  # Changer le format des blocs oblige à les reconstruire : la poussée le fait.
   push:
     branches: [main]
     paths: [".github/workflows/habitat.yml", "champi/france.py", "champi/habitat.py", "champi/sources.py"]
+  schedule:
+    - cron: "0 2 * * 0"       # chaque dimanche : complète les blocs manquants (rien sinon)
   workflow_dispatch:
     inputs:
       groupes:
         description: "Nombre de tâches parallèles"
         default: "40"
+      tout:
+        description: "Tout reconstruire (ignorer la release publiée)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -34,8 +40,16 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
+      - name: Index de la release publiée
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p habitat
+          if gh release download habitat -p habitat.tar -D "$RUNNER_TEMP"; then
+            tar -xf "$RUNNER_TEMP/habitat.tar" -C habitat blocs.json communes.json
+          fi
       - id: liste
-        run: echo "groupes=$(python -m champi.france preparer --groupes ${{ inputs.groupes || 40 }} | tail -1)" >> "$GITHUB_OUTPUT"
+        run: echo "groupes=$(python -m champi.france preparer --groupes ${{ inputs.groupes || 40 }} ${{ inputs.tout && '--tout' || '' }} | tail -1)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: habitat-preparation
@@ -45,6 +59,7 @@ jobs:
 
   blocs:
     needs: preparer
+    if: needs.preparer.outputs.groupes != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     strategy:
@@ -75,8 +90,10 @@ jobs:
             habitat/vides
           if-no-files-found: ignore
 
+  # Même si des groupes ont échoué : on publie ce qui est fait, la suite viendra.
   assembler:
-    needs: blocs
+    needs: [preparer, blocs]
+    if: ${{ !cancelled() && needs.preparer.outputs.groupes != '[]' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,6 +102,15 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
+      - name: Release publiée (complétée par cette construction)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p habitat
+          if gh release download habitat -p habitat.tar -D "$RUNNER_TEMP"; then
+            tar -xf "$RUNNER_TEMP/habitat.tar" -C habitat
+            rm "$RUNNER_TEMP/habitat.tar"
+          fi
       - uses: actions/download-artifact@v4
         with:
           pattern: habitat-*

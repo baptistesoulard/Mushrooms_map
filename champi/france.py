@@ -4,10 +4,15 @@ Construit dans GitHub Actions (`.github/workflows/habitat.yml`), jamais sur le p
 les sources brutes pèsent une vingtaine de Go. Chaque bloc est indépendant (ses sources
 sont lues dans son emprise) : la construction se répartit sur des dizaines de tâches.
 
-    python -m champi.france preparer --groupes 40   # communes, liste des blocs, groupes
+    python -m champi.france preparer --groupes 40   # communes, blocs à construire, groupes
     python -m champi.france groupe 7                # construit les blocs du groupe 7
     python -m champi.france bloc 18_156             # un seul bloc (essai)
     python -m champi.france assembler               # index des blocs, échantillon national
+
+La construction est INCRÉMENTALE : le workflow extrait d'abord la release publiée dans
+`habitat/`, et seuls les blocs qui lui manquent sont construits, puis ajoutés. Une
+construction interrompue (service saturé, délai dépassé) publie ce qu'elle a fait ; la
+suivante complète. Changer `FORMAT` (ou `--tout`) reconstruit tout.
 
 Un bloc = trois PNG RGB, lus tels quels par le site (calcul dans le navigateur) et par
 l'export quotidien (échantillon) :
@@ -34,6 +39,7 @@ from .grille import Grille
 from .habitat import forets, forets_publiques, relief, roches, zones_protegees
 from .sources import GEOPF_WFS, http_get, rasteriser, wfs_geopf
 
+FORMAT = 1                            # à changer avec le format ou le calcul d'un bloc : tout est refait
 BLOC = 512
 COTE = BLOC * PAS_FIN                 # 36 864 m Mercator, environ 25 km au sol
 ECHANTILLON = 4                       # une case sur 4 × 4 pour l'export quotidien
@@ -105,16 +111,35 @@ def blocs_de_france() -> list[str]:
     return sorted(noms, key=lambda n: tuple(map(int, n.split("_"))))
 
 
-def preparer(groupes: int) -> list[int]:
+def publie() -> dict | None:
+    """L'index de la release publiée (extraite dans `habitat/`), s'il est au FORMAT courant."""
+    chemin = SORTIE / "blocs.json"
+    if not chemin.exists():
+        return None
+    index = json.loads(chemin.read_text(encoding="utf-8"))
+    return index if index.get("format") == FORMAT else None
+
+
+def preparer(groupes: int, tout: bool = False) -> list[int]:
     SORTIE.mkdir(parents=True, exist_ok=True)
-    com = communes_nationales()
-    (SORTIE / "communes.json").write_text(json.dumps(com, ensure_ascii=False), encoding="utf-8")
+    base = None if tout else publie()
     blocs = blocs_de_france()
+    if base:
+        # Les blocs publiés renvoient aux index de SA liste de communes : on la garde.
+        faits = set(base["blocs"]) | set(base.get("vides", []))
+        a_construire = [b for b in blocs if b not in faits]
+    else:
+        com = communes_nationales()
+        (SORTIE / "communes.json").write_text(json.dumps(com, ensure_ascii=False), encoding="utf-8")
+        a_construire = blocs
+    groupes = min(groupes, len(a_construire))
     # Répartition entrelacée : les blocs voisins (souvent de même densité) vont à des groupes
     # différents, pour que les tâches durent à peu près autant.
-    liste = {"blocs": blocs, "groupes": [blocs[g::groupes] for g in range(groupes)]}
+    liste = {"blocs": blocs, "incremental": base is not None, "a_construire": a_construire,
+             "groupes": [a_construire[g::groupes] for g in range(groupes)]}
     (SORTIE / "liste.json").write_text(json.dumps(liste), encoding="utf-8")
-    print(f"{len(com)} communes, {len(blocs)} blocs en {groupes} groupes")
+    print(f"{len(blocs)} blocs, {len(a_construire)} à construire en {groupes} groupes"
+          + (" (complément de la release publiée)" if base else ""))
     return list(range(groupes))
 
 
@@ -147,7 +172,7 @@ def construire_bloc(nom: str, index_communes: dict[str, int]) -> dict | None:
         if not foret.any():
             return None
         alt, pente, ens, orientation = relief(g, cle, marge=1)
-        roche, _ = roches(g, cle)
+        roche, _ = roches(g)
         protege, protections = zones_protegees(g, cle)
         public = forets_publiques(g, cle)
     finally:
@@ -189,9 +214,10 @@ def _index_communes() -> dict[str, int]:
     return {c["insee"]: i + 1 for i, c in enumerate(com)}
 
 
-def groupe(n: int, passes: int = 3) -> None:
+def groupe(n: int, passes: int = 3, minutes: float = 150) -> None:
     """Construit les blocs du groupe ; ceux qui échouent (service saturé) sont repris après une
-    pause, jusqu'à `passes` fois."""
+    pause, jusqu'à `passes` fois. Après `minutes`, plus aucun bloc n'est commencé : la tâche
+    rend ce qu'elle a fait avant d'être tuée par GitHub, et la construction suivante complète."""
     liste = json.loads((SORTIE / "liste.json").read_text(encoding="utf-8"))
     index = _index_communes()
     t0 = time.time()
@@ -201,6 +227,11 @@ def groupe(n: int, passes: int = 3) -> None:
         for k, nom in enumerate(restants, 1):
             if (SORTIE / "meta" / f"{nom}.json").exists() or (SORTIE / "vides" / nom).exists():
                 continue
+            if time.time() - t0 > 60 * minutes:
+                reste = [b for b in restants[k - 1:] if not (SORTIE / "meta" / f"{b}.json").exists()]
+                print(f"::warning title=groupe {n}::délai atteint, {len(reste)} blocs laissés à la "
+                      f"construction suivante", flush=True)
+                raise SystemExit(1)
             t = time.time()
             try:
                 meta = construire_bloc(nom, index)
@@ -227,28 +258,47 @@ def groupe(n: int, passes: int = 3) -> None:
 
 # --- Assemblage ---------------------------------------------------------------------
 
-def assembler() -> None:
+def assembler() -> bool:
+    """Index et échantillon national : la release publiée (si la construction la complète)
+    plus les blocs construits. Les blocs qui manquent encore sont listés, pas bloquants.
+    Renvoie False si rien n'a été construit (rien à publier)."""
     liste = json.loads((SORTIE / "liste.json").read_text(encoding="utf-8"))
-    metas, manquants = {}, []
-    for nom in liste["blocs"]:
+    base = publie() if liste["incremental"] else None
+    metas = dict(base["blocs"]) if base else {}
+    vides = set(base.get("vides", [])) if base else set()
+    nouveaux = []
+    for nom in liste["a_construire"]:
         f = SORTIE / "meta" / f"{nom}.json"
         if f.exists():
-            metas[nom] = json.loads(f.read_text(encoding="utf-8"))
-        elif not (SORTIE / "vides" / nom).exists():
-            manquants.append(nom)
-    if manquants:
-        raise SystemExit(f"{len(manquants)} blocs manquants : {', '.join(manquants[:20])}…")
+            m = json.loads(f.read_text(encoding="utf-8"))
+            metas[nom] = {"n_foret": m["n_foret"], "protections": m["protections"]}
+            nouveaux.append(nom)
+        elif (SORTIE / "vides" / nom).exists():
+            vides.add(nom)
+            nouveaux.append(nom)
+    if not nouveaux or not metas:
+        print("::error::aucun bloc construit : rien à publier")
+        return False
+    manquants = [nom for nom in liste["blocs"] if nom not in metas and nom not in vides]
     index = {
-        "construit_le": time.strftime("%Y-%m-%d"),
+        "construit_le": time.strftime("%Y-%m-%d"), "format": FORMAT,
         "bloc": BLOC, "pas": PAS_FIN, "cote": COTE, "altitude_decalage": ALTITUDE_DECALAGE,
-        "blocs": {nom: {"n_foret": m["n_foret"], "protections": m["protections"]} for nom, m in metas.items()},
+        "blocs": dict(sorted(metas.items())), "vides": sorted(vides), "manquants": manquants,
     }
-    (SORTIE / "blocs.json").write_text(json.dumps(index, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    parties = [dict(np.load(SORTIE / "echantillon" / f"{nom}.npz")) for nom in metas]
+    # Échantillon : celui de la release (ses blocs ne sont jamais refaits en incrémental),
+    # plus celui des blocs construits.
+    parties = [dict(np.load(SORTIE / "echantillon.npz"))] if base else []
+    parties += [dict(np.load(SORTIE / "echantillon" / f"{nom}.npz")) for nom in nouveaux
+                if (SORTIE / "echantillon" / f"{nom}.npz").exists()]
     national = {k: np.concatenate([p[k] for p in parties]) for k in parties[0]}
     np.savez_compressed(SORTIE / "echantillon.npz", **national)
+    (SORTIE / "blocs.json").write_text(json.dumps(index, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     n = sum(m["n_foret"] for m in metas.values())
     print(f"{len(metas)} blocs boisés, {n / 1e6:.1f} M cases boisées, échantillon {len(national['lat']) / 1e6:.2f} M")
+    if manquants:
+        print(f"::warning title=habitat incomplet::{len(manquants)} blocs manquants, complétés à la "
+              f"prochaine construction : {', '.join(manquants[:30])}")
+    return True
 
 
 if __name__ == "__main__":
@@ -256,12 +306,13 @@ if __name__ == "__main__":
     sous = ap.add_subparsers(dest="action", required=True)
     p = sous.add_parser("preparer")
     p.add_argument("--groupes", type=int, default=40)
+    p.add_argument("--tout", action="store_true", help="ignorer la release publiée, tout reconstruire")
     sous.add_parser("groupe").add_argument("n", type=int)
     sous.add_parser("bloc").add_argument("noms", nargs="+")
     sous.add_parser("assembler")
     a = ap.parse_args()
     if a.action == "preparer":
-        print(json.dumps(preparer(a.groupes)))
+        print(json.dumps(preparer(a.groupes, a.tout)))
     elif a.action == "groupe":
         groupe(a.n)
     elif a.action == "bloc":
@@ -270,5 +321,5 @@ if __name__ == "__main__":
             t = time.time()
             m = construire_bloc(nom, idx)
             print(nom, m and m["n_foret"], f"{time.time() - t:.0f} s")
-    else:
-        assembler()
+    elif not assembler():
+        raise SystemExit(1)

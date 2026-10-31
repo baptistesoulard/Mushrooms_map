@@ -9,10 +9,13 @@ dépendance géographique. Les téléchargements bruts restent dans `cache/` (no
 """
 from __future__ import annotations
 
+import gzip
 import json
+import sys
 import time
 import unicodedata
 from datetime import date
+from functools import lru_cache
 
 import numpy as np
 
@@ -22,6 +25,8 @@ from .sources import (
     BRGM_WFS, geometrie_lonlat_vers_merc, http_get, json_en_cache, polygones, rasteriser,
     wfs_geopf, wms_bil_lonlat,
 )
+
+LITHOLOGIE = DATA / "lithologie_1m.geojson.gz"   # copie de la couche du BRGM, versionnée
 
 # --- Légendes (codes stockés dans le .npz, relus par le site) ----------------------
 
@@ -171,26 +176,67 @@ def _classe_roche(descr: str) -> int:
     return 3
 
 
-def roches(grille: Grille, cle: str = DEPARTEMENT) -> tuple[np.ndarray, dict]:
+def telecharger_lithologie() -> None:
+    """Copie la couche du BRGM pour la France dans `data/` (versionné), à la main, rarement.
+
+    Le pare-feu du BRGM rejette les requêtes des serveurs de GitHub (« Request Rejected »,
+    mesuré le 2026-10-31) : la construction de l'habitat lit cette copie, jamais le service.
+    Le service plafonne une réponse à 1 000 entités et ignore le tri : on le lit par dalles,
+    sans doublon (OBJECTID).
+    """
+    par_id = {}
+    lats = [41.0, 43.0, 44.5, 46.0, 47.5, 49.0, 51.5]
+    lons = [-5.6, -1.0, 2.5, 5.5, 10.0]
+    for sud, nord in zip(lats, lats[1:]):
+        for ouest, est in zip(lons, lons[1:]):
+            lot = http_get(BRGM_WFS, {
+                "SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature",
+                "TYPENAMES": "ms:LITHO_1M_SIMPLIFIEE", "OUTPUTFORMAT": "geojson",
+                "BBOX": f"{sud},{ouest},{nord},{est},urn:ogc:def:crs:EPSG::4326",
+            }, delai=300, attendre_json=True)["features"]
+            if len(lot) >= 1000:
+                raise RuntimeError(f"dalle {sud},{ouest} tronquée : la découper")
+            for f in lot:
+                par_id[f["properties"]["OBJECTID"]] = f
+    def arrondi(anneau):   # 5 décimales : ~1 m, bien en deçà du 1/1 000 000
+        return [[round(x, 5), round(y, 5)] for x, y in anneau]
+    entites = [{"type": "Feature", "properties": {"DESCR": f["properties"].get("DESCR") or ""},
+                "geometry": {"type": f["geometry"]["type"],
+                             "coordinates": [[arrondi(a) for a in poly] for poly in polygones(f["geometry"])]
+                             if f["geometry"]["type"] == "MultiPolygon"
+                             else [arrondi(a) for a in f["geometry"]["coordinates"]]}}
+               for _, f in sorted(par_id.items())]
+    texte = json.dumps({"type": "FeatureCollection", "features": entites},
+                       ensure_ascii=False, separators=(",", ":"))
+    LITHOLOGIE.write_bytes(gzip.compress(texte.encode("utf-8"), mtime=0))
+    print(f"{len(entites)} entités, {LITHOLOGIE.stat().st_size / 1e6:.1f} Mo")
+
+
+@lru_cache(maxsize=1)
+def _lithologie() -> list[tuple[tuple[float, float, float, float], dict]]:
+    """Les entités de la copie nationale, avec leur emprise (ouest, sud, est, nord)."""
+    donnees = json.loads(gzip.decompress(LITHOLOGIE.read_bytes()).decode("utf-8"))
+    sortie = []
+    for f in donnees["features"]:
+        pts = np.concatenate([np.asarray(poly[0]) for poly in polygones(f["geometry"])])
+        sortie.append(((pts[:, 0].min(), pts[:, 1].min(), pts[:, 0].max(), pts[:, 1].max()), f))
+    return sortie
+
+
+def roches(grille: Grille) -> tuple[np.ndarray, dict]:
     """Lithologie simplifiée au 1/1 000 000 (BRGM), en trois classes de réaction du sol.
 
     La carte au 1/50 000 (BD Charm-50) serait bien plus fine, mais son téléchargement
     passe par un formulaire : pas scriptable. Le 1/1 000 000 ne distingue que les grands
     ensembles (massifs calcaires, cristallin, molasse) : c'est la variable la plus grossière
-    du modèle, et le site le dit.
+    du modèle, et le site le dit. Lue dans la copie nationale (`telecharger_lithologie`).
     """
-    def charger():
-        ouest, sud, est, nord = _bbox_lonlat(grille)
-        return http_get(BRGM_WFS, {
-            "SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature",
-            "TYPENAMES": "ms:LITHO_1M_SIMPLIFIEE", "OUTPUTFORMAT": "geojson",
-            "BBOX": f"{sud},{ouest},{nord},{est},urn:ogc:def:crs:EPSG::4326",
-        }, delai=120, attendre_json=True)
-
-    donnees = json_en_cache(f"lithologie_{cle}", charger)
+    ouest, sud, est, nord = _bbox_lonlat(grille)
     entites, vues = [], {}
-    for f in donnees["features"]:
-        descr = f["properties"].get("DESCR") or ""
+    for (o, s, e, n), f in _lithologie():
+        if o > est or e < ouest or s > nord or n < sud:
+            continue
+        descr = f["properties"]["DESCR"]
         code = _classe_roche(descr)
         vues[descr] = ROCHES[code]
         entites.append((geometrie_lonlat_vers_merc(f["geometry"]), code))
@@ -291,4 +337,7 @@ def construire() -> None:
 
 
 if __name__ == "__main__":
-    construire()
+    if sys.argv[1:] == ["lithologie"]:     # python -m champi.habitat lithologie
+        telecharger_lithologie()
+    else:
+        construire()
