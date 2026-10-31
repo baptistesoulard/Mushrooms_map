@@ -382,9 +382,8 @@ async function demarrer() {
   });
 
   // --- Ma position ------------------------------------------------------------------
-  // Un bouton la montre et la suit tant que la page est visible ; elle ne quitte jamais
-  // l'appareil. À l'ouverture, elle choisit le département, mais seulement si le navigateur
-  // l'a déjà autorisée : la carte ne la demande jamais d'elle-même.
+  // Demandée à l'ouverture pour choisir le département, puis montrée et suivie tant que la
+  // page est visible ; un bouton recentre ou arrête. Elle ne quitte jamais l'appareil.
   const calquePosition = L.layerGroup().addTo(map);
   let suivi = null, actif = false, derniere = null, aCentrer = false, depAuto = false, depOuverture = null;
 
@@ -422,7 +421,8 @@ async function demarrer() {
     arreter();
     if (depAuto) return;   // à l'ouverture, rien à dire : la carte garde le dernier département
     L.popup().setLatLng(map.getCenter()).setContent(err.code === err.PERMISSION_DENIED
-      ? "Position refusée : autorisez-la pour ce site dans le navigateur."
+      ? "Position refusée : le navigateur s'en souvient. Autorisez-la pour ce site dans ses " +
+        "réglages (le cadenas à gauche de l'adresse, ou Réglages › Safari › Position sur iPhone)."
       : "Position introuvable pour l'instant. Réessayez à découvert.").openOn(map);
   }
 
@@ -481,11 +481,14 @@ async function demarrer() {
     if (document.visibilityState === "visible") suivre(); else pause();
   });
 
+  // À l'ouverture, la position est demandée (choix de l'utilisateur, 2026-10-31) pour se
+  // placer d'emblée sur son département ; après un refus, plus rien : le navigateur s'en
+  // souvient, et le bouton dit comment revenir dessus.
   async function positionOuverture() {
-    if (!navigator.geolocation || !navigator.permissions) return;
+    if (!navigator.geolocation) return;
     try {
-      if ((await navigator.permissions.query({ name: "geolocation" })).state !== "granted") return;
-    } catch { return; }
+      if ((await navigator.permissions?.query({ name: "geolocation" }))?.state === "denied") return;
+    } catch { /* sans l'API des permissions : on demande */ }
     activer({ centrer: false, auto: true });
   }
 

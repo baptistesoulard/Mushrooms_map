@@ -51,10 +51,11 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   récente (`maj`) gagne, effacements gardés (`champi-coins-effaces`) pour qu'un coin effacé
   ne revienne pas d'un autre appareil (`coins.fusionner`, testé sous Node). Pas de serveur à
   nous : ce n'est pas un pas vers la carte communautaire.
-- **La position n'est jamais demandée d'office.** Le bouton « Ma position » la demande et la
-  suit (page visible seulement) ; à l'ouverture, elle choisit le département seulement si le
-  navigateur l'a déjà autorisée (`navigator.permissions`), et jamais contre un département
-  choisi entre-temps. Le département vient de la commune de la case (blocs d'habitat).
+- **La position est demandée à l'ouverture** (choix de l'utilisateur, 2026-10-31) pour se
+  placer sur son département, sauf si le navigateur l'a déjà refusée (`navigator.permissions`) :
+  on n'insiste pas, le bouton dit comment réautoriser. Elle est suivie tant que la page est
+  visible, ne change jamais un département choisi entre-temps et ne quitte pas l'appareil.
+  Le département vient de la commune de la case (blocs d'habitat).
 - **Zones protégées : hachurées, sans indice** (réserves, arrêtés de biotope, cœurs de parcs
   nationaux). Leur règlement varie ; le site ne dit jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur

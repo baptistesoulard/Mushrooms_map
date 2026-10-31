@@ -51,11 +51,10 @@
     <li>Si vous activez la synchronisation, le jeton GitHub est gardé dans le navigateur (clé
     <code>champi-synchro</code>) et vos coins sont envoyés à <code>api.github.com</code>, dans
     votre propre dépôt privé, et nulle part ailleurs.</li>
-    <li>La position de l'appareil n'est demandée que lorsque vous appuyez sur « Ma position »
-    (sur la carte) ou sur « Noter une trouvaille à ma position ». Une fois que vous l'avez
-    autorisée, la carte s'en sert aussi à l'ouverture pour choisir votre département, sans
-    redemander. Elle sert à afficher le point, choisir le département et placer un coin ;
-    elle n'est envoyée nulle part.</li>
+    <li>À l'ouverture, la carte demande la position de l'appareil pour se placer sur votre
+    département et afficher où vous êtes ; si vous refusez, elle ne redemande plus (le
+    navigateur garde votre choix). Elle sert aussi à « Ma position » et à « Noter une
+    trouvaille à ma position ». Elle n'est envoyée nulle part.</li>
     <li>Les fonds de carte sont chargés directement depuis les serveurs de l'IGN
     (<code>data.geopf.fr</code>), qui reçoivent donc votre adresse IP, comme pour toute carte
     en ligne. La bibliothèque de carte (Leaflet) est servie par le site lui-même.</li>
