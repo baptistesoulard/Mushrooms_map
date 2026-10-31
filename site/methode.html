@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
 <title>Méthode — Champignons en Haute-Savoie</title>
 <meta name="description" content="Comment l'indice de pousse est calculé : habitat (essence, roche, altitude, pente) multiplié par la météo (saison, pluie, température du sol, gel), les règles espèce par espèce et leurs limites.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -14,8 +15,9 @@
   <h1>Comment la carte est calculée</h1>
   <p>Chaque matin, le site recalcule pour chaque espèce un indice entre 0 et 1, sur toutes les
   forêts du département découpées en cases de 50 m, pour aujourd'hui et les sept jours suivants.
-  Les cases sont ensuite regroupées en zones de 250 m avant d'être publiées : la carte montre des
-  secteurs favorables, pas des coins.</p>
+  La carte affiche ces cases telles quelles. Leur précision est celle des données qui les
+  décrivent : fine pour le relief et les contours de forêt, grossière pour la roche et la
+  météo (voir plus bas).</p>
 
   <h2>Un produit de deux familles de facteurs</h2>
   <p><strong>Indice = habitat × météo.</strong> Un produit et non une moyenne : chaque facteur

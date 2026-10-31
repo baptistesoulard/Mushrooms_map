@@ -2,12 +2,16 @@
 
     python -m champi.export
 
-Écrit, pour la carte :
-- `indice/<espèce>_<k>.png` (k = 0 à 7) : R = indice × 200 (ou un code), G = pluie de la
-  fenêtre (mm), B = température du sol ((°C + 10) × 5), sur la grille publiée de 250 m ;
-- `attributs.png`, `lieux.png` : ce qui ne change pas (altitude, forêt, roche, commune) ;
-- `carte.json` : jours, légendes, et pour chaque espèce et chaque jour les faits et les
-  phrases du panneau ; `especes.json` : les règles, pour la page Méthode.
+Le site, à usage personnel, publie la grille de calcul de 50 m. Fichiers écrits :
+- `indice/<espèce>_<k>.png` (k = 0 à 7 ; niveaux de gris ; 50 m) : indice × 200, ou un
+  code (251 hors forêt, 252 zone protégée, 255 hors département) ;
+- `sol_<k>.png` (50 m) : température du sol de la case, (°C + 10) × 5, 255 hors forêt ;
+- `pluie/<espèce>_<k>.png` (zones de 250 m) : pluie de la fenêtre de l'espèce, mm ;
+- `attributs.png`, `lieux.png` (50 m, RVB) : altitude, forêt, roche, exposition, commune,
+  zone protégée ;
+- `carte.json` (jours, légendes, faits et phrases du panneau), `especes.json` (règles),
+  `validation.json`.
+Seuls `carte.json` et l'indice affiché se chargent d'emblée ; le reste au premier clic.
 """
 from __future__ import annotations
 
@@ -22,7 +26,7 @@ from PIL import Image
 from . import especes as E
 from . import modele as M
 from . import redaction
-from .config import DATA, DEPARTEMENT, FACTEUR_PUBLIE, NOM_DEPARTEMENT, SITE_DATA
+from .config import DATA, DEPARTEMENT, FACTEUR_ZONE, NOM_DEPARTEMENT, SITE_DATA
 from .grille import Grille
 from .meteo import Interpolateur, Meteo, previsions
 from .sources import ecrire_json
@@ -32,7 +36,12 @@ TRANCHE_M = 200
 ECHELLE = 200                        # indice publié = round(indice × 200)
 HORS_DEPARTEMENT, HORS_FORET, PROTEGE = 255, 251, 252
 COUVERTURE_PLEINE = 0.3              # une zone à 30 % boisée ou plus garde tout son indice
-MIN_CASES_FORET = 4                  # sur 25 : en dessous, la zone est « hors forêt »
+PART_FORET_MIN = 0.16                # en dessous, la zone est « hors forêt » (4 cases sur 25)
+
+
+def code_sol(t):
+    """Température du sol (°C) codée sur 0-254 : (t + 10) × 5, de -10 à 40,8 °C."""
+    return (np.asarray(t) + 10) * 5
 
 
 @dataclass
@@ -51,7 +60,6 @@ class Cases:
     roche: np.ndarray
     protege: np.ndarray
     commune: np.ndarray
-    bloc: np.ndarray            # index de la zone publiée (250 m) qui contient la case
 
 
 def charger_habitat() -> tuple[Grille, dict, dict]:
@@ -62,7 +70,6 @@ def charger_habitat() -> tuple[Grille, dict, dict]:
 
 def cases_de_foret(grille: Grille, h: dict) -> Cases:
     lig, col = np.nonzero((h["commune"] > 0) & (h["essence"] > 0))
-    publie = grille.grossir(FACTEUR_PUBLIE)
     return Cases(
         lignes=lig, colonnes=col,
         lat=grille.latitudes()[lig], lon=grille.longitudes()[col],
@@ -70,7 +77,6 @@ def cases_de_foret(grille: Grille, h: dict) -> Cases:
         ensoleillement=h["ensoleillement"][lig, col].astype(np.float32) / 100,
         pente=h["pente"][lig, col], essence=h["essence"][lig, col], ouverte=h["ouverte"][lig, col],
         roche=h["roche"][lig, col], protege=h["protege"][lig, col], commune=h["commune"][lig, col],
-        bloc=(lig // FACTEUR_PUBLIE) * publie.nx + col // FACTEUR_PUBLIE,
     )
 
 
@@ -89,6 +95,7 @@ class Calcul:
         self.meteo, self.cases = meteo, cases
         self.interp = Interpolateur(meteo.lats, meteo.lons, cases.lat, cases.lon)
         self._gel: dict[int, np.ndarray] = {}
+        self._sol: dict[int, np.ndarray] = {}
 
     def _gele(self, d: int) -> np.ndarray:
         if d not in self._gel:
@@ -96,94 +103,91 @@ class Calcul:
             self._gel[d] = tmin < E.GEL_SEUIL
         return self._gel[d]
 
+    def sol(self, k: int) -> np.ndarray:
+        """Température du sol de chaque case, moyenne des 7 jours précédant le jour k."""
+        if k not in self._sol:
+            c, m = self.cases, self.meteo
+            self._sol[k] = M.temperature_locale(self.interp(m.tsol_mer[k - 7:k].mean(axis=0)), c.altitude,
+                                                E.GRADIENT_SOL, c.ensoleillement, E.SOLEIL_SOL)
+        return self._sol[k]
+
     def entrees(self, esp: E.Espece, k: int):
         """Mêmes sorties que `modele.entrees_meteo`, calculées par la voie rapide."""
         c, m = self.cases, self.meteo
         j_min, j_max = esp.pluie_jours
         pluie = self.interp(m.pluie[k - j_max:k - j_min + 1].sum(axis=0))
-        t_sol = M.temperature_locale(self.interp(m.tsol_mer[k - 7:k].mean(axis=0)), c.altitude,
-                                     E.GRADIENT_SOL, c.ensoleillement, E.SOLEIL_SOL)
         gel = np.zeros(len(c.lat), dtype=np.int8)
         for d in range(k - 6, k + 1):
             gel += self._gele(d)
-        return M.pluie_efficace(pluie, c.ensoleillement), t_sol, gel
+        return M.pluie_efficace(pluie, c.ensoleillement), self.sol(k), gel
 
 
-# --- Agrégation vers la grille publiée ---------------------------------------------
+# --- Passage aux grilles publiées ---------------------------------------------------
 
 class Agregat:
-    def __init__(self, grille: Grille, h: dict, cases: Cases):
-        f = FACTEUR_PUBLIE
+    """Des cases de 50 m vers une grille de `facteur` × `facteur` cases (1 : la grille même)."""
+
+    def __init__(self, grille: Grille, h: dict, cases: Cases, facteur: int):
+        f = self.facteur = facteur
         self.publie = grille.grossir(f)
-        nb = self.publie.nx * self.publie.ny
-        self.nb, self.cases = nb, cases
+        nb = self.nb = self.publie.nx * self.publie.ny
+        self.cases = cases
+        self.bloc = (cases.lignes // f) * self.publie.nx + cases.colonnes // f
         dans = h["commune"] > 0
         self.n_dept = dans.reshape(self.publie.ny, f, self.publie.nx, f).sum(axis=(1, 3)).ravel()
-        self.n_foret = np.bincount(cases.bloc, minlength=nb)
-        libre = cases.protege == 0
-        self.libre = libre
-        self.n_libre = np.bincount(cases.bloc[libre], minlength=nb)
+        self.n_foret = np.bincount(self.bloc, minlength=nb)
+        self.libre = cases.protege == 0
+        self.n_libre = np.bincount(self.bloc[self.libre], minlength=nb)
         self.couverture = np.minimum(1.0, self.n_foret / (f * f) / COUVERTURE_PLEINE)
+        min_foret = max(1, round(PART_FORET_MIN * f * f))
         code = np.zeros(nb, dtype=np.uint8)
-        code[self.n_foret < MIN_CASES_FORET] = HORS_FORET
-        code[(self.n_foret >= MIN_CASES_FORET) & (2 * (self.n_foret - self.n_libre) >= self.n_foret)] = PROTEGE
+        code[self.n_foret < min_foret] = HORS_FORET
+        code[(self.n_foret >= min_foret) & (2 * (self.n_foret - self.n_libre) >= self.n_foret)] = PROTEGE
         code[self.n_dept < (f * f) / 2] = HORS_DEPARTEMENT
         self.code_fixe = code
 
     def _moyenne(self, valeurs, masque=None) -> np.ndarray:
-        b = self.cases.bloc if masque is None else self.cases.bloc[masque]
+        b = self.bloc if masque is None else self.bloc[masque]
         v = valeurs if masque is None else valeurs[masque]
         n = np.bincount(b, minlength=self.nb)
         s = np.bincount(b, weights=v, minlength=self.nb)
         return np.divide(s, n, out=np.zeros(self.nb), where=n > 0)
 
+    def _image(self, valeurs: np.ndarray) -> np.ndarray:
+        return valeurs.reshape(self.publie.ny, self.publie.nx)
+
     def indice(self, indice_cases) -> np.ndarray:
-        """Indice publié par zone : moyenne des cases libres, réduite si la zone est peu boisée."""
+        """Indice publié : moyenne des cases libres, réduite si la zone est peu boisée."""
         moy = self._moyenne(indice_cases, self.libre) * self.couverture
         code = np.clip(np.round(moy * ECHELLE), 0, ECHELLE).astype(np.uint8)
-        return np.where(self.code_fixe > 0, self.code_fixe, code)
+        return self._image(np.where(self.code_fixe > 0, self.code_fixe, code))
 
-    def image_jour(self, indice_cases, pluie_cases, tsol_cases) -> np.ndarray:
-        r = self.indice(indice_cases)
-        g = np.clip(np.round(self._moyenne(pluie_cases)), 0, 255).astype(np.uint8)
-        b = np.clip(np.round((self._moyenne(tsol_cases) + 10) * 5), 0, 255).astype(np.uint8)
-        return np.dstack([v.reshape(self.publie.ny, self.publie.nx) for v in (r, g, b)])
-
-    def images_fixes(self, grille: Grille, h: dict) -> tuple[np.ndarray, np.ndarray]:
-        """attributs : R altitude/20, G essence | publique<<4 | ouverte<<5, B roche | orientation<<2.
-        lieux : R, G commune (16 bits), B zone protégée."""
-        f, p, c = FACTEUR_PUBLIE, self.publie, self.cases
-        forme = (p.ny, f, p.nx, f)
-        dans = (h["commune"] > 0)
-        alt = np.where(dans, h["altitude"], 0).reshape(forme).sum(axis=(1, 3)).ravel()
-        alt = np.divide(alt, self.n_dept, out=np.zeros(self.nb), where=self.n_dept > 0)
-
-        def dominante(valeurs, classes):
-            n = np.bincount(c.bloc * classes + valeurs.astype(np.int64), minlength=self.nb * classes)
-            return n.reshape(self.nb, classes).argmax(axis=1)
-
-        essence = np.where(self.n_foret > 0, dominante(c.essence, 16), 0)
-        publique = self._moyenne(h["public"][c.lignes, c.colonnes].astype(float)) >= 0.5
-        ouverte = self._moyenne(c.ouverte.astype(float)) >= 0.5
-        orientation = np.where(self.n_foret > 0, dominante(h["orientation"][c.lignes, c.colonnes], 9), 0)
-        centre = (slice(f // 2, None, f), slice(f // 2, None, f))
-        roche = h["roche"][centre].ravel()
-        commune = h["commune"][centre].ravel().astype(np.int64)
-        protege = h["protege"].reshape(forme).max(axis=(1, 3)).ravel()
-
-        attributs = np.dstack([
-            np.clip(np.round(alt / 20), 0, 255).astype(np.uint8),
-            (essence | (publique.astype(int) << 4) | (ouverte.astype(int) << 5)).astype(np.uint8),
-            (roche | (orientation << 2)).astype(np.uint8),
-        ]).reshape(p.ny, p.nx, 3)
-        lieux = np.dstack([(commune & 255).astype(np.uint8), (commune >> 8).astype(np.uint8),
-                           protege.astype(np.uint8)]).reshape(p.ny, p.nx, 3)
-        return attributs, lieux
+    def valeurs(self, valeurs_cases, codage=lambda v: v) -> np.ndarray:
+        """Moyenne par zone d'une grandeur, codée sur 0-254 ; 255 là où il n'y a pas de forêt."""
+        code = np.clip(np.round(codage(self._moyenne(valeurs_cases))), 0, 254).astype(np.uint8)
+        return self._image(np.where(self.n_foret > 0, code, 255).astype(np.uint8))
 
 
-def ecrire_png(chemin, rgb: np.ndarray) -> None:
+def images_fixes(h: dict) -> tuple[np.ndarray, np.ndarray]:
+    """attributs : R altitude/20, G essence | publique<<4 | ouverte<<5, B roche | orientation<<2.
+    lieux : R, G commune (16 bits), B zone protégée."""
+    def u8(a):
+        return np.asarray(a).astype(np.uint8)
+
+    attributs = np.dstack([
+        u8(np.clip(np.round(np.maximum(h["altitude"], 0) / 20), 0, 255)),
+        u8(h["essence"]) | (u8(h["public"]) << 4) | (u8(h["ouverte"]) << 5),
+        u8(h["roche"]) | (u8(h["orientation"]) << 2),
+    ])
+    commune = h["commune"].astype(np.int64)
+    lieux = np.dstack([u8(commune & 255), u8(commune >> 8), u8(h["protege"])])
+    return attributs, lieux
+
+
+def ecrire_png(chemin, image: np.ndarray) -> None:
+    """Niveaux de gris pour une grille 2D, RVB pour une grille à trois canaux."""
     chemin.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(rgb, "RGB").save(chemin, optimize=True)
+    Image.fromarray(image, "L" if image.ndim == 2 else "RGB").save(chemin, optimize=True)
 
 
 # --- Faits du jour ------------------------------------------------------------------
@@ -197,12 +201,11 @@ def faits_du_jour(esp: E.Espece, jour: date, saison: float, habitat, indice_case
     def moy(v):
         return float((v[libre] * poids).sum() / total)
 
-    # Classes, sur les zones publiées boisées : ce que le lecteur voit sur la carte.
+    # Classes, sur les cases publiées boisées : ce que le lecteur voit sur la carte.
     visibles = codes_publies[codes_publies <= ECHELLE] / ECHELLE
-    parts = [0.0] * len(M.CLASSES)
-    for v in visibles:
-        parts[M.classe(v)] += 1
-    parts = [p / max(len(visibles), 1) for p in parts]
+    seuils = np.array([seuil for seuil, _ in M.CLASSES])
+    k = np.minimum(np.searchsorted(seuils, visibles, side="right"), len(seuils) - 1)
+    parts = (np.bincount(k, minlength=len(seuils)) / max(len(visibles), 1)).tolist()
 
     tranche = (cases.altitude[libre] // TRANCHE_M).astype(int)
     tranches = []
@@ -266,7 +269,8 @@ def exporter(meteo: Meteo | None = None) -> dict:
     t0 = time.time()
     grille, h, meta = charger_habitat()
     cases = cases_de_foret(grille, h)
-    agregat = Agregat(grille, h, cases)
+    publie = Agregat(grille, h, cases, 1)
+    zones = Agregat(grille, h, cases, FACTEUR_ZONE)
     if meteo is None:
         meteo = previsions(grille, jours_futurs=JOURS_FUTURS)
     print(f"Météo : {len(meteo.lats) * len(meteo.lons)} points, {meteo.dates[0]} → {meteo.dates[-1]} "
@@ -275,9 +279,12 @@ def exporter(meteo: Meteo | None = None) -> dict:
     aujourdhui = meteo.dates[k0]
     calcul = Calcul(meteo, cases)
 
-    attributs, lieux = agregat.images_fixes(grille, h)
+    attributs, lieux = images_fixes(h)
     ecrire_png(SITE_DATA / "attributs.png", attributs)
     ecrire_png(SITE_DATA / "lieux.png", lieux)
+    for k in range(JOURS_FUTURS):
+        ecrire_png(SITE_DATA / f"sol_{k}.png", publie.valeurs(calcul.sol(k0 + k), code_sol))
+    print(f"  fonds fixes et sol  ({time.time() - t0:.0f} s)")
 
     regles = E.en_json()
     resumes: dict[str, list] = {}
@@ -290,10 +297,11 @@ def exporter(meteo: Meteo | None = None) -> dict:
             pluie, tsol, gel = calcul.entrees(esp, k0 + k)
             facteurs = M.facteurs_meteo(esp, pluie, tsol, gel)
             ind = M.indice(habitat, saison, facteurs)
-            image = agregat.image_jour(ind, pluie, tsol)
+            image = publie.indice(ind)
             ecrire_png(SITE_DATA / "indice" / f"{esp.code}_{k}.png", image)
+            ecrire_png(SITE_DATA / "pluie" / f"{esp.code}_{k}.png", zones.valeurs(pluie))
             faits = faits_du_jour(esp, jour, saison, habitat, ind, facteurs, pluie, tsol, cases,
-                                  image[..., 0].ravel(), meta["communes"])
+                                  image.ravel(), meta["communes"])
             texte = redaction.rediger(next(e for e in regles["especes"] if e["code"] == esp.code), faits)
             resumes[esp.code].append({**faits, **texte})
         print(f"  {esp.nom} : {[r['niveau'] for r in resumes[esp.code]]}  ({time.time() - t0:.0f} s)")
@@ -305,12 +313,12 @@ def exporter(meteo: Meteo | None = None) -> dict:
     fiabilite = ({code: redaction.fiabilite(r["meteo"]) for code, r in validation["especes"].items()}
                  if validation else {})
 
-    publie = agregat.publie
     carte = {
         "genere_le": datetime.now(timezone.utc).isoformat(timespec="minutes"),
         "departement": DEPARTEMENT, "nom": NOM_DEPARTEMENT,
-        "bornes": publie.bornes_lonlat(), "taille": [publie.nx, publie.ny],
-        "grille": publie.en_dict(),
+        "bornes": grille.bornes_lonlat(),
+        "grille": grille.en_dict(),
+        "grille_zone": zones.publie.en_dict(),
         "echelle": ECHELLE,
         "codes": {"hors_departement": HORS_DEPARTEMENT, "hors_foret": HORS_FORET, "protege": PROTEGE},
         "classes": [{"seuil": s, "nom": n} for s, n in M.CLASSES],

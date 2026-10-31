@@ -79,9 +79,9 @@ def test_codes_des_zones():
     h["protege"][:5, 5:] = 3                 # zone 1 : protégée
     h["commune"][5:, 5:] = 0                 # zone 3 : hors département
     cases = cases_de_foret(grille, h)
-    a = Agregat(grille, h, cases)
+    a = Agregat(grille, h, cases, 5)
     codes = a.indice(np.full(len(cases.lat), 0.5, dtype=np.float32))
-    assert codes.tolist() == [HORS_FORET, PROTEGE, 100, HORS_DEPARTEMENT]
+    assert codes.ravel().tolist() == [HORS_FORET, PROTEGE, 100, HORS_DEPARTEMENT]
 
 
 def test_zone_peu_boisee_reduite():
@@ -89,6 +89,35 @@ def test_zone_peu_boisee_reduite():
     h["essence"][:] = 0
     h["essence"][0, :4] = 8                  # 4 cases boisées sur 25 = 16 %
     cases = cases_de_foret(grille, h)
-    a = Agregat(grille, h, cases)
-    code = a.indice(np.full(len(cases.lat), 1.0, dtype=np.float32))[0]
+    a = Agregat(grille, h, cases, 5)
+    code = a.indice(np.full(len(cases.lat), 1.0, dtype=np.float32))[0, 0]
     assert code == round(200 * (4 / 25) / 0.3)
+
+
+def test_grille_publiee_a_50_m_case_par_case():
+    """Facteur 1 : chaque case garde sa valeur ; hors forêt, protégée, hors département codées."""
+    grille, h = _habitat(2, 3)
+    h["essence"][:] = 8
+    h["essence"][0, 0] = 0
+    h["protege"][0, 1] = 1
+    h["commune"][1, 2] = 0
+    cases = cases_de_foret(grille, h)
+    a = Agregat(grille, h, cases, 1)
+    valeurs = np.linspace(0.1, 0.4, len(cases.lat)).astype(np.float32)
+    codes = a.indice(valeurs)
+    assert codes.shape == (2, 3)
+    assert codes[0, 0] == HORS_FORET and codes[0, 1] == PROTEGE and codes[1, 2] == HORS_DEPARTEMENT
+    libres = [(i, j) for i in range(2) for j in range(3) if (i, j) not in [(0, 0), (0, 1), (1, 2)]]
+    attendu = {(int(l), int(c)): v for l, c, v in zip(cases.lignes, cases.colonnes, valeurs)}
+    for i, j in libres:
+        assert codes[i, j] == round(attendu[(i, j)] * 200)
+
+
+def test_valeurs_sans_foret_codees_255():
+    grille, h = _habitat(5, 5)
+    h["essence"][:] = 0
+    h["essence"][2, 2] = 8
+    cases = cases_de_foret(grille, h)
+    assert Agregat(grille, h, cases, 1).valeurs(np.array([12.4]))[2, 2] == 12
+    assert Agregat(grille, h, cases, 1).valeurs(np.array([12.4]))[0, 0] == 255
+    assert Agregat(grille, h, cases, 5).valeurs(np.array([12.4]))[0, 0] == 12

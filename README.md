@@ -4,8 +4,8 @@ Carte des forêts de Haute-Savoie où les conditions sont favorables à cinq cha
 (cèpe, girolle, trompette de la mort, pied-de-mouton, morille), aujourd'hui et pour les
 sept jours suivants. Recalculée chaque matin, à partir de données publiques uniquement.
 
-**Indice = habitat × météo**, entre 0 et 1, sur des cases de 50 m regroupées en zones de
-250 m à la publication :
+**Indice = habitat × météo**, entre 0 et 1, sur des cases de 50 m (le site, à usage
+personnel, les publie telles quelles) :
 
 - **habitat** (fixe) : essence dominante (BD Forêt, IGN), roche (BRGM), altitude, pente
   (RGE ALTI, IGN) ;

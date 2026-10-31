@@ -16,7 +16,7 @@ from datetime import date
 
 import numpy as np
 
-from .config import CACHE, DATA, DEPARTEMENT, MARGE_M, NOM_DEPARTEMENT, PAS_FIN, PAS_PUBLIE
+from .config import CACHE, DATA, DEPARTEMENT, MARGE_M, NOM_DEPARTEMENT, PAS_FIN, PAS_ZONE
 from .grille import Grille, grille_englobante
 from .sources import (
     BRGM_WFS, geometrie_lonlat_vers_merc, http_get, json_en_cache, polygones, rasteriser,
@@ -80,7 +80,7 @@ def communes() -> dict:
 def grille_du_departement(com: dict) -> Grille:
     pts = np.concatenate([np.asarray(p[0]) for f in com["features"] for p in polygones(f["geometry"])])
     (lon0, lat0), (lon1, lat1) = pts.min(0), pts.max(0)
-    return grille_englobante(lon0, lat0, lon1, lat1, PAS_FIN, PAS_PUBLIE, MARGE_M)
+    return grille_englobante(lon0, lat0, lon1, lat1, PAS_FIN, PAS_ZONE, MARGE_M)
 
 
 def relief(grille: Grille) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:

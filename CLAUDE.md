@@ -6,7 +6,7 @@ validation vivent dans `data/validation.json`, les décisions datées dans les c
 ## Le projet
 
 Site public : carte des forêts de Haute-Savoie favorables à cinq champignons, aujourd'hui
-et à J+7. **Indice = habitat × météo** (`champi/modele.py`), publié par zones de 250 m.
+et à J+7. **Indice = habitat × météo** (`champi/modele.py`), publié par cases de 50 m.
 
 ```
 champi.habitat (à la main) → data/habitat_74.npz (versionné, 8 Mo)
@@ -17,7 +17,7 @@ champi.validation (à la main) → data/validation.json (versionné) → copié 
 ## Règles
 
 - **Les seuils vivent dans `champi/especes.py` et nulle part ailleurs.** Le site les relit
-  depuis `especes.json` (page Méthode, fenêtre d'une zone) : aucun seuil en dur en JS.
+  depuis `especes.json` (page Méthode, fiche et fenêtre d'une case) : aucun seuil en dur en JS.
 - **Les règles ne se règlent pas sur les observations.** Elles sont trop peu nombreuses
   (une centaine par espèce au mieux) : on vérifie, on ne règle pas. Changer un seuil exige
   une raison mycologique, pas un meilleur AUC.
@@ -25,9 +25,11 @@ champi.validation (à la main) → data/validation.json (versionné) → copié 
 - **Un produit, pas une moyenne** : chaque facteur peut fermer la porte (gel, hors saison).
 - **Classes à seuils fixes** (`modele.CLASSES`), jamais des quantiles : un jour sans pousse
   doit donner une carte pâle.
-- **On publie des zones de 250 m, pas des coins.** Ne pas publier la grille de 50 m, ni
-  afficher d'observation ponctuelle sur le site (le cache GBIF de `data/validation/` ne
-  contient que des données déjà publiques, et ne sert qu'à la validation).
+- **Site à usage personnel (décision du 2026-10-31) : l'indice est publié à 50 m**, la
+  résolution de calcul, et le site n'est pas indexé (`noindex`). Le repasser en public
+  (partage, indexation) obligerait à revenir aux zones de 250 m : une carte publique à 50 m
+  enverrait tout le monde aux mêmes coins. Aucune observation ponctuelle n'est affichée (le
+  cache GBIF de `data/validation/` ne contient que des données déjà publiques).
 - **Zones protégées : hachurées, sans indice.** Leur règlement varie ; le site ne dit
   jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur

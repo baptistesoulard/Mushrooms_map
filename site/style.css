@@ -122,6 +122,13 @@ legend { font-weight: 600; font-size: .85rem; color: var(--texte-2); padding: 0;
 .choix label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .choix .niv { font-size: .75rem; color: var(--texte-3); font-weight: 400; }
 
+.fiche { margin-top: 12px; font-size: .86rem; color: var(--texte-2); }
+.fiche details { border: 1px solid var(--trait); border-radius: var(--rayon); padding: 8px 12px; }
+.fiche summary { cursor: pointer; color: var(--texte); font-size: .92rem; }
+.fiche .latin { font-style: italic; color: var(--texte-3); }
+.fiche p { margin: .5em 0 0; }
+.fiche .confusions strong { color: var(--texte); }
+
 .verdict {
   margin-top: 16px;
   padding: 12px 14px;

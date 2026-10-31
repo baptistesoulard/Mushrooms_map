@@ -36,7 +36,7 @@ import pandas as pd
 
 from . import especes as E
 from . import modele as M
-from .config import DATA, FACTEUR_PUBLIE
+from .config import DATA, FACTEUR_ZONE
 from .export import Agregat, cases_de_foret, charger_habitat
 from .grille import lonlat_vers_merc
 from .meteo import ARCHIVE, VARIABLES
@@ -137,7 +137,7 @@ def zones(df: pd.DataFrame, publie, n_dept) -> np.ndarray:
     lig = np.floor((publie.y1 - y) / publie.pas).astype(int)
     ok = (col >= 0) & (col < publie.nx) & (lig >= 0) & (lig < publie.ny)
     idx = np.where(ok, lig * publie.nx + col, -1)
-    idx[ok] = np.where(n_dept[idx[ok]] >= (FACTEUR_PUBLIE ** 2) / 2, idx[ok], -1)
+    idx[ok] = np.where(n_dept[idx[ok]] >= (FACTEUR_ZONE ** 2) / 2, idx[ok], -1)
     return idx
 
 
@@ -164,7 +164,7 @@ def test_habitat(esp: E.Espece, df: pd.DataFrame, fond: pd.DataFrame, contexte) 
     agregat, cases, rng = contexte["agregat"], contexte["cases"], contexte["rng"]
     h = M.facteur_habitat(esp, cases.essence, cases.ouverte, cases.roche, cases.altitude, cases.pente)
     indice_zone = agregat._moyenne(h) * agregat.couverture
-    foret_zone = np.minimum(1.0, agregat.n_foret / FACTEUR_PUBLIE ** 2)
+    foret_zone = np.minimum(1.0, agregat.n_foret / FACTEUR_ZONE ** 2)
 
     # Une zone et un jour ne comptent qu'une fois : une sortie (ou un inventaire de cent
     # espèces au même endroit) ne pèse pas comme cent observations indépendantes.
@@ -355,7 +355,7 @@ def valider() -> dict:
     t0 = time.time()
     grille, h, meta = charger_habitat()
     cases = cases_de_foret(grille, h)
-    agregat = Agregat(grille, h, cases)
+    agregat = Agregat(grille, h, cases, FACTEUR_ZONE)   # le test d'habitat raisonne en zones de 250 m
     par_espece, fond = observations()
     print(f"Observations : {', '.join(f'{g} {len(d)}' for g, d in par_espece.items())} ; "
           f"fond {len(fond)}  ({time.time() - t0:.0f} s)")

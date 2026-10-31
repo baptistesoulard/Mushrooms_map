@@ -10,11 +10,14 @@ SITE_DATA = SITE / "data"         # généré chaque jour, jamais versionné
 DEPARTEMENT = "74"
 NOM_DEPARTEMENT = "Haute-Savoie"
 
-# Grille de calcul : 72 m en Web Mercator, soit 50 m au sol à 46° N.
-# La grille publiée regroupe 5 × 5 cases (≈ 250 m) : on publie des zones, pas des coins.
+# Grille de calcul : 72 m en Web Mercator, soit 50 m au sol à 46° N. Le site, à usage
+# personnel (décision du 2026-10-31), publie l'indice à cette résolution.
 PAS_FIN = 72.0
-FACTEUR_PUBLIE = 5
-PAS_PUBLIE = PAS_FIN * FACTEUR_PUBLIE
+# Zones de 250 m (5 × 5 cases) : pluie de la fenêtre dans la fenêtre d'une case, et test
+# d'habitat de la validation (positions connues à 1 km près). Les bords de grille sont
+# calés sur ce pas pour que le regroupement tombe juste.
+FACTEUR_ZONE = 5
+PAS_ZONE = PAS_FIN * FACTEUR_ZONE
 
 # Marge autour du département, pour que les cases du bord aient leurs voisines.
 MARGE_M = 1500.0
