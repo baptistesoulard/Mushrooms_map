@@ -49,8 +49,9 @@
     Partager vos coins crée un fichier que vous envoyez vous-même ; ceux qu'on vous a confiés
     n'y figurent pas.</li>
     <li>Si vous activez la synchronisation, le jeton GitHub est gardé dans le navigateur (clé
-    <code>champi-synchro</code>) et vos coins sont envoyés à <code>api.github.com</code>, dans
-    votre propre dépôt privé, et nulle part ailleurs.</li>
+    <code>champi-synchro</code>), ainsi que le prénom qui signe vos coins
+    (<code>champi-nom</code>) ; vos coins sont envoyés à <code>api.github.com</code>, dans le
+    dépôt privé du lien, et nulle part ailleurs.</li>
     <li>À l'ouverture, la carte demande la position de l'appareil pour se placer sur votre
     département et afficher où vous êtes ; si vous refusez, elle ne redemande plus (le
     navigateur garde votre choix). Elle sert aussi à « Ma position » et à « Noter une
@@ -74,19 +75,38 @@
     <li>Composez le lien : l'adresse de la carte suivie de
     <code>#depot=votre-compte/champi-coins&amp;jeton=</code> et du jeton. Ouvrez-le une fois
     sur chaque appareil : le jeton est gardé dans le navigateur et retiré de la barre
-    d'adresse. Le panneau « Mes coins » dit ensuite quand a eu lieu la dernière
-    synchronisation.</li>
+    d'adresse. La carte demande votre prénom, qui signe vos coins. Le panneau « Mes coins »
+    dit ensuite quand a eu lieu la dernière synchronisation.</li>
   </ol>
   <ul>
-    <li>Le lien vaut une clé : qui l'a peut lire et modifier vos coins, et rien d'autre (le jeton
-    n'ouvre que ce dépôt). Gardez-le dans vos notes ou votre gestionnaire de mots de passe ; il
-    peut aussi rester dans l'historique du navigateur. Pour confier des coins à quelqu'un, le
-    partage par fichier reste le bon outil.</li>
+    <li>Le lien vaut une clé : qui l'a peut lire et modifier les coins du dépôt, et rien d'autre
+    (le jeton n'ouvre que ce dépôt). Gardez-le dans vos notes ou votre gestionnaire de mots de
+    passe ; il peut aussi rester dans l'historique du navigateur.</li>
     <li>La carte garde sa copie : elle marche sans réseau, et ce qui a été noté en forêt part
     au prochain passage en ligne. Un coin effacé sur un appareil l'est partout. Chaque envoi
     est une version du dépôt : une erreur se rattrape dans son historique.</li>
     <li>Un jeton finit par expirer : la carte le dit, garde tout, et il suffit d'un nouveau
     jeton et d'un nouveau lien. Si Safari a effacé les données du site, rouvrez le lien.</li>
+  </ul>
+
+  <h2 id="groupe">Partager ses coins avec un groupe</h2>
+  <p>Le même lien, donné à des proches, en fait un groupe : chacun voit les coins du dépôt sur
+  sa carte et peut en noter, d'un appui long. C'est un lien que <strong>vous</strong>
+  distribuez, jamais l'adresse du site : les coins ne sont lisibles que par ceux qui l'ont.</p>
+  <ul>
+    <li>En ouvrant le lien, chacun donne son prénom ; ses coins en portent la signature
+    (« coin de Paul ») et apparaissent en pointillés chez les autres. Chacun n'efface que les
+    siens.</li>
+    <li>En rejoignant le groupe, la carte demande si les coins déjà notés sur l'appareil y
+    partent ; sinon, ils restent sur l'appareil. Au moment de noter une trouvaille, la case
+    « Seulement sur cet appareil » la garde pour soi. Les coins confiés par fichier ne partent
+    jamais dans le groupe.</li>
+    <li>Pour qu'une personne voie les coins sans pouvoir en ajouter, créez un second jeton sur
+    le même dépôt avec « Contents » en « Read-only », et donnez-lui le lien fait avec ce jeton :
+    ses propres coins restent alors sur son appareil.</li>
+    <li>Tout se fait sous votre compte GitHub : les envois des membres apparaissent à votre nom
+    dans l'historique du dépôt. Un lien transmis par un membre fait un membre de plus ; pour
+    reprendre la main, supprimez le jeton et donnez un nouveau lien à ceux que vous gardez.</li>
   </ul>
 
   <h2>Mentions légales</h2>

@@ -51,6 +51,12 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   récente (`maj`) gagne, effacements gardés (`champi-coins-effaces`) pour qu'un coin effacé
   ne revienne pas d'un autre appareil (`coins.fusionner`, testé sous Node). Pas de serveur à
   nous : ce n'est pas un pas vers la carte communautaire.
+- **Groupe = ceux à qui l'utilisateur donne le lien** (décision du 2026-10-31), jamais
+  l'adresse du site ni un dépôt public. Chacun signe ses coins de son prénom (`champi-nom`,
+  `auteur`), demandé avant toute synchro : pas de coin non signé dans le dépôt. On n'efface
+  que les siens. Ne partent jamais au dépôt (`coins.aEnvoyer`) : les coins confiés par
+  fichier (`de`) et ceux gardés pour soi (`prive`, choisi en rejoignant ou en notant). Un
+  jeton en lecture seule (403 à l'écriture) donne un lien qui lit sans écrire.
 - **La position est demandée à l'ouverture** (choix de l'utilisateur, 2026-10-31) pour se
   placer sur son département, sauf si le navigateur l'a déjà refusée (`navigator.permissions`) :
   on n'insiste pas, le bouton dit comment réautoriser. Elle est suivie tant que la page est

@@ -87,3 +87,16 @@ def test_base64_garde_les_accents(tmp_path):
     b64 = appeler("versBase64", [texte], tmp_path)
     # GitHub coupe le base64 en lignes : les retours à la ligne sont ignorés.
     assert appeler("depuisBase64", [b64[:10] + "\n" + b64[10:]], tmp_path) == texte
+
+
+def test_seuls_ses_coins_partent_au_depot(tmp_path):
+    coins = [coin("a"), {**coin("b"), "de": "Paul"}, {**coin("c"), "prive": True}, {**coin("d"), "auteur": "Léa"}]
+    envoyes = [c["id"] for c in coins if appeler("aEnvoyer", [c], tmp_path)]
+    assert envoyes == ["a", "d"]   # ni le coin confié par fichier, ni celui gardé pour soi
+
+
+def test_signer_ne_touche_ni_aux_coins_confies_ni_aux_coins_signes(tmp_path):
+    coins = [coin("a", "2026-10-01T10:00Z"), {**coin("b"), "de": "Paul"}, {**coin("c"), "auteur": "Léa"}]
+    signes = {c["id"]: c for c in appeler("signer", [coins, "Baptiste", "2026-10-31T21:00Z"], tmp_path)}
+    assert signes["a"]["auteur"] == "Baptiste" and signes["a"]["maj"] == "2026-10-31T21:00Z"
+    assert "auteur" not in signes["b"] and signes["c"]["auteur"] == "Léa"

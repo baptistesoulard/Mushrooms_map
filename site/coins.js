@@ -1,10 +1,12 @@
 // Mes coins : les trouvailles de l'utilisateur, gardées dans CE navigateur (le site n'a pas de
 // serveur). Elles se partagent par fichier, avec qui l'on veut : le partage n'envoie que ses
-// propres coins, jamais ceux qu'un ami a confiés. Entre ses propres appareils, elles peuvent se
-// synchroniser par un dépôt GitHub privé à soi, ouvert par un lien qui porte le jeton.
-const CLE = "champi-coins";            // les trois clés sont déclarées dans a-propos.html
+// propres coins, jamais ceux qu'un ami a confiés. Entre ses appareils, et avec les proches à qui
+// l'on donne le lien, elles se synchronisent par un dépôt GitHub privé, ouvert par un lien qui
+// porte le jeton : chacun signe ses coins de son prénom et n'efface que les siens.
+const CLE = "champi-coins";            // les quatre clés sont déclarées dans a-propos.html
 const CLE_EFFACES = "champi-coins-effaces";
 const CLE_SYNCHRO = "champi-synchro";
+const CLE_NOM = "champi-nom";
 const RAYON_M = 100;                   // deux trouvailles à moins de 100 m : le même coin
 const ZOOM_PRECIS = 14;                // en deçà, un appui long tomberait à des centaines de mètres
 const FORMAT = "champi-coins";
@@ -48,16 +50,33 @@ function valide(c, codes) {
   return c && typeof c.id === "string" && Number.isFinite(c.lat) && Number.isFinite(c.lon)
     && Math.abs(c.lat) <= 90 && Math.abs(c.lon) <= 180 && codes.has(c.espece)
     && /^\d{4}-\d{2}-\d{2}$/.test(c.date) && (c.de == null || typeof c.de === "string")
+    && (c.auteur == null || typeof c.auteur === "string") && (c.prive == null || typeof c.prive === "boolean")
     && (c.maj == null || typeof c.maj === "string");
 }
 
+// `de` : coin confié par fichier (le nom donné à l'import) ; `auteur` : le prénom de qui l'a noté,
+// pour le groupe ; `prive` : gardé sur cet appareil, jamais envoyé au dépôt.
 function propre(c) {
   const o = { id: c.id, lat: Math.round(c.lat * 1e5) / 1e5, lon: Math.round(c.lon * 1e5) / 1e5,
               espece: c.espece, date: c.date };
   if (c.note) o.note = String(c.note).slice(0, 200);
   if (c.de) o.de = String(c.de).slice(0, 40);
+  if (c.auteur) o.auteur = String(c.auteur).slice(0, 40);
+  if (c.prive) o.prive = true;
   if (c.maj) o.maj = String(c.maj).slice(0, 30);
   return o;
+}
+
+// Ce qui part au dépôt : ni les coins confiés par fichier (on ne les re-partage pas), ni ceux
+// gardés pour soi.
+export function aEnvoyer(c) {
+  return !c.de && !c.prive;
+}
+
+// En donnant son prénom, on signe ses coins non signés de cet appareil (pas ceux confiés par
+// fichier) ; la nouvelle `maj` fait gagner la version signée à la fusion.
+export function signer(coins, nom, quand) {
+  return coins.map((c) => (c.de || c.auteur ? c : { ...c, auteur: nom, maj: quand }));
 }
 
 // Les effacements : { id: date de l'effacement }, pour qu'un coin effacé sur un appareil ne
@@ -136,6 +155,11 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
   try { effaces = nettoyerEffaces(JSON.parse(localStorage.getItem(CLE_EFFACES) || "{}")); } catch { effaces = {}; }
   let synchro = lireSynchro();
   let enCours = null, encore = false, derniere = 0;
+  let monNom = "";
+  try { monNom = localStorage.getItem(CLE_NOM) || ""; } catch { monNom = ""; }
+  // À moi : ni confié par fichier, ni signé par un autre membre du groupe.
+  const mien = (c) => !c.de && (!c.auteur || c.auteur === monNom);
+  const auteurDe = (c) => c.de || c.auteur || "quelqu'un";
 
   const message = (texte) => { document.getElementById("coins-message").textContent = texte; };
   // Garde l'état dans le navigateur, puis l'envoie au dépôt si la synchronisation est active.
@@ -162,19 +186,22 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
       ...ordre.map((c) => el("option", { value: c, selected: c === etat().espece }, especes[c].nom)));
     const date = el("input", { type: "date", name: "date", value: auJour(), max: auJour(), required: true });
     const note = el("input", { type: "text", name: "note", maxlength: "200", placeholder: "Note (facultatif)" });
+    const prive = el("input", { type: "checkbox", name: "prive" });
     const form = el("form", { class: "coin-form" },
       el("strong", {}, "Noter une trouvaille"),
       precision ? el("p", { class: "muet" }, `Position du téléphone, à ${Math.round(precision)} m près.`) : "",
       el("label", {}, "Espèce ", choix),
       el("label", {}, "Date ", date),
       note,
+      synchro ? el("label", { class: "case" }, prive, " Seulement sur cet appareil") : "",
       el("button", { type: "submit" }, "Enregistrer"));
     const popup = L.popup({ maxWidth: 260 }).setLatLng(latlng).setContent(form).openOn(map);
     form.addEventListener("submit", (ev) => {
       ev.preventDefault();
       if (!date.value) return;
       coins.push(propre({ id: nouvelId(), lat: latlng.lat, lon: latlng.lng, espece: choix.value,
-                          date: date.value, note: note.value.trim(), maj: maintenant() }));
+                          date: date.value, note: note.value.trim(), auteur: monNom || null,
+                          prive: prive.checked, maj: maintenant() }));
       sauver();
       // Demande au navigateur de ne pas effacer ces données pour faire de la place.
       navigator.storage?.persist?.().catch(() => {});
@@ -216,8 +243,12 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
     div.append(ligne);
     const ul = el("ul");
     for (const t of groupe.trouvailles) {
-      ul.append(el("li", {}, dateFr(t.date), t.de ? el("span", { class: "muet" }, ` · coin de ${t.de}`) : "",
-        " ", el("button", { type: "button", class: "lien", onclick: () => effacer(t) }, "effacer"),
+      // Seuls ses propres coins s'effacent : effacer celui d'un autre l'effacerait pour tout le groupe.
+      ul.append(el("li", {}, dateFr(t.date),
+        !mien(t) ? el("span", { class: "muet" }, ` · coin de ${auteurDe(t)}`) : "",
+        synchro && t.prive ? el("span", { class: "muet" }, " · sur cet appareil seulement") : "",
+        mien(t) || t.de ? " " : "",
+        mien(t) || t.de ? el("button", { type: "button", class: "lien", onclick: () => effacer(t) }, "effacer") : "",
         t.note ? el("div", { class: "muet" }, t.note) : ""));
     }
     div.append(ul);
@@ -245,7 +276,7 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
   function dessiner(groupes) {
     calque.clearLayers();
     for (const g of groupes) {
-      const partage = g.trouvailles.every((t) => t.de);
+      const partage = g.trouvailles.every((t) => !mien(t));
       const icone = L.divIcon({ className: `coin${partage ? " partage" : ""}`, iconSize: [24, 24],
         html: String(g.trouvailles.length > 1 ? g.trouvailles.length : especes[g.trouvailles[0].espece].nom[0]) });
       const m = L.marker([g.lat, g.lon], { icon: icone, keyboard: false, title: especes[g.trouvailles[0].espece].nom });
@@ -275,7 +306,7 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
     for (const { g, r, v } of lignes) {
       const d = v >= 0 ? decrire(v) : null;
       const annees = [...new Set(g.trouvailles.map((t) => t.date.slice(0, 4)))].sort().join(", ");
-      const qui = g.trouvailles.every((t) => t.de) ? ` · ${g.trouvailles[0].de}` : "";
+      const qui = g.trouvailles.every((t) => !mien(t)) ? ` · ${auteurDe(g.trouvailles[0])}` : "";
       ul.append(el("li", {}, el("button", { type: "button", onclick: () => map.setView([g.lat, g.lon], 15) },
         `${r?.commune ?? "Coin"} (${annees})${qui}`, el("span", { class: "cl" }, d ? d.nom : "pas d'indice"))));
     }
@@ -296,6 +327,10 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
         rafraichir();
       } }, "retirer")));
     }
+    // Les membres du groupe : à titre d'information, leurs coins ne se retirent pas d'ici.
+    const groupe = new Map();
+    for (const c of coins) if (!c.de && c.auteur && c.auteur !== monNom) groupe.set(c.auteur, (groupe.get(c.auteur) || 0) + 1);
+    for (const [qui, n] of groupe) zone.append(el("li", {}, `Coins de ${qui} (${n}), dans le groupe`));
   }
 
   function rafraichir() {
@@ -325,7 +360,7 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
   });
 
   document.getElementById("coins-partager").addEventListener("click", async () => {
-    const miens = coins.filter((c) => !c.de);
+    const miens = coins.filter(mien);
     if (!miens.length) { message("Aucun coin à vous à partager."); return; }
     const f = fichier(miens, `mes-coins-champignons-${auJour()}.json`);
     if (navigator.canShare?.({ files: [f] })) {
@@ -367,10 +402,23 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
       (rejetes ? `, ${rejetes} illisible(s)` : "") + ".");
   });
 
-  // --- Synchronisation entre ses appareils (dépôt GitHub privé) ---------------------------
+  // --- Synchronisation : ses appareils, et le groupe de ceux qui ont le lien -----------------
   // Le navigateur garde sa copie (la carte marche sans réseau en forêt) ; chaque passage lit
-  // le fichier du dépôt, fusionne, et ne réécrit que s'il y a du nouveau.
+  // le fichier du dépôt, fusionne, et ne réécrit que s'il y a du nouveau. Les coins confiés par
+  // fichier et ceux gardés pour soi ne partent jamais.
   const zoneSynchro = document.getElementById("coins-synchro");
+
+  // Le prénom signe les coins pour les autres membres : demandé une fois par appareil.
+  function demanderNom() {
+    if (monNom) return true;
+    const nom = (prompt("Votre prénom, pour signer vos coins : les autres personnes qui ont le lien le verront.", "") || "")
+      .trim().slice(0, 40);
+    if (!nom) return false;
+    monNom = nom;
+    try { localStorage.setItem(CLE_NOM, nom); } catch { /* gardé le temps de la page */ }
+    coins = signer(coins, nom, maintenant());
+    return true;
+  }
 
   function lireSynchro() {
     try {
@@ -390,9 +438,24 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
       etatSynchro("Lien de synchronisation incomplet : il faut le dépôt et le jeton.");
       return true;
     }
+    if (!demanderNom()) {
+      etatSynchro("Synchronisation non activée : il faut un prénom pour signer vos coins. Rouvrez le lien.");
+      return true;
+    }
+    // En rejoignant un dépôt, on choisit si ses coins déjà notés y partent.
+    if (synchro?.depot !== depot) {
+      const n = coins.filter((c) => mien(c) && aEnvoyer(c)).length;
+      const [quoi, pronom, reste] = n > 1 ? [`vos ${n} coins déjà notés`, "les", "ils restent"]
+        : ["votre coin déjà noté", "le", "il reste"];
+      if (n && !confirm(`Mettre ${quoi} dans le dépôt ${depot} ? Toutes les personnes qui ont le lien ` +
+        `${pronom} verront. Annuler : ${reste} sur cet appareil seulement.`)) {
+        coins = coins.map((c) => (mien(c) && aEnvoyer(c) ? { ...c, prive: true } : c));
+      }
+    }
     synchro = { depot, jeton };
     try { localStorage.setItem(CLE_SYNCHRO, JSON.stringify(synchro)); } catch { /* gardé le temps de la page */ }
-    synchroniser();
+    sauver();          // la signature et le choix, puis la synchronisation
+    rafraichir();
     return true;
   }
 
@@ -417,7 +480,7 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
                  ...(corps ? { "Content-Type": "application/json" } : {}) },
       body: corps ? JSON.stringify(corps) : undefined,
     });
-    if (!r.ok && r.status !== 404 && r.status !== 409 && r.status !== 422) throw new ErreurSynchro(r.status);
+    if (!r.ok && ![403, 404, 409, 422].includes(r.status)) throw new ErreurSynchro(r.status);
     return r;
   }
 
@@ -443,19 +506,30 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
         throw new ErreurSynchro(r.status);
       }
       // 404 : pas encore de fichier (premier passage), ou dépôt inaccessible (l'écriture le dira).
-      const f = fusionner({ coins, effaces }, distant);
+      const gardes = coins.filter((c) => !aEnvoyer(c));
+      const local = { coins: coins.filter(aEnvoyer), effaces };
+      const f = fusionner(local, distant);
       const texte = JSON.stringify(contenu(f), null, 1);
-      if (texte !== JSON.stringify(contenu({ coins, effaces }), null, 1)) {
-        coins = f.coins;          // du nouveau venu d'un autre appareil
+      if (texte !== JSON.stringify(contenu(local), null, 1)) {
+        const ici = new Set(gardes.map((c) => c.id));
+        coins = [...f.coins.filter((c) => !ici.has(c.id)), ...gardes];   // du nouveau venu d'ailleurs
         effaces = f.effaces;
         sauver({ envoyer: false });
         rafraichir();
       }
       if (sha && texte === JSON.stringify(contenu(distant), null, 1)) return s;   // rien à écrire
+      if (s.lecture) return s;                     // lien en lecture seule : on lit, on n'écrit pas
       const n = f.coins.length;
       const p = await appel(s, "PUT", { message: `Coins : ${n} trouvaille${n > 1 ? "s" : ""}`,
                                         content: versBase64(texte), ...(sha ? { sha } : {}) });
       if (p.ok) return s;
+      if (p.status === 403) {                      // jeton en lecture seule : on s'en souvient
+        s.lecture = true;
+        if (synchro === s) {
+          try { localStorage.setItem(CLE_SYNCHRO, JSON.stringify(s)); } catch { /* le temps de la page */ }
+        }
+        return s;
+      }
       if (p.status === 404) throw new ErreurSynchro(404);
       // 409 ou 422 : un autre appareil a écrit entre la lecture et l'écriture. On recommence.
     }
@@ -465,7 +539,7 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
   function motif(err, s) {
     const statut = err instanceof ErreurSynchro ? err.statut : null;
     if (statut === 401) return "Jeton refusé ou expiré : créez-en un nouveau et rouvrez le lien. Vos coins restent ici.";
-    if (statut === 403 || statut === 404) return `Le jeton n'ouvre pas le dépôt ${s.depot} en écriture : vérifiez son accès (Contents, lecture et écriture).`;
+    if (statut === 403 || statut === 404) return `Le jeton n'ouvre pas le dépôt ${s.depot} : vérifiez son accès (Contents).`;
     if (statut === "fichier") return `Le fichier ${FICHIER_DEPOT} du dépôt n'est pas un fichier de coins : rien n'a été écrasé.`;
     if (statut === "conflit") return "Le dépôt a changé pendant l'envoi : nouvel essai au prochain passage.";
     return "Pas de réseau, ou GitHub ne répond pas : vos coins sont gardés ici et partiront au prochain passage.";
@@ -473,14 +547,16 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
 
   // Une synchronisation à la fois ; une demande pendant qu'elle tourne en relance une après.
   function synchroniser() {
-    if (!synchro) return Promise.resolve();
+    if (!synchro || !monNom) return Promise.resolve();   // jamais de coins non signés dans le dépôt
     if (enCours) { encore = true; return enCours; }
     const s = synchro;
     enCours = uneSynchro()
       .then(() => {
         if (synchro !== s) return;
         const heure = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-        etatSynchro(`Synchronisé avec le dépôt ${s.depot} à ${heure}.`);
+        etatSynchro(s.lecture
+          ? `Lecture seule : coins du dépôt ${s.depot} lus à ${heure} ; les vôtres restent sur cet appareil.`
+          : `Synchronisé avec le dépôt ${s.depot} à ${heure}, signé « ${monNom} ».`);
       })
       .catch((err) => { console.error(err); if (synchro === s) etatSynchro(motif(err, s)); })
       .finally(() => {
@@ -496,7 +572,10 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
     if (document.visibilityState === "visible" && Date.now() - derniere > RELANCE_MS) synchroniser();
   });
   if (!lienSynchro()) {
-    etatSynchro("");
+    // Un appareil synchronisé avant la signature des coins : le prénom d'abord.
+    if (synchro && demanderNom()) sauver({ envoyer: false });
+    etatSynchro(synchro && !monNom
+      ? "Synchronisation en pause : il faut un prénom pour signer vos coins. Rechargez la page pour le donner." : "");
     synchroniser();
   }
 
