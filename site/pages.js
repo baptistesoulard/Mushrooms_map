@@ -112,7 +112,7 @@ async function validation() {
       const testees = Object.values(r.especes).filter((e) => e.habitat.auc !== undefined || e.meteo.auc_mois !== undefined).length;
       zone.append(el("details", { class: "region" },
         el("summary", {}, el("strong", {}, r.nom), testees
-          ? ` — ${testees} espèce${testees > 1 ? "s" : ""} sur 5 avec assez de cas`
+          ? ` — ${testees} espèce${testees > 1 ? "s" : ""} sur ${Object.keys(r.especes).length} avec assez de cas`
           : " — trop peu d'observations pour conclure"),
         fond, ...sections));
     }

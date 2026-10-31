@@ -28,7 +28,7 @@ class Espece:
     roches: dict[int, float]
     # Plafond d'altitude (m) à la latitude de référence : pleine jusqu'à altitude[0], nulle
     # au-dessus de altitude[1] ; il monte vers le sud (`modele.plafond_altitude`). Pas de
-    # plancher : les cinq espèces poussent jusqu'au niveau de la mer (Landes, Sologne, Bretagne).
+    # plancher : toutes ces espèces poussent jusqu'au niveau de la mer (Landes, Sologne, Bretagne).
     altitude: tuple[float, float]
     # Pluie déclenchante : cumul entre `pluie_jours[1]` et `pluie_jours[0]` jours avant.
     pluie_jours: tuple[int, int]
@@ -94,6 +94,31 @@ ESPECES: list[Espece] = [
                "loin, elle signale un coin où chercher. Sous les chênes, sur calcaire et pour le "
                "cèpe d'été, où elle est rare, son absence ne dit rien. La BD Forêt n'a pas de "
                "classe « bouleau » : la carte note ces bois comme des feuillus en mélange.",
+    ),
+    Espece(
+        code="bolet_bai", nom="Bolet bai", de="du bolet bai", latin="Imleria badia",
+        saison=("07-15", "09-01", "11-10", "12-10"),
+        essences={0: 0.0, 1: 0.6, 2: 0.7, 3: 0.8, 4: 0.9, 5: 0.3, 6: 0.05, 7: 0.9, 8: 1.0,
+                  9: 0.4, 10: 0.9, 11: 0.6, 12: 0.9, 13: 0.1, 14: 0.1},
+        roches={0: 0.8, 1: 0.2, 2: 1.0, 3: 0.6},
+        altitude=(1600, 2000),
+        pluie_jours=(7, 25), pluie_mm=(15, 40),
+        sol=(6, 10, 17, 22), gel=0.6,
+        habitat_texte="Bois acides de résineux comme de feuillus : épicéas, pins, châtaigniers, "
+                      "chênes, hêtres ; souvent dans la mousse, au pied des souches. Il fuit le "
+                      "calcaire.",
+        meteo_texte="Plus tardif et moins frileux que le cèpe : il suit les pluies de fin d'été "
+                    "et tient jusqu'aux premières gelées, en grosses poussées les automnes humides.",
+        description="Chapeau brun châtain à brun chocolat, de 4 à 15 cm, mat et velouté par temps "
+                    "sec, collant et luisant par temps humide. Dessous : des tubes (une éponge), "
+                    "crème puis jaune verdâtre, qui bleuissent quand on appuie. Pied brun clair "
+                    "strié de fibrilles brunes, sans réseau. Chair blanchâtre à jaunâtre, qui "
+                    "bleuit un peu à la coupe.",
+        confusions="Les autres bolets à pores jaunes (bolets à chair jaune) : moins bons, sans "
+                   "danger grave. Bolet amer (Tylopilus felleus) : pores rosés, réseau brun sur "
+                   "le pied. Comme pour le cèpe, écarter les bolets à pores rouges.",
+        limites=["Il fuit le calcaire, mais la carte lit la roche, pas le sol : un limon acide "
+                 "posé sur du calcaire lui convient, et la carte l'y sous-estime."],
     ),
     Espece(
         code="girolle", nom="Girolle", de="de la girolle", latin="Cantharellus cibarius et proches",
@@ -163,6 +188,39 @@ ESPECES: list[Espece] = [
                    "(Sarcodon), plus foncés et souvent amers, ne sont pas des pieds-de-mouton.",
     ),
     Espece(
+        code="lactaire", nom="Lactaire délicieux", de="du lactaire délicieux",
+        latin="Lactarius deliciosus et lactaires sanguins",
+        saison=("08-01", "09-10", "11-15", "12-15"),
+        essences={0: 0.0, 1: 0.05, 2: 0.0, 3: 0.05, 4: 0.0, 5: 0.05, 6: 0.0, 7: 0.4, 8: 0.1,
+                  9: 0.05, 10: 1.0, 11: 0.05, 12: 0.6, 13: 0.3, 14: 0.1},
+        roches={0: 0.8, 1: 1.0, 2: 0.6, 3: 0.9},
+        altitude=(1600, 2000),
+        pluie_jours=(7, 25), pluie_mm=(15, 40),
+        sol=(6, 10, 17, 22), gel=0.5,
+        habitat_texte="Sous les pins seulement (sylvestre, maritime, noir, d'Alep), souvent dans "
+                      "l'herbe des jeunes pinèdes, des lisières et des dunes boisées ; de "
+                      "préférence sur calcaire ou sable coquillier, plus rare sur sol acide.",
+        meteo_texte="Une espèce d'arrière-saison qui attend les pluies : sur le littoral "
+                    "atlantique et en Méditerranée, il sort tard, d'octobre à décembre, tant que "
+                    "le sol reste doux.",
+        description="Chapeau orange carotte, de 4 à 12 cm, creusé au centre et marqué de cercles "
+                    "plus foncés ; il se tache de vert en vieillissant. Dessous : des lames "
+                    "serrées, orange. Pied court, creux, orange, souvent piqué de petites "
+                    "fossettes. À la cassure, un lait orange carotte (rouge vineux d'emblée chez "
+                    "les lactaires sanguins) ; les blessures verdissent. Il colore l'urine en "
+                    "rouge : c'est sans danger.",
+        confusions="Lactaire à toison (Lactarius torminosus), toxique : chapeau rose saumon à "
+                   "marge laineuse, lait BLANC, sous les bouleaux. Tout lactaire à lait blanc "
+                   "est à écarter. Le lactaire de l'épicéa (L. deterrimus), lait orange lui "
+                   "aussi, est sans danger mais médiocre.",
+        repere="Il aime l'herbe sous les jeunes pins, les bords d'allées et les lisières plus "
+               "que la litière épaisse des vieilles futaies.",
+        limites=["La BD Forêt ne distingue ni les pins entre eux, ni les jeunes plantations des "
+                 "vieilles futaies : la carte voit toutes les pinèdes pareilles.",
+                 "Sous les épicéas des montagnes, le lactaire à lait orange est surtout le "
+                 "lactaire de l'épicéa, moins recherché : la carte ne le suit pas."],
+    ),
+    Espece(
         code="morille", nom="Morille", de="de la morille", latin="Morchella spp.",
         saison=("03-01", "04-01", "05-20", "06-30"),
         essences={0: 0.0, 1: 0.8, 2: 0.3, 3: 0.4, 4: 0.2, 5: 0.6, 6: 1.0, 7: 0.5, 8: 0.5,
@@ -186,7 +244,7 @@ ESPECES: list[Espece] = [
                    "La morille elle-même est toxique crue ou mal cuite.",
         limites=["Ses milieux de prédilection (frênes, ripisylves, coupes récentes, brûlis) "
                  "sont mal décrits par la BD Forêt : l'habitat de la morille est le moins "
-                 "fiable des cinq."],
+                 "fiable de la carte."],
     ),
 ]
 

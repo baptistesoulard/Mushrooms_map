@@ -65,9 +65,12 @@ INCERTITUDE_HABITAT_M = 1000
 INCERTITUDE_METEO_M = 10000
 GROUPES = {
     "cepe": ["Boletus edulis", "Boletus pinophilus", "Boletus aereus", "Boletus reticulatus"],
+    "bolet_bai": ["Imleria badia"],
     "girolle": ["Cantharellus cibarius", "Cantharellus pallens", "Cantharellus friesii"],
     "trompette": ["Craterellus cornucopioides"],
     "pied_de_mouton": ["Hydnum repandum", "Hydnum rufescens"],
+    "lactaire": ["Lactarius deliciosus", "Lactarius sanguifluus", "Lactarius semisanguifluus",
+                 "Lactarius vinosus", "Lactarius quieticolor"],
     "morille": ["Morchella"],
 }
 # Les règles du Midi (pin d'Alep, chênes verts, pin maritime) sont les moins sûres : elles
@@ -148,11 +151,13 @@ def telecharger(cles: list[int], nom: str, incertitude_max: float) -> pd.DataFra
 
 
 def _cles() -> dict[str, list[int]]:
+    """Les clés GBIF de chaque groupe, gardées dans `data/`. Un groupe ajouté est résolu ; pour
+    changer les noms d'un groupe existant, retirer sa ligne du fichier."""
     chemin = DATA / "validation_taxons.json"
-    if chemin.exists():
-        return json.loads(chemin.read_text(encoding="utf-8"))
-    cles = {g: [cle_taxon(n) for n in noms] for g, noms in GROUPES.items()}
-    chemin.write_text(json.dumps(cles, indent=1), encoding="utf-8")
+    connues = json.loads(chemin.read_text(encoding="utf-8")) if chemin.exists() else {}
+    cles = {g: connues.get(g) or [cle_taxon(n) for n in noms] for g, noms in GROUPES.items()}
+    if cles != connues:
+        chemin.write_text(json.dumps(cles, indent=1), encoding="utf-8")
     return cles
 
 
@@ -165,7 +170,7 @@ def observations() -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
     par_espece = observations_especes()
     fond = telecharger([5], "fond_champignons", INCERTITUDE_HABITAT_M)   # 5 = règne Fungi
     exclus = {k for c in cles.values() for k in c}
-    # Le fond exclut les cinq groupes (genre Morchella compris : ses espèces ont d'autres clés).
+    # Le fond exclut tous les groupes (genre Morchella compris : ses espèces ont d'autres clés).
     exclus_especes = set(pd.concat(par_espece.values())["taxon"].dropna().astype(int))
     fond = fond[~fond["taxon"].isin(exclus | exclus_especes)]
     return par_espece, fond
@@ -566,7 +571,7 @@ def series_des_cas(cas_m: dict[str, pd.DataFrame]) -> dict:
 def valider() -> dict:
     t0 = time.time()
     par_espece, fond = observations()
-    # Un seul passage sur les blocs pour les cinq espèces et le fond.
+    # Un seul passage sur les blocs pour toutes les espèces et le fond.
     tous = pd.concat([fond.assign(groupe="fond")] + [d.assign(groupe=g) for g, d in par_espece.items()])
     tous = lieux(tous, Blocs())
     lieux_fond = tous[tous["groupe"] == "fond"]

@@ -5,9 +5,10 @@ validation vivent dans `data/validation.json`, les décisions datées dans les c
 
 ## Le projet
 
-Site personnel : carte des forêts de France métropolitaine favorables à cinq champignons,
-aujourd'hui et à J+7. **Indice = habitat × météo** (`champi/modele.py`), par cases de 50 m.
-Né en Haute-Savoie (2026-10-30), étendu à la France le 2026-10-31.
+Site personnel : carte des forêts de France métropolitaine favorables à sept champignons
+(`especes.ESPECES`), aujourd'hui et à J+7. **Indice = habitat × météo** (`champi/modele.py`),
+par cases de 50 m. Né en Haute-Savoie (2026-10-30), étendu à la France le 2026-10-31 ; bolet
+bai et lactaire délicieux ajoutés le même jour (bois acides du bocage, pinèdes du littoral).
 
 ```
 champi.france (habitat.yml, rarement) → release « habitat » (blocs PNG, échantillon) — jamais dans git
@@ -114,7 +115,8 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 ## Limites connues (dites sur le site)
 
 - BD Forêt : beaucoup de forêts sont « feuillus en mélange » ou « mixtes » ; le hêtre est
-  souvent invisible. Trompette et morille en pâtissent.
+  souvent invisible. Trompette et morille en pâtissent. Une seule classe « Pins », sans âge :
+  le lactaire délicieux voit toutes les pinèdes pareilles.
 - Affinités pour les essences du Midi (pin d'Alep, chênes verts, pin maritime) : moins sûres ;
   vérifiées à part (pourtour méditerranéen) ; les Landes de Gascogne, trop peu observées,
   ne se jugent pas.

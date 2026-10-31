@@ -10,26 +10,26 @@
  "regions": {
   "france": {
    "nom": "France métropolitaine",
-   "fond": 66557,
+   "fond": 66378,
    "especes": {
     "cepe": {
      "nom": "Cèpe",
      "observations": 2936,
      "habitat": {
       "n": 669,
-      "n_fond": 66557,
+      "n_fond": 66378,
       "auc": 0.614,
       "ic": [
        0.594,
        0.636
       ],
-      "auc_foret": 0.606,
+      "auc_foret": 0.607,
       "ic_foret": [
-       0.586,
-       0.626
+       0.587,
+       0.627
       ],
       "ic_ecart": [
-       -0.013,
+       -0.014,
        0.027
       ],
       "part_bonnes_zones": 0.77,
@@ -59,25 +59,72 @@
       ]
      }
     },
+    "bolet_bai": {
+     "nom": "Bolet bai",
+     "observations": 1320,
+     "habitat": {
+      "n": 308,
+      "n_fond": 66378,
+      "auc": 0.64,
+      "ic": [
+       0.609,
+       0.67
+      ],
+      "auc_foret": 0.66,
+      "ic_foret": [
+       0.632,
+       0.686
+      ],
+      "ic_ecart": [
+       -0.05,
+       0.01
+      ],
+      "part_bonnes_zones": 0.659,
+      "part_bonnes_zones_fond": 0.465,
+      "part_hors_foret": 0.081
+     },
+     "meteo": {
+      "n": 627,
+      "auc_mois": 0.556,
+      "ic_mois": [
+       0.533,
+       0.581
+      ],
+      "auc_saison": 0.682,
+      "ic_saison": [
+       0.661,
+       0.702
+      ],
+      "auc_calendrier": 0.636,
+      "ic_calendrier": [
+       0.619,
+       0.653
+      ],
+      "ic_ecart": [
+       0.024,
+       0.066
+      ]
+     }
+    },
     "girolle": {
      "nom": "Girolle",
      "observations": 1698,
      "habitat": {
       "n": 317,
-      "n_fond": 66557,
+      "n_fond": 66378,
       "auc": 0.664,
       "ic": [
-       0.637,
-       0.694
+       0.636,
+       0.693
       ],
       "auc_foret": 0.661,
       "ic_foret": [
-       0.636,
-       0.684
+       0.634,
+       0.686
       ],
       "ic_ecart": [
-       -0.025,
-       0.032
+       -0.027,
+       0.033
       ],
       "part_bonnes_zones": 0.789,
       "part_bonnes_zones_fond": 0.572,
@@ -87,13 +134,13 @@
       "n": 767,
       "auc_mois": 0.518,
       "ic_mois": [
-       0.497,
-       0.54
+       0.496,
+       0.541
       ],
       "auc_saison": 0.595,
       "ic_saison": [
        0.577,
-       0.614
+       0.615
       ],
       "auc_calendrier": 0.554,
       "ic_calendrier": [
@@ -102,7 +149,7 @@
       ],
       "ic_ecart": [
        0.026,
-       0.057
+       0.056
       ]
      }
     },
@@ -111,23 +158,23 @@
      "observations": 617,
      "habitat": {
       "n": 150,
-      "n_fond": 66557,
+      "n_fond": 66378,
       "auc": 0.687,
       "ic": [
-       0.651,
-       0.72
+       0.654,
+       0.724
       ],
       "auc_foret": 0.709,
       "ic_foret": [
-       0.674,
-       0.738
+       0.68,
+       0.74
       ],
       "ic_ecart": [
-       -0.063,
+       -0.065,
        0.016
       ],
       "part_bonnes_zones": 0.7,
-      "part_bonnes_zones_fond": 0.442,
+      "part_bonnes_zones_fond": 0.443,
       "part_hors_foret": 0.04
      },
      "meteo": {
@@ -135,12 +182,12 @@
       "auc_mois": 0.593,
       "ic_mois": [
        0.558,
-       0.632
+       0.627
       ],
       "auc_saison": 0.665,
       "ic_saison": [
-       0.632,
-       0.693
+       0.635,
+       0.694
       ],
       "auc_calendrier": 0.583,
       "ic_calendrier": [
@@ -148,8 +195,8 @@
        0.611
       ],
       "ic_ecart": [
-       0.051,
-       0.113
+       0.049,
+       0.111
       ]
      }
     },
@@ -158,20 +205,20 @@
      "observations": 1853,
      "habitat": {
       "n": 227,
-      "n_fond": 66557,
+      "n_fond": 66378,
       "auc": 0.673,
       "ic": [
-       0.642,
-       0.708
+       0.64,
+       0.705
       ],
-      "auc_foret": 0.693,
+      "auc_foret": 0.694,
       "ic_foret": [
-       0.667,
-       0.719
+       0.666,
+       0.722
       ],
       "ic_ecart": [
-       -0.052,
-       0.011
+       -0.05,
+       0.012
       ],
       "part_bonnes_zones": 0.912,
       "part_bonnes_zones_fond": 0.709,
@@ -182,12 +229,12 @@
       "auc_mois": 0.549,
       "ic_mois": [
        0.526,
-       0.574
+       0.573
       ],
       "auc_saison": 0.64,
       "ic_saison": [
-       0.619,
-       0.659
+       0.621,
+       0.66
       ],
       "auc_calendrier": 0.608,
       "ic_calendrier": [
@@ -195,8 +242,55 @@
        0.624
       ],
       "ic_ecart": [
-       0.013,
-       0.05
+       0.012,
+       0.052
+      ]
+     }
+    },
+    "lactaire": {
+     "nom": "Lactaire délicieux",
+     "observations": 664,
+     "habitat": {
+      "n": 196,
+      "n_fond": 66378,
+      "auc": 0.756,
+      "ic": [
+       0.716,
+       0.791
+      ],
+      "auc_foret": 0.612,
+      "ic_foret": [
+       0.575,
+       0.646
+      ],
+      "ic_ecart": [
+       0.113,
+       0.176
+      ],
+      "part_bonnes_zones": 0.301,
+      "part_bonnes_zones_fond": 0.068,
+      "part_hors_foret": 0.092
+     },
+     "meteo": {
+      "n": 267,
+      "auc_mois": 0.569,
+      "ic_mois": [
+       0.532,
+       0.604
+      ],
+      "auc_saison": 0.682,
+      "ic_saison": [
+       0.652,
+       0.712
+      ],
+      "auc_calendrier": 0.664,
+      "ic_calendrier": [
+       0.642,
+       0.69
+      ],
+      "ic_ecart": [
+       -0.012,
+       0.047
       ]
      }
     },
@@ -205,20 +299,20 @@
      "observations": 533,
      "habitat": {
       "n": 150,
-      "n_fond": 66557,
+      "n_fond": 66378,
       "auc": 0.566,
       "ic": [
-       0.519,
+       0.514,
        0.616
       ],
       "auc_foret": 0.462,
       "ic_foret": [
-       0.42,
-       0.504
+       0.418,
+       0.505
       ],
       "ic_ecart": [
-       0.052,
-       0.153
+       0.049,
+       0.152
       ],
       "part_bonnes_zones": 0.387,
       "part_bonnes_zones_fond": 0.253,
@@ -228,22 +322,22 @@
       "n": 239,
       "auc_mois": 0.598,
       "ic_mois": [
-       0.56,
-       0.636
+       0.559,
+       0.64
       ],
       "auc_saison": 0.674,
       "ic_saison": [
-       0.644,
-       0.704
+       0.641,
+       0.706
       ],
       "auc_calendrier": 0.704,
       "ic_calendrier": [
-       0.679,
-       0.728
+       0.678,
+       0.729
       ],
       "ic_ecart": [
        -0.067,
-       0.006
+       0.007
       ]
      }
     }
@@ -251,18 +345,18 @@
   },
   "mediterranee": {
    "nom": "Pourtour méditerranéen",
-   "fond": 8965,
+   "fond": 8943,
    "especes": {
     "cepe": {
      "nom": "Cèpe",
      "observations": 149,
      "habitat": {
       "n": 62,
-      "n_fond": 8965,
+      "n_fond": 8943,
       "auc": 0.705,
       "ic": [
-       0.641,
-       0.77
+       0.645,
+       0.768
       ],
       "auc_foret": 0.606,
       "ic_foret": [
@@ -270,8 +364,8 @@
        0.66
       ],
       "ic_ecart": [
-       0.035,
-       0.163
+       0.037,
+       0.162
       ],
       "part_bonnes_zones": 0.823,
       "part_bonnes_zones_fond": 0.644,
@@ -281,22 +375,69 @@
       "n": 101,
       "auc_mois": 0.568,
       "ic_mois": [
-       0.506,
-       0.629
+       0.508,
+       0.635
       ],
       "auc_saison": 0.7,
       "ic_saison": [
-       0.651,
+       0.649,
        0.75
       ],
       "auc_calendrier": 0.628,
       "ic_calendrier": [
-       0.584,
-       0.668
+       0.586,
+       0.666
       ],
       "ic_ecart": [
-       0.015,
-       0.134
+       0.005,
+       0.133
+      ]
+     }
+    },
+    "bolet_bai": {
+     "nom": "Bolet bai",
+     "observations": 39,
+     "habitat": {
+      "n": 23,
+      "n_fond": 8943,
+      "auc": 0.72,
+      "ic": [
+       0.6,
+       0.833
+      ],
+      "auc_foret": 0.653,
+      "ic_foret": [
+       0.556,
+       0.736
+      ],
+      "ic_ecart": [
+       0.001,
+       0.128
+      ],
+      "part_bonnes_zones": 0.783,
+      "part_bonnes_zones_fond": 0.471,
+      "part_hors_foret": 0.087
+     },
+     "meteo": {
+      "n": 26,
+      "auc_mois": 0.567,
+      "ic_mois": [
+       0.434,
+       0.688
+      ],
+      "auc_saison": 0.715,
+      "ic_saison": [
+       0.617,
+       0.808
+      ],
+      "auc_calendrier": 0.704,
+      "ic_calendrier": [
+       0.636,
+       0.762
+      ],
+      "ic_ecart": [
+       -0.08,
+       0.094
       ]
      }
     },
@@ -305,11 +446,11 @@
      "observations": 101,
      "habitat": {
       "n": 32,
-      "n_fond": 8965,
+      "n_fond": 8943,
       "auc": 0.675,
       "ic": [
-       0.575,
-       0.769
+       0.582,
+       0.767
       ],
       "auc_foret": 0.556,
       "ic_foret": [
@@ -317,33 +458,33 @@
        0.642
       ],
       "ic_ecart": [
-       0.026,
-       0.202
+       0.031,
+       0.211
       ],
       "part_bonnes_zones": 0.75,
-      "part_bonnes_zones_fond": 0.552,
+      "part_bonnes_zones_fond": 0.553,
       "part_hors_foret": 0.031
      },
      "meteo": {
       "n": 57,
       "auc_mois": 0.459,
       "ic_mois": [
-       0.367,
-       0.554
+       0.365,
+       0.55
       ],
       "auc_saison": 0.575,
       "ic_saison": [
        0.508,
-       0.639
+       0.643
       ],
       "auc_calendrier": 0.419,
       "ic_calendrier": [
-       0.352,
-       0.484
+       0.353,
+       0.491
       ],
       "ic_ecart": [
-       0.064,
-       0.241
+       0.062,
+       0.239
       ]
      }
     },
@@ -362,20 +503,20 @@
      "observations": 77,
      "habitat": {
       "n": 28,
-      "n_fond": 8965,
+      "n_fond": 8943,
       "auc": 0.689,
       "ic": [
-       0.595,
-       0.783
+       0.596,
+       0.778
       ],
       "auc_foret": 0.648,
       "ic_foret": [
        0.592,
-       0.703
+       0.702
       ],
       "ic_ecart": [
-       -0.062,
-       0.147
+       -0.079,
+       0.143
       ],
       "part_bonnes_zones": 0.929,
       "part_bonnes_zones_fond": 0.712,
@@ -385,22 +526,69 @@
       "n": 47,
       "auc_mois": 0.525,
       "ic_mois": [
-       0.431,
-       0.626
+       0.422,
+       0.619
       ],
       "auc_saison": 0.69,
       "ic_saison": [
-       0.616,
-       0.76
+       0.607,
+       0.769
       ],
       "auc_calendrier": 0.644,
       "ic_calendrier": [
-       0.586,
-       0.694
+       0.581,
+       0.692
       ],
       "ic_ecart": [
-       -0.035,
-       0.132
+       -0.042,
+       0.128
+      ]
+     }
+    },
+    "lactaire": {
+     "nom": "Lactaire délicieux",
+     "observations": 173,
+     "habitat": {
+      "n": 53,
+      "n_fond": 8943,
+      "auc": 0.706,
+      "ic": [
+       0.636,
+       0.773
+      ],
+      "auc_foret": 0.523,
+      "ic_foret": [
+       0.463,
+       0.586
+      ],
+      "ic_ecart": [
+       0.098,
+       0.263
+      ],
+      "part_bonnes_zones": 0.358,
+      "part_bonnes_zones_fond": 0.144,
+      "part_hors_foret": 0.057
+     },
+     "meteo": {
+      "n": 86,
+      "auc_mois": 0.557,
+      "ic_mois": [
+       0.485,
+       0.627
+      ],
+      "auc_saison": 0.708,
+      "ic_saison": [
+       0.649,
+       0.757
+      ],
+      "auc_calendrier": 0.705,
+      "ic_calendrier": [
+       0.669,
+       0.738
+      ],
+      "ic_ecart": [
+       -0.055,
+       0.053
       ]
      }
     },
@@ -409,45 +597,45 @@
      "observations": 75,
      "habitat": {
       "n": 23,
-      "n_fond": 8965,
+      "n_fond": 8943,
       "auc": 0.501,
       "ic": [
-       0.365,
-       0.626
+       0.369,
+       0.632
       ],
       "auc_foret": 0.432,
       "ic_foret": [
-       0.315,
-       0.545
+       0.318,
+       0.55
       ],
       "ic_ecart": [
-       -0.033,
-       0.172
+       -0.041,
+       0.173
       ],
       "part_bonnes_zones": 0.304,
-      "part_bonnes_zones_fond": 0.221,
+      "part_bonnes_zones_fond": 0.22,
       "part_hors_foret": 0.217
      },
      "meteo": {
       "n": 46,
       "auc_mois": 0.736,
       "ic_mois": [
-       0.63,
-       0.832
+       0.641,
+       0.827
       ],
       "auc_saison": 0.81,
       "ic_saison": [
-       0.743,
-       0.865
+       0.74,
+       0.867
       ],
       "auc_calendrier": 0.752,
       "ic_calendrier": [
-       0.702,
-       0.79
+       0.706,
+       0.792
       ],
       "ic_ecart": [
-       -0.009,
-       0.123
+       -0.011,
+       0.121
       ]
      }
     }
@@ -455,7 +643,7 @@
   },
   "landes": {
    "nom": "Landes de Gascogne",
-   "fond": 1920,
+   "fond": 1915,
    "especes": {
     "cepe": {
      "nom": "Cèpe",
@@ -465,6 +653,16 @@
      },
      "meteo": {
       "n": 12
+     }
+    },
+    "bolet_bai": {
+     "nom": "Bolet bai",
+     "observations": 8,
+     "habitat": {
+      "n": 7
+     },
+     "meteo": {
+      "n": 4
      }
     },
     "girolle": {
@@ -497,6 +695,16 @@
       "n": 2
      }
     },
+    "lactaire": {
+     "nom": "Lactaire délicieux",
+     "observations": 21,
+     "habitat": {
+      "n": 19
+     },
+     "meteo": {
+      "n": 11
+     }
+    },
     "morille": {
      "nom": "Morille",
      "observations": 2,
@@ -511,27 +719,27 @@
   },
   "haute_savoie": {
    "nom": "Haute-Savoie",
-   "fond": 1544,
+   "fond": 1543,
    "especes": {
     "cepe": {
      "nom": "Cèpe",
      "observations": 174,
      "habitat": {
       "n": 27,
-      "n_fond": 1544,
+      "n_fond": 1543,
       "auc": 0.662,
       "ic": [
-       0.59,
+       0.58,
        0.736
       ],
-      "auc_foret": 0.543,
+      "auc_foret": 0.544,
       "ic_foret": [
-       0.458,
-       0.634
+       0.463,
+       0.63
       ],
       "ic_ecart": [
-       0.012,
-       0.219
+       0.01,
+       0.229
       ],
       "part_bonnes_zones": 0.926,
       "part_bonnes_zones_fond": 0.667,
@@ -541,22 +749,51 @@
       "n": 87,
       "auc_mois": 0.529,
       "ic_mois": [
-       0.455,
-       0.604
+       0.452,
+       0.608
       ],
       "auc_saison": 0.644,
       "ic_saison": [
-       0.592,
-       0.697
+       0.584,
+       0.694
       ],
       "auc_calendrier": 0.671,
       "ic_calendrier": [
-       0.635,
-       0.703
+       0.633,
+       0.704
       ],
       "ic_ecart": [
-       -0.079,
-       0.017
+       -0.08,
+       0.024
+      ]
+     }
+    },
+    "bolet_bai": {
+     "nom": "Bolet bai",
+     "observations": 41,
+     "habitat": {
+      "n": 2
+     },
+     "meteo": {
+      "n": 20,
+      "auc_mois": 0.613,
+      "ic_mois": [
+       0.454,
+       0.744
+      ],
+      "auc_saison": 0.628,
+      "ic_saison": [
+       0.503,
+       0.75
+      ],
+      "auc_calendrier": 0.535,
+      "ic_calendrier": [
+       0.414,
+       0.65
+      ],
+      "ic_ecart": [
+       -0.029,
+       0.212
       ]
      }
     },
@@ -570,22 +807,22 @@
       "n": 41,
       "auc_mois": 0.45,
       "ic_mois": [
-       0.368,
-       0.535
+       0.364,
+       0.527
       ],
       "auc_saison": 0.574,
       "ic_saison": [
-       0.486,
+       0.489,
        0.66
       ],
       "auc_calendrier": 0.618,
       "ic_calendrier": [
-       0.552,
-       0.679
+       0.554,
+       0.675
       ],
       "ic_ecart": [
-       -0.114,
-       0.024
+       -0.111,
+       0.021
       ]
      }
     },
@@ -599,22 +836,22 @@
       "n": 23,
       "auc_mois": 0.612,
       "ic_mois": [
-       0.467,
-       0.748
+       0.469,
+       0.75
       ],
       "auc_saison": 0.688,
       "ic_saison": [
-       0.584,
-       0.781
+       0.583,
+       0.791
       ],
       "auc_calendrier": 0.65,
       "ic_calendrier": [
-       0.557,
-       0.733
+       0.558,
+       0.729
       ],
       "ic_ecart": [
-       -0.066,
-       0.132
+       -0.073,
+       0.129
       ]
      }
     },
@@ -628,23 +865,33 @@
       "n": 42,
       "auc_mois": 0.614,
       "ic_mois": [
-       0.526,
-       0.706
+       0.524,
+       0.7
       ],
       "auc_saison": 0.719,
       "ic_saison": [
-       0.641,
-       0.786
+       0.643,
+       0.788
       ],
       "auc_calendrier": 0.647,
       "ic_calendrier": [
-       0.587,
-       0.697
+       0.586,
+       0.703
       ],
       "ic_ecart": [
-       -0.0,
-       0.135
+       0.002,
+       0.134
       ]
+     }
+    },
+    "lactaire": {
+     "nom": "Lactaire délicieux",
+     "observations": 11,
+     "habitat": {
+      "n": 1
+     },
+     "meteo": {
+      "n": 4
      }
     },
     "morille": {

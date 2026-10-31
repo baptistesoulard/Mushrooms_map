@@ -1,7 +1,8 @@
 # Champignons en France
 
-Carte des forêts de France métropolitaine où les conditions sont favorables à cinq
-champignons (cèpe, girolle, trompette de la mort, pied-de-mouton, morille), aujourd'hui et
+Carte des forêts de France métropolitaine où les conditions sont favorables à sept
+champignons (cèpe, bolet bai, girolle, trompette de la mort, pied-de-mouton, lactaire
+délicieux, morille), aujourd'hui et
 pour les sept jours suivants, case par case de 50 m. Recalculée chaque matin, à partir de
 données publiques uniquement.
 
