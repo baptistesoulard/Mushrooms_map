@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Méthode — Champignons en Haute-Savoie</title>
+<title>Méthode — Champignons en France</title>
 <meta name="description" content="Comment l'indice de pousse est calculé : habitat (essence, roche, altitude, pente) multiplié par la météo (saison, pluie, température du sol, gel), les règles espèce par espèce et leurs limites.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
@@ -13,11 +13,12 @@
 <div class="page">
   <header><a href="./">← Retour à la carte</a></header>
   <h1>Comment la carte est calculée</h1>
-  <p>Chaque matin, le site recalcule pour chaque espèce un indice entre 0 et 1, sur toutes les
-  forêts du département découpées en cases de 50 m, pour aujourd'hui et les sept jours suivants.
-  La carte affiche ces cases telles quelles. Leur précision est celle des données qui les
-  décrivent : fine pour le relief et les contours de forêt, grossière pour la roche et la
-  météo (voir plus bas).</p>
+  <p>Chaque matin, le site publie la météo du jour ; votre navigateur en déduit, pour chaque
+  espèce, un indice entre 0 et 1 sur les forêts de France métropolitaine découpées en cases de
+  50 m, pour aujourd'hui et les sept jours suivants. En vue large, chaque pixel résume environ
+  1 km² ; en vous approchant, la carte affiche les cases elles-mêmes. Leur précision est celle
+  des données qui les décrivent : fine pour le relief et les contours de forêt, plus grossière
+  pour la météo, grossière pour la roche (voir plus bas).</p>
 
   <h2>Un produit de deux familles de facteurs</h2>
   <p><strong>Indice = habitat × météo.</strong> Un produit et non une moyenne : chaque facteur
@@ -38,14 +39,24 @@
   observations</a> mesure s'il le fait mieux que le hasard.</p>
 
   <h2>Le relief corrige la météo</h2>
-  <p>La météo vient d'une grille de points espacés d'environ 5 km. En Haute-Savoie, deux forêts
-  séparées de 2 km peuvent avoir 1 000 m d'écart d'altitude : la température y est donc
-  recalculée case par case, avec la baisse habituelle de la température avec l'altitude.
+  <p>La météo vient du modèle AROME de Météo-France, sur une grille de 2,5 km, pour les jours
+  passés et les deux prochains ; au-delà, des modèles ARPEGE (environ 10 km) et de l'ECMWF
+  (environ 25 km), qui fournit aussi la température du sol. En montagne, deux forêts séparées
+  de 2 km peuvent avoir 1 000 m d'écart d'altitude : la température y est donc recalculée case
+  par case, avec la baisse habituelle de la température avec l'altitude.
   L'exposition compte aussi : un versant sud a un sol un peu plus chaud et sèche plus vite, un
   versant nord reste frais et humide. C'est ce qui fait « descendre » la zone de pousse à mesure
   que l'automne avance, et la fait remonter en été quand le sol de plaine est trop chaud.</p>
   <p>Grâce au délai entre la pluie et la pousse, la carte des jours suivants repose surtout sur
   la pluie déjà tombée : la prévision ne pèse vraiment que sur la température et le gel.</p>
+  <p>Comparée à 1 801 pluviomètres de Météo-France (automne 2025 et printemps 2026), la pluie
+  d'AROME n'est pas biaisée en moyenne : elle est utilisée telle quelle.</p>
+
+  <h2>Du nord au sud</h2>
+  <p>Les saisons et les plafonds d'altitude ont été écrits pour la Haute-Savoie (46° N). Ailleurs,
+  ils suivent la loi bioclimatique de Hopkins : par degré de latitude vers le sud, le printemps
+  arrive environ 4 jours plus tôt, l'automne finit 4 jours plus tard, et la forêt monte de
+  122 m. Il n'y a pas d'altitude minimale : les cinq espèces poussent jusqu'au bord de la mer.</p>
 
   <h2>Les règles, espèce par espèce</h2>
   <p>Les seuils sont des ordres de grandeur tirés des guides de terrain et de la littérature sur
@@ -59,9 +70,11 @@
   <h2>Ce que la carte ne sait pas</h2>
   <ul>
     <li><strong>L'essence est souvent floue.</strong> La BD Forêt de l'IGN ne nomme une essence
-    que lorsqu'elle domine nettement. En Haute-Savoie, la plupart des forêts sont « feuillus en
-    mélange » ou « mixtes » : le hêtre, si important pour la trompette, n'est identifié que sur
-    une petite part du département.</li>
+    que lorsqu'elle domine nettement. Beaucoup de forêts sont « feuillus en mélange » ou
+    « mixtes » : le hêtre, si important pour la trompette, n'est souvent pas identifié.</li>
+    <li><strong>Les règles viennent des Alpes.</strong> Les affinités des espèces pour les
+    essences du Midi (pin d'Alep, chênes verts, pin maritime) sont des ordres de grandeur moins
+    sûrs, et la vérification sur les observations n'a encore été faite qu'en Haute-Savoie.</li>
     <li><strong>La roche est grossière.</strong> La carte géologique utilisée est au
     1/1 000 000 : elle distingue les grands ensembles (massifs calcaires, cristallin, molasse),
     pas les variations locales du sol, ni l'acidification de l'humus sous les résineux.</li>

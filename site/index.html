@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Champignons en Haute-Savoie</title>
-<meta name="description" content="Carte des forêts de Haute-Savoie où les conditions sont favorables aux cèpes, girolles, trompettes, pieds-de-mouton et morilles, aujourd'hui et pour les sept prochains jours. Météo, essences, roche, altitude et exposition, à partir de données publiques.">
-<meta property="og:title" content="Champignons en Haute-Savoie">
+<title>Champignons en France</title>
+<meta name="description" content="Carte des forêts de France où les conditions sont favorables aux cèpes, girolles, trompettes, pieds-de-mouton et morilles, aujourd'hui et pour les sept prochains jours, case par case de 50 m. Météo, essences, roche, altitude et exposition, à partir de données publiques.">
+<meta property="og:title" content="Champignons en France">
 <meta property="og:description" content="Où les conditions sont favorables aux champignons, forêt par forêt, aujourd'hui et pour les sept prochains jours.">
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -17,7 +17,7 @@
 <div class="appli">
   <aside class="panneau">
     <div class="entete">
-      <h1>Champignons en Haute-Savoie</h1>
+      <h1>Champignons en France</h1>
       <p>Les forêts où la météo, l'essence, la roche, l'altitude et l'exposition sont
       réunies pour une pousse, aujourd'hui et pour les sept prochains jours. C'est un
       indice de conditions favorables, pas la promesse d'un panier : la carte dit où
@@ -37,6 +37,17 @@
       <legend>Jour</legend>
       <div class="choix" id="choix-jour"></div>
     </fieldset>
+
+    <div class="section">
+      <h3>Où chercher en France</h3>
+      <ol class="communes" id="classement"></ol>
+      <p class="muet">Indice moyen des forêts de chaque département. Un clic l'affiche.</p>
+    </div>
+
+    <label class="departement">
+      <span>Département</span>
+      <select id="choix-departement"></select>
+    </label>
 
     <div class="verdict" aria-live="polite">
       <div class="jour" id="verdict-jour"></div>
@@ -64,7 +75,7 @@
     <div class="alerte">
       <p><strong>Ne mangez jamais un champignon sans identification certaine.</strong>
       Faites contrôler votre récolte par un pharmacien ou une société mycologique. En cas de
-      malaise après un repas de champignons : le 15, ou le centre antipoison.</p>
+      malaise après un repas de champignons : le 15, ou le <span id="antipoison">centre antipoison</span>.</p>
       <p>En forêt privée, les champignons appartiennent au propriétaire. Pendant la chasse,
       portez une couleur vive. <a href="avant-de-partir.html">Avant de partir</a>.</p>
     </div>

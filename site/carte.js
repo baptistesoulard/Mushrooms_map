@@ -1,14 +1,23 @@
-// Carte de l'indice de pousse, à la résolution de calcul (cases de 50 m).
-// Lit data/carte.json, data/especes.json et des images PNG où chaque pixel est une case
-// (codage des canaux : champi/export.py). Le calque est dessiné tuile par tuile, à l'échelle
-// de l'écran : cases nettes et hachures fines à tous les zooms.
+// Carte de l'indice de pousse, France entière.
+// Vue large (zoom < DETAIL) : l'aperçu national calculé chaque matin (pixels de 1,15 km).
+// Vue rapprochée : le navigateur calcule lui-même l'indice des cases de 50 m, bloc par bloc
+// (habitat/blocs/*.png, data/meteo/*.bin, modele.js), à la résolution de calcul.
+import { evaluer, indices, preparer } from "./modele.js";
 
 const R = 6378137;
 const MONDE = 2 * Math.PI * R;
-const CLE_ESPECE = "champi-espece"; // seule donnée gardée dans le navigateur (voir a-propos.html)
+const DETAIL = 11;                     // à partir de ce zoom, une case ≈ un pixel d'écran
+const CLE_ESPECE = "champi-espece";    // gardées dans le navigateur (voir a-propos.html)
+const CLE_DEPARTEMENT = "champi-departement";
 const NIVEAU_COURT = ["hors saison", "défavorable", "possible", "par endroits", "bon"];
-const OPACITE = 175;                // sur 255 : le fond de carte reste lisible
-const EN_MEMOIRE = 8;               // grilles d'indice gardées (≈ 3 Mo chacune)
+const OPACITE = 175;                   // sur 255 : le fond de carte reste lisible
+const PROTEGE = 252;                   // code d'une case protégée (hachures)
+const CENTRES_ANTIPOISON = [           // centres-antipoison.net, vérifié le 2026-10-31
+  ["Angers", 47.47, -0.55, "02 41 48 21 21"], ["Bordeaux", 44.84, -0.58, "05 56 96 40 80"],
+  ["Lille", 50.63, 3.06, "08 00 59 59 59"], ["Lyon", 45.76, 4.84, "04 72 11 69 11"],
+  ["Marseille", 43.30, 5.37, "04 91 75 25 25"], ["Nancy", 48.69, 6.18, "03 83 22 50 50"],
+  ["Paris", 48.86, 2.35, "01 40 05 48 48"], ["Toulouse", 43.60, 1.44, "05 61 77 74 47"],
+];
 
 const fr = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 const fr2 = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -29,44 +38,46 @@ const el = (tag, attrs = {}, ...enfants) => {
 function versMerc(lat, lon) {
   return [R * lon * Math.PI / 180, R * Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360))];
 }
-function versLatLon(x, y) {
-  return [(2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * 180 / Math.PI, x / R * 180 / Math.PI];
+function latDeY(y) {
+  return (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * 180 / Math.PI;
 }
 
-function lireStockage() {
-  try { return localStorage.getItem(CLE_ESPECE); } catch { return null; }
+function lire(cle) {
+  try { return localStorage.getItem(cle); } catch { return null; }
 }
-function ecrireStockage(v) {
-  try { localStorage.setItem(CLE_ESPECE, v); } catch { /* navigation privée : sans conséquence */ }
+function ecrire(cle, v) {
+  try { localStorage.setItem(cle, v); } catch { /* navigation privée : sans conséquence */ }
 }
 
-// Décode un PNG en tableau d'octets RVBA (canvas : les PNG sans profil de couleur restent bruts).
+// Décode un PNG en octets RVBA bruts : sans conversion de couleur ni prémultiplication (ce
+// sont des données, pas une image), et hors du fil principal.
 async function pixels(url) {
-  const img = new Image();
-  img.src = url;
-  await img.decode();
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${url} : ${r.status}`);
+  const bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
   const c = document.createElement("canvas");
-  c.width = img.width;
-  c.height = img.height;
+  c.width = bmp.width;
+  c.height = bmp.height;
   const ctx = c.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(img, 0, 0);
-  return { l: img.width, h: img.height, d: ctx.getImageData(0, 0, img.width, img.height).data };
+  ctx.drawImage(bmp, 0, 0);
+  bmp.close();
+  return { l: c.width, h: c.height, d: ctx.getImageData(0, 0, c.width, c.height).data };
 }
 
-// Un PNG en niveaux de gris → un octet par case.
-async function canal(url) {
-  const px = await pixels(url);
-  const v = new Uint8Array(px.l * px.h);
-  for (let i = 0; i < v.length; i++) v[i] = px.d[i * 4];
-  return v;
-}
-
-// Charge une seule fois, à la demande.
-function paresseux(charger) {
-  const memo = new Map();
+// Mémoire bornée : les plus anciennes entrées partent d'abord.
+function memoire(taille, charger) {
+  const m = new Map();
   return (cle) => {
-    if (!memo.has(cle)) memo.set(cle, charger(cle).catch((e) => { memo.delete(cle); throw e; }));
-    return memo.get(cle);
+    if (m.has(cle)) {
+      const v = m.get(cle);
+      m.delete(cle);
+      m.set(cle, v);
+      return v;
+    }
+    const p = charger(cle).catch((e) => { m.delete(cle); throw e; });
+    m.set(cle, p);
+    if (m.size > taille) m.delete(m.keys().next().value);
+    return p;
   };
 }
 
@@ -91,9 +102,10 @@ async function demarrer() {
     fetch("data/especes.json").then((r) => r.json()),
   ]);
   const especes = Object.fromEntries(regles.especes.map((e) => [e.code, e]));
-  const g = carte.grille;
-  const gz = carte.grille_zone;
-  const codes = carte.codes;
+  const communs = regles.communs;
+  const deps = Object.fromEntries(carte.departements.map((d) => [d.code, d]));
+  const B = carte.blocs;
+  const blocsPresents = new Set(B.liste);
   const leg = carte.legendes;
   const pal = couleurs();
 
@@ -101,21 +113,7 @@ async function demarrer() {
   const TABLE = new Uint8ClampedArray(256 * 4);
   for (let code = 0; code <= carte.echelle; code++) {
     const k = classeDe(code / carte.echelle, carte.classes);
-    if (k === 0) continue;
-    TABLE.set([...pal.classes[k], OPACITE], code * 4);
-  }
-
-  // Données chargées à la demande : seul l'indice affiché part d'emblée.
-  const fixes = paresseux((nom) => pixels(`data/${nom}.png`));
-  const sol = paresseux((k) => canal(`data/sol_${k}.png`));
-  const pluie = paresseux((cle) => canal(`data/pluie/${cle}.png`));
-  const indices = new Map();
-  function indice(cle) {
-    if (!indices.has(cle)) {
-      indices.set(cle, canal(`data/indice/${cle}.png`).catch((e) => { indices.delete(cle); throw e; }));
-      if (indices.size > EN_MEMOIRE) indices.delete(indices.keys().next().value);
-    }
-    return indices.get(cle);
+    if (k > 0) TABLE.set([...pal.classes[k], OPACITE], code * 4);
   }
 
   // --- Jour de référence et fraîcheur -------------------------------------------
@@ -128,19 +126,111 @@ async function demarrer() {
     p.textContent = `Cette carte a été calculée le ${dateLongue(carte.jours[0].date)} : la mise à jour ` +
       "quotidienne n'a pas eu lieu. Les jours proposés commencent donc avant aujourd'hui.";
   }
+  const jourDe = (k) => {
+    const [a, m, j] = carte.jours[k].date.split("-").map(Number);
+    return { annee: a, num: Date.UTC(a, m - 1, j) / 864e5, k };
+  };
 
-  // --- État -----------------------------------------------------------------------
-  const resumes = carte.resumes;
-  const meilleure = carte.especes.slice().sort((a, b) =>
-    resumes[b.code][jourDepart].niveau - resumes[a.code][jourDepart].niveau)[0].code;
-  const memo = lireStockage();
-  const etat = { espece: especes[memo] ? memo : meilleure, jour: jourDepart };
+  // --- Données à la demande --------------------------------------------------------
+  const resumes = memoire(8, (dep) => fetch(`data/resumes/${dep}.json`).then((r) => r.json()));
+  const apercus = memoire(6, async (cle) => {
+    const px = await pixels(`data/apercu/${cle}.png`);
+    const v = new Uint8Array(px.l * px.h);
+    for (let i = 0; i < v.length; i++) v[i] = px.d[i * 4];
+    return v;
+  });
+  const annexes = memoire(2, (nom) => fetch(nom).then((r) => r.json()));   // communes, zones protégées
+
+  // Habitat d'un bloc : les cases boisées, à plat, plus ce qu'il faut pour dessiner.
+  const habitats = memoire(40, async (nom) => {
+    const [a, b, c] = await Promise.all(["a", "b", "c"].map((l) => pixels(`habitat/blocs/${nom}_${l}.png`)));
+    const [bx, by] = nom.split("_").map(Number);
+    const n = B.taille * B.taille;
+    const essence = new Uint8Array(n), protege = new Uint8Array(n), commune = new Uint16Array(n);
+    const foret = [];
+    for (let i = 0; i < n; i++) {
+      const q = i * 4;
+      essence[i] = a.d[q + 2] & 15;
+      protege[i] = c.d[q + 2];
+      commune[i] = (c.d[q] << 8) | c.d[q + 1];
+      if (essence[i] > 0) foret.push(i);
+    }
+    const nf = foret.length;
+    const cases = {
+      lat: new Float64Array(nf), lon: new Float64Array(nf), altitude: new Float64Array(nf),
+      ensoleillement: new Float64Array(nf), pente: new Float64Array(nf), essence: new Uint8Array(nf),
+      ouverte: new Uint8Array(nf), public: new Uint8Array(nf), roche: new Uint8Array(nf), orientation: new Uint8Array(nf),
+    };
+    const y1 = (by + 1) * B.cote, x0 = bx * B.cote;
+    foret.forEach((i, f) => {
+      const q = i * 4, lig = Math.floor(i / B.taille), col = i % B.taille;
+      cases.lat[f] = latDeY(y1 - (lig + 0.5) * B.pas);
+      cases.lon[f] = (x0 + (col + 0.5) * B.pas) / R * 180 / Math.PI;
+      cases.altitude[f] = ((a.d[q] << 8) | a.d[q + 1]) - B.altitude_decalage;
+      cases.essence[f] = essence[i];
+      cases.ouverte[f] = (a.d[q + 2] >> 4) & 1;
+      cases.public[f] = (a.d[q + 2] >> 5) & 1;
+      cases.pente[f] = b.d[q];
+      cases.ensoleillement[f] = (b.d[q + 1] - 100) / 100;
+      cases.roche[f] = b.d[q + 2] & 3;
+      cases.orientation[f] = b.d[q + 2] >> 2;
+    });
+    return { nom, essence, protege, commune, foret: Int32Array.from(foret), cases, prep: null };
+  });
+
+  const meteos = memoire(40, async (nom) => {
+    const v = new Int16Array(await fetch(`data/meteo/${nom}.bin`).then((r) => r.arrayBuffer()));
+    const [ni, nj, i0, j0] = v;
+    const n = ni * nj, M = carte.meteo;
+    const champs = {};
+    M.champs.forEach((c, k) => {
+      const f = new Float32Array(n);
+      for (let i = 0; i < n; i++) f[i] = v[4 + k * n + i] / 10;
+      champs[c] = f;
+    });
+    const arrondi = (x) => Math.round(x * 1e4) / 1e4;
+    return {
+      lats: Array.from({ length: ni }, (_, i) => arrondi(M.lat0 + (i0 + i) * M.pas)),
+      lons: Array.from({ length: nj }, (_, j) => arrondi(M.lon0 + (j0 + j) * M.pas)),
+      champ: (c) => champs[c],
+    };
+  });
+
+  // Codes d'un bloc pour l'espèce et le jour : un octet par case, comme l'aperçu.
+  const codesBlocs = memoire(60, async (cle) => {
+    const [nom, esp, k] = cle.split("|");
+    const [h, m] = await Promise.all([habitats(nom), meteos(nom)]);
+    if (!h.prep) h.prep = preparer(h.cases, m);
+    const ind = indices(especes[esp], h.prep, m, jourDe(Number(k)), communs);
+    const codes = new Uint8Array(B.taille * B.taille);
+    h.foret.forEach((i, f) => {
+      codes[i] = h.protege[i] ? PROTEGE : Math.min(carte.echelle, Math.round(ind[f] * carte.echelle));
+    });
+    return codes;
+  });
+
+  // --- État ---------------------------------------------------------------------
+  const memoDep = lire(CLE_DEPARTEMENT);
+  const etat = {
+    departement: deps[memoDep]?.centre ? memoDep : "74",
+    espece: especes[lire(CLE_ESPECE)] ? lire(CLE_ESPECE) : carte.especes[0].code,
+    jour: jourDepart,
+  };
 
   // --- Carte ----------------------------------------------------------------------
-  const b = carte.bornes;
-  const bornes = L.latLngBounds([b.sud, b.ouest], [b.nord, b.est]);
-  const map = L.map("carte", { minZoom: 8, maxZoom: 18, maxBounds: bornes.pad(0.3), zoomSnap: 0.5 });
-  map.fitBounds(bornes);
+  const ba = carte.apercu.bornes;
+  const france = L.latLngBounds([ba.sud, ba.ouest], [ba.nord, ba.est]);
+  const map = L.map("carte", { minZoom: 5, maxZoom: 18, maxBounds: france.pad(0.2), zoomSnap: 0.5 });
+  const d0 = deps[etat.departement];
+  const vueInitiale = () => map.fitBounds(d0?.bornes ? [[d0.bornes[0], d0.bornes[1]], [d0.bornes[2], d0.bornes[3]]] : france);
+  vueInitiale();
+  // Un conteneur encore sans taille (onglet en arrière-plan, mise en page tardive) : la vue
+  // se recale dès qu'il en prend une.
+  let vueFaite = map.getSize().x > 0;
+  new ResizeObserver(() => {
+    map.invalidateSize();
+    if (!vueFaite && map.getSize().x > 0) { vueFaite = true; vueInitiale(); }
+  }).observe($("carte"));
   map.attributionControl.setPrefix(false);
   const wmts = (couche, format) =>
     "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal" +
@@ -152,7 +242,7 @@ async function demarrer() {
       { maxZoom: 19, attribution: "Photographies © IGN" }),
   };
   fonds.plan.addTo(map);
-  map.attributionControl.addAttribution("Indice : météo Open-Meteo, forêts et relief IGN, roches BRGM");
+  map.attributionControl.addAttribution("Indice : météo Météo-France et ECMWF via Open-Meteo, forêts et relief IGN, roches BRGM");
 
   const ControleFonds = L.Control.extend({
     onAdd() {
@@ -172,74 +262,134 @@ async function demarrer() {
   });
   new ControleFonds({ position: "topright" }).addTo(map);
 
-  let courant = null;   // grille d'indice affichée (un octet par case)
+  // Position Mercator du centre de chaque pixel d'une tuile.
+  function axes(coords) {
+    const n = 256 * 2 ** coords.z;
+    const xs = new Float64Array(256), ys = new Float64Array(256);
+    for (let i = 0; i < 256; i++) {
+      xs[i] = ((coords.x * 256 + i + 0.5) / n) * MONDE - MONDE / 2;
+      ys[i] = MONDE / 2 - ((coords.y * 256 + i + 0.5) / n) * MONDE;
+    }
+    return { xs, ys };
+  }
 
-  // Chaque pixel d'écran va chercher sa case : x, y Mercator → colonne, ligne de la grille.
-  const Calque = L.GridLayer.extend({
+  function peindre(o, p, code, hachure) {
+    if (code === PROTEGE) {             // hachures : « réglementation propre », jamais un gris plein
+      if (hachure) { o[p] = pal.hachure[0]; o[p + 1] = pal.hachure[1]; o[p + 2] = pal.hachure[2]; o[p + 3] = 150; }
+      return;
+    }
+    const t = code * 4;
+    o[p] = TABLE[t]; o[p + 1] = TABLE[t + 1]; o[p + 2] = TABLE[t + 2]; o[p + 3] = TABLE[t + 3];
+  }
+
+  // Vue large : l'aperçu national.
+  const g = carte.apercu.grille;
+  let apercu = null;
+  const Apercu = L.GridLayer.extend({
     createTile(coords) {
       const tuile = document.createElement("canvas");
       tuile.width = tuile.height = 256;
-      if (!courant) return tuile;
-      const n = 256 * 2 ** coords.z;
-      const cols = new Int32Array(256);
-      const lignes = new Int32Array(256);
-      let visible = false;
-      for (let i = 0; i < 256; i++) {
-        const x = ((coords.x * 256 + i + 0.5) / n) * MONDE - MONDE / 2;
-        const y = MONDE / 2 - ((coords.y * 256 + i + 0.5) / n) * MONDE;
-        cols[i] = Math.floor((x - g.x0) / g.pas);
-        lignes[i] = Math.floor((g.y1 - y) / g.pas);
-        if (cols[i] >= 0 && cols[i] < g.nx) visible = true;
-      }
-      if (!visible) return tuile;
+      if (!apercu) return tuile;
+      const { xs, ys } = axes(coords);
       const ctx = tuile.getContext("2d");
       const img = ctx.createImageData(256, 256);
-      const o = img.data;
       for (let j = 0; j < 256; j++) {
-        const lig = lignes[j];
+        const lig = Math.floor((g.y1 - ys[j]) / g.pas);
         if (lig < 0 || lig >= g.ny) continue;
-        const base = lig * g.nx;
         for (let i = 0; i < 256; i++) {
-          const col = cols[i];
+          const col = Math.floor((xs[i] - g.x0) / g.pas);
           if (col < 0 || col >= g.nx) continue;
-          const code = courant[base + col];
-          const p = (j * 256 + i) * 4;
-          if (code === codes.protege) {   // hachures : « réglementation propre », jamais un gris plein
-            if ((coords.x * 256 + i + coords.y * 256 + j) % 7 < 2) {
-              o[p] = pal.hachure[0]; o[p + 1] = pal.hachure[1]; o[p + 2] = pal.hachure[2]; o[p + 3] = 150;
-            }
-            continue;
-          }
-          const t = code * 4;
-          o[p] = TABLE[t]; o[p + 1] = TABLE[t + 1]; o[p + 2] = TABLE[t + 2]; o[p + 3] = TABLE[t + 3];
+          const code = apercu[lig * g.nx + col];
+          if (code <= carte.echelle) peindre(img.data, (j * 256 + i) * 4, code, false);
         }
       }
       ctx.putImageData(img, 0, 0);
       return tuile;
     },
   });
-  const calque = new Calque({ pane: "overlayPane", updateWhenZooming: false, keepBuffer: 1 }).addTo(map);
+  const calqueApercu = new Apercu({ pane: "overlayPane", maxZoom: DETAIL - 0.5, updateWhenZooming: false }).addTo(map);
 
-  async function rafraichirCalque() {
+  // Vue rapprochée : chaque tuile réunit les blocs qu'elle touche, calculés à la demande.
+  const Detail = L.GridLayer.extend({
+    createTile(coords, fini) {
+      const tuile = document.createElement("canvas");
+      tuile.width = tuile.height = 256;
+      const { xs, ys } = axes(coords);
+      const cle = `${etat.espece}|${etat.jour}`;
+      const noms = new Set();
+      for (const x of [xs[0], xs[255]]) for (const y of [ys[0], ys[255]]) {
+        const nom = `${Math.floor(x / B.cote)}_${Math.floor(y / B.cote)}`;
+        if (blocsPresents.has(nom)) noms.add(nom);
+      }
+      if (!noms.size) { setTimeout(() => fini(null, tuile)); return tuile; }
+      Promise.all([...noms].map((nom) => codesBlocs(`${nom}|${cle}`).then((c) => [nom, c])))
+        .then((liste) => {
+          const blocs = new Map(liste);
+          const ctx = tuile.getContext("2d");
+          const img = ctx.createImageData(256, 256);
+          for (let j = 0; j < 256; j++) {
+            const by = Math.floor(ys[j] / B.cote);
+            const lig = Math.floor(((by + 1) * B.cote - ys[j]) / B.pas);
+            for (let i = 0; i < 256; i++) {
+              const bx = Math.floor(xs[i] / B.cote);
+              const codes = blocs.get(`${bx}_${by}`);
+              if (!codes) continue;
+              const col = Math.floor((xs[i] - bx * B.cote) / B.pas);
+              const code = codes[lig * B.taille + col];
+              if (code === 0) continue;
+              peindre(img.data, (j * 256 + i) * 4, code, (coords.x * 256 + i + coords.y * 256 + j) % 7 < 2);
+            }
+          }
+          ctx.putImageData(img, 0, 0);
+          fini(null, tuile);
+        })
+        .catch((e) => { console.error(e); fini(null, tuile); });
+      return tuile;
+    },
+  });
+  const calqueDetail = new Detail({ pane: "overlayPane", minZoom: DETAIL, updateWhenZooming: false, keepBuffer: 1 }).addTo(map);
+
+  async function rafraichirCalques() {
     const demande = `${etat.espece}_${etat.jour}`;
-    const grille = await indice(demande);
-    if (demande !== `${etat.espece}_${etat.jour}`) return; // l'utilisateur a déjà changé d'avis
-    courant = grille;
-    calque.redraw();
-    // Le jour suivant se prépare en arrière-plan : le changement de jour sera immédiat.
-    if (etat.jour + 1 < carte.jours.length) indice(`${etat.espece}_${etat.jour + 1}`).catch(() => {});
+    const a = await apercus(demande);
+    if (demande !== `${etat.espece}_${etat.jour}`) return;   // l'utilisateur a déjà changé d'avis
+    apercu = a;
+    calqueApercu.redraw();
+    calqueDetail.redraw();
+    if (etat.jour + 1 < carte.jours.length) apercus(`${etat.espece}_${etat.jour + 1}`).catch(() => {});
   }
 
   // --- Panneau --------------------------------------------------------------------
+  let resume = null;    // résumés du département affiché, par espèce
+
+  function choixDepartement() {
+    const s = $("choix-departement");
+    if (!s.options.length) {
+      const tri = carte.departements.filter((d) => d.centre).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+      for (const d of tri) s.append(el("option", { value: d.code }, `${d.nom} (${d.code})`));
+      s.addEventListener("change", () => allerDepartement(s.value, true));
+    }
+    s.value = etat.departement;
+  }
+
+  async function allerDepartement(code, centrer) {
+    etat.departement = code;
+    ecrire(CLE_DEPARTEMENT, code);
+    const d = deps[code];
+    if (centrer && d.bornes) map.fitBounds([[d.bornes[0], d.bornes[1]], [d.bornes[2], d.bornes[3]]]);
+    resume = await resumes(code);
+    if (etat.departement === code) panneau();
+  }
+
   function choixEspeces() {
     const zone = $("choix-espece");
     zone.replaceChildren();
     for (const e of carte.especes) {
-      const r = resumes[e.code][etat.jour];
+      const r = resume?.[e.code]?.[etat.jour];
       const input = el("input", { type: "radio", name: "espece", value: e.code });
       input.checked = e.code === etat.espece;
-      input.addEventListener("change", () => { etat.espece = e.code; ecrireStockage(e.code); tout(); });
-      zone.append(el("label", {}, input, e.nom, el("span", { class: "niv" }, NIVEAU_COURT[r.niveau])));
+      input.addEventListener("change", () => { etat.espece = e.code; ecrire(CLE_ESPECE, e.code); tout(); });
+      zone.append(el("label", {}, input, e.nom, el("span", { class: "niv" }, r ? NIVEAU_COURT[r.niveau] : "")));
     }
   }
 
@@ -256,11 +406,18 @@ async function demarrer() {
 
   function fiche() {
     const e = especes[etat.espece];
-    const [, s1, s2] = e.saison;
+    const lat = deps[etat.departement]?.centre?.[0] ?? communs.latitude_ref;
+    // Dates de la saison à la latitude du département (loi de Hopkins, comme le calcul).
+    const date = (mmjj) => {
+      const [m, j] = mmjj.split("-").map(Number);
+      const sens = m <= 6 ? 1 : m >= 8 ? -1 : 0;
+      const d = new Date(Date.UTC(2026, m - 1, j) + Math.round(sens * communs.hopkins_jours * (lat - communs.latitude_ref)) * 864e5);
+      return dateCourte(`${d.getUTCMonth() + 1}-${d.getUTCDate()}`);
+    };
     const corps = [
       el("p", {}, e.description),
-      el("p", {}, el("strong", {}, "Saison : "), `surtout du ${dateCourte(s1)} au ${dateCourte(s2)}. `,
-        el("strong", {}, "Milieu : "), e.habitat_texte),
+      el("p", {}, el("strong", {}, "Saison : "), `surtout du ${date(e.saison[1])} au ${date(e.saison[2])} ` +
+        `à cette latitude. `, el("strong", {}, "Milieu : "), e.habitat_texte),
     ];
     if (e.confusions) corps.push(el("p", { class: "confusions" }, el("strong", {}, "Confusions possibles : "), e.confusions));
     corps.push(el("p", { class: "muet" }, "Ce portrait ne suffit jamais pour identifier un champignon."));
@@ -270,10 +427,30 @@ async function demarrer() {
         ...corps));
   }
 
+  function classement() {
+    const ol = $("classement");
+    ol.replaceChildren();
+    const liste = carte.classement[etat.espece][etat.jour].filter((c) => c.indice >= 0.05).slice(0, 8);
+    if (!liste.length) ol.append(el("li", { class: "muet" }, "Aucun département ne se détache ce jour-là."));
+    for (const c of liste) {
+      const k = classeDe(c.indice, carte.classes);
+      ol.append(el("li", {}, el("button", { type: "button", onclick: () => allerDepartement(c.dep, true) },
+        `${deps[c.dep]?.nom ?? c.dep} (${c.dep})`, el("span", { class: "cl" }, carte.classes[k].nom))));
+    }
+  }
+
   function verdict() {
-    const r = resumes[etat.espece][etat.jour];
     const e = especes[etat.espece];
-    $("verdict-jour").textContent = `${e.nom}, ${carte.jours[etat.jour].libelle}`;
+    const d = deps[etat.departement];
+    $("verdict-jour").textContent = `${e.nom}, ${carte.jours[etat.jour].libelle} — ${d?.nom ?? ""}`;
+    const r = resume?.[etat.espece]?.[etat.jour];
+    if (!r) {
+      $("verdict-titre").textContent = "Pas de forêt calculée dans ce département.";
+      $("verdict-texte").replaceChildren();
+      $("tranches").replaceChildren();
+      $("communes").replaceChildren();
+      return;
+    }
     $("verdict-titre").textContent = r.verdict;
     $("verdict-texte").replaceChildren(...r.phrases.map((p) => el("p", {}, p)));
     const f = (carte.fiabilite || {})[etat.espece];
@@ -297,13 +474,16 @@ async function demarrer() {
 
     const ul = $("communes");
     ul.replaceChildren();
-    if (!r.communes.length || r.niveau === 0) {
-      ul.append(el("li", { class: "muet" }, "Aucune commune ne se détache."));
-    }
+    if (!r.communes.length || r.niveau === 0) ul.append(el("li", { class: "muet" }, "Aucune commune ne se détache."));
     for (const c of r.niveau === 0 ? [] : r.communes) {
-      ul.append(el("li", {}, el("button", { type: "button", onclick: () => allerA(c.nom) },
+      ul.append(el("li", {}, el("button", { type: "button", onclick: () => allerA(c.centre) },
         c.nom, el("span", { class: "cl" }, carte.classes[c.classe].nom))));
     }
+  }
+
+  function allerA(centre) {
+    map.setView(centre, 13);
+    if (window.matchMedia("(max-width: 820px)").matches) $("carte").scrollIntoView({ behavior: "smooth" });
   }
 
   function legende() {
@@ -319,112 +499,97 @@ async function demarrer() {
       "Zone protégée : réglementation propre, pas d'indice"));
     z.append(el("div", {}, el("span", { class: "pastille vide" }),
       "Sans couleur : indice très faible, ou hors forêt"));
+    z.append(el("p", { class: "muet" }, `En vue large, chaque pixel résume environ 1 km² ; ` +
+      "zoomez pour voir les cases de 50 m."));
   }
 
-  async function allerA(nomCommune) {
-    const idx = leg.communes.indexOf(nomCommune) + 1;
-    const lieux = await fixes("lieux");
-    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-    for (let y = 0; y < lieux.h; y++) {
-      for (let x = 0; x < lieux.l; x++) {
-        const i = (y * lieux.l + x) * 4;
-        if (lieux.d[i] + 256 * lieux.d[i + 1] === idx) {
-          if (x < x0) x0 = x;
-          if (x > x1) x1 = x;
-          if (y < y0) y0 = y;
-          if (y > y1) y1 = y;
-        }
-      }
-    }
-    if (x0 === Infinity) return;
-    const so = versLatLon(g.x0 + x0 * g.pas, g.y1 - (y1 + 1) * g.pas);
-    const ne = versLatLon(g.x0 + (x1 + 1) * g.pas, g.y1 - y0 * g.pas);
-    map.fitBounds([so, ne], { maxZoom: 15 });
-    if (window.matchMedia("(max-width: 820px)").matches) $("carte").scrollIntoView({ behavior: "smooth" });
+  function antipoison() {
+    const c = map.getCenter();
+    const [ville, , , tel] = CENTRES_ANTIPOISON.reduce((m, v) =>
+      (Math.hypot(v[1] - c.lat, (v[2] - c.lng) * 0.7) < Math.hypot(m[1] - c.lat, (m[2] - c.lng) * 0.7) ? v : m));
+    $("antipoison").textContent = `centre antipoison le plus proche (${ville}) : ${tel}`;
   }
+  map.on("moveend", antipoison);
 
   // --- Fenêtre d'une case ---------------------------------------------------------
   map.on("click", async (ev) => {
-    if (!courant) return;
+    if (map.getZoom() < DETAIL) { map.setView(ev.latlng, DETAIL + 1); return; }
     const [x, y] = versMerc(ev.latlng.lat, ev.latlng.lng);
-    const col = Math.floor((x - g.x0) / g.pas);
-    const lig = Math.floor((g.y1 - y) / g.pas);
-    if (col < 0 || lig < 0 || col >= g.nx || lig >= g.ny) return;
-    const i = lig * g.nx + col;
-    const code = courant[i];
-    if (code === codes.hors_departement) return;
-    const izone = Math.floor(lig / (gz.pas / g.pas)) * gz.nx + Math.floor(col / (gz.pas / g.pas));
+    const bx = Math.floor(x / B.cote), by = Math.floor(y / B.cote);
+    const nom = `${bx}_${by}`;
+    if (!blocsPresents.has(nom)) return;
+    const col = Math.floor((x - bx * B.cote) / B.pas), lig = Math.floor(((by + 1) * B.cote - y) / B.pas);
+    const i = lig * B.taille + col;
     const popup = L.popup({ maxWidth: 330 }).setLatLng(ev.latlng).setContent("Chargement…").openOn(map);
     try {
-      const cle = `${etat.espece}_${etat.jour}`;
-      const [attributs, lieux, sols, pluies] = await Promise.all([
-        fixes("attributs"), fixes("lieux"), sol(etat.jour), pluie(cle)]);
-      popup.setContent(fenetre(code, i, attributs, lieux, sols[i], pluies[izone], ev.latlng));
+      const [h, m, communes, zones] = await Promise.all([
+        habitats(nom), meteos(nom), annexes("habitat/communes.json"), annexes("habitat/blocs.json")]);
+      popup.setContent(fenetre(h, m, i, communes, zones.blocs[nom], ev.latlng));
     } catch (err) {
       console.error(err);
       popup.setContent("Les détails de cette case n'ont pas pu se charger.");
     }
   });
 
-  function fenetre(code, i, attributs, lieux, codeSol, pluieZone, ll) {
+  function fenetre(h, meteo, i, communes, infoBloc, ll) {
     const e = especes[etat.espece];
-    const q = i * 4;
-    const idxCommune = lieux.d[q] + 256 * lieux.d[q + 1];
-    const commune = leg.communes[idxCommune - 1] || "Hors commune";
+    const com = communes[h.commune[i] - 1];
     const div = el("div");
-    div.append(el("h4", {}, commune));
-    if (code === codes.protege) {
-      const z = leg.protections[lieux.d[q + 2] - 1];
+    if (!com) {
+      div.append(el("p", {}, "Hors de France : pas d'indice."));
+      return div;
+    }
+    div.append(el("h4", {}, `${com.nom} (${com.dep})`));
+    if (h.protege[i]) {
+      const z = infoBloc?.protections?.[h.protege[i] - 1];
       div.append(el("p", {}, `${z ? `${z.nature} « ${z.nom} »` : "Zone protégée"}. Ces espaces ont leur propre ` +
         "réglementation, souvent plus stricte sur la cueillette : renseignez-vous avant d'y ramasser quoi que ce soit. " +
         "Le site n'y calcule pas d'indice."));
       return div;
     }
-    const ess = attributs.d[q + 1] & 15;
-    const alt = attributs.d[q] * 20;
-    if (code === codes.hors_foret) {
-      div.append(el("p", {}, `Hors forêt (≈ ${fr.format(alt)} m) : pas d'indice.`));
+    const f = h.foret.indexOf(i);
+    if (f < 0) {
+      div.append(el("p", {}, "Hors forêt : pas d'indice."));
       return div;
     }
-    const v = code / carte.echelle;
-    const k = classeDe(v, carte.classes);
-    const pastille = k > 0 ? el("span", { class: "pastille", style: `background:rgb(${pal.classes[k].join(",")})` })
+    const k = h.cases;
+    const cas = { essence: k.essence[f], ouverte: k.ouverte[f], roche: k.roche[f], altitude: k.altitude[f],
+                  pente: k.pente[f], ensoleillement: k.ensoleillement[f], lat: k.lat[f], lon: k.lon[f] };
+    const r = evaluer(e, cas, meteo, jourDe(etat.jour), communs);
+    const kc = classeDe(r.indice, carte.classes);
+    const pastille = kc > 0 ? el("span", { class: "pastille", style: `background:rgb(${pal.classes[kc].join(",")})` })
       : el("span", { class: "pastille vide" });
     div.append(el("div", { class: "pop-indice" }, pastille,
-      `${e.nom} : ${carte.classes[k].nom.toLowerCase()} (${fr2.format(v)})`));
+      `${e.nom} : ${carte.classes[kc].nom.toLowerCase()} (${fr2.format(r.indice)})`));
     div.append(el("div", { class: "muet" }, carte.jours[etat.jour].libelle));
 
-    const publique = (attributs.d[q + 1] >> 4) & 1;
-    const ouverte = (attributs.d[q + 1] >> 5) & 1;
-    const roche = attributs.d[q + 2] & 3;
-    const orient = attributs.d[q + 2] >> 2;
     const [p0, p1] = e.pluie_mm;
     const [, s1, s2] = e.sol;
     const mot = (a) => (a >= 0.8 ? "élevée" : a >= 0.5 ? "moyenne" : "faible");
-
     const dl = el("dl");
     const ligne = (t, d, cls) => { dl.append(el("dt", {}, t), el("dd", cls ? { class: cls } : {}, d)); };
-    ligne("Forêt", `${leg.essences[ess]}${ouverte ? " (ouverte)" : ""}`);
-    ligne("Affinité", `${mot(e.essences[ess] ?? 0)} pour cette forêt, ${mot(e.roches[roche] ?? 0)} pour la roche`);
-    ligne("Roche", leg.roches[roche]);
-    ligne("Altitude", `≈ ${fr.format(alt)} m`);
-    ligne("Exposition", leg.orientations[orient]);
-    ligne("Statut", publique ? "forêt publique (régime forestier)" : "forêt probablement privée");
+    ligne("Forêt", `${leg.essences[cas.essence]}${cas.ouverte ? " (ouverte)" : ""}`);
+    ligne("Affinité", `${mot(e.essences[cas.essence] ?? 0)} pour cette forêt, ${mot(e.roches[cas.roche] ?? 0)} pour la roche`);
+    ligne("Roche", leg.roches[cas.roche]);
+    ligne("Altitude", `${fr.format(cas.altitude)} m`);
+    ligne("Exposition", leg.orientations[k.orientation[f]]);
+    ligne("Statut", k.public[f] ? "forêt publique (régime forestier)" : "forêt probablement privée");
     const [jmin, jmax] = e.pluie_jours;
-    if (pluieZone !== 255) {
-      ligne(`Pluie ${jmin}–${jmax} j avant`,
-        `${fr.format(pluieZone)} mm ${pluieZone >= p1 ? "✓" : pluieZone < p0 ? "✗ trop peu" : "– un peu juste"}`,
-        pluieZone >= p1 ? "ok" : pluieZone < p0 ? "ko" : "");
-    }
-    if (codeSol !== 255) {
-      const t = codeSol / 5 - 10;
-      ligne("Sol (7 jours)", `${fr1.format(t)} °C ${t < s1 ? "✗ trop froid" : t > s2 ? "✗ trop chaud" : "✓"}`,
-        t < s1 || t > s2 ? "ko" : "ok");
-    }
+    ligne(`Pluie ${jmin}–${jmax} j avant`,
+      `${fr.format(r.pluie)} mm ${r.pluie >= p1 ? "✓" : r.pluie < p0 ? "✗ trop peu" : "– un peu juste"}`,
+      r.pluie >= p1 ? "ok" : r.pluie < p0 ? "ko" : "");
+    ligne("Sol (7 jours)", `${fr1.format(r.tSol)} °C ${r.tSol < s1 ? "✗ trop froid" : r.tSol > s2 ? "✗ trop chaud" : "✓"}`,
+      r.tSol < s1 || r.tSol > s2 ? "ko" : "ok");
+    if (r.gel) ligne("Gel", `${r.gel} jour${r.gel > 1 ? "s" : ""} sur 7`, "ko");
+    if (r.saison < 1) ligne("Saison", r.saison === 0 ? "hors saison ✗" : "début ou fin de saison", r.saison === 0 ? "ko" : "");
     div.append(dl);
     div.append(el("p", { class: "muet" },
-      `Case de 50 m ; pluie moyenne sur 250 m. Pleine pousse au-delà de ${fr.format(p1)} mm, ` +
+      `Case de 50 m ; météo AROME à 2,5 km. Pleine pousse au-delà de ${fr.format(p1)} mm, ` +
       `sol entre ${fr.format(s1)} et ${fr.format(s2)} °C.`));
+    if (com.dep !== etat.departement && deps[com.dep]) {
+      div.append(el("p", {}, el("button", { type: "button", class: "lien", onclick: () => allerDepartement(com.dep, false) },
+        `Résumé du département : ${deps[com.dep].nom}`)));
+    }
     div.append(el("a", {
       href: `https://www.geoportail.gouv.fr/carte?c=${ll.lng.toFixed(5)},${ll.lat.toFixed(5)}&z=16&permalink=yes`,
       target: "_blank", rel: "noopener",
@@ -432,18 +597,32 @@ async function demarrer() {
     return div;
   }
 
-  function tout() {
+  function panneau() {
+    choixDepartement();
     choixEspeces();
-    choixJours();
     fiche();
+    classement();
     verdict();
-    rafraichirCalque();
+  }
+
+  function tout() {
+    choixJours();
+    panneau();
+    rafraichirCalques();
   }
 
   legende();
+  antipoison();
+  resume = await resumes(etat.departement);
+  if (!lire(CLE_ESPECE)) {   // première visite : l'espèce la mieux placée dans le département
+    const meilleure = carte.especes.slice().sort((a, b) =>
+      (resume[b.code]?.[jourDepart]?.niveau ?? 0) - (resume[a.code]?.[jourDepart]?.niveau ?? 0))[0];
+    etat.espece = meilleure.code;
+  }
   tout();
   const genere = new Date(carte.genere_le);
-  $("maj").textContent = `Calculée le ${genere.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Paris" })}.`;
+  $("maj").textContent = `Calculée le ${genere.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Paris" })}.`
+    + (carte.blocs_manquants ? ` Habitat en cours de construction : ${carte.blocs_manquants} carrés de 25 km encore vides.` : "");
 }
 
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",

@@ -1,8 +1,8 @@
 name: Carte quotidienne
 
-# Chaque matin : météo du jour → indice par espèce → site publié sur GitHub Pages.
-# Rien n'est commité : les données du jour vivent dans l'artefact déployé, pas dans git
-# (40 images par jour gonfleraient l'historique de plusieurs centaines de Mo par an).
+# Chaque matin : météo du jour (dépôt public d'Open-Meteo) → données du site → GitHub Pages.
+# L'habitat de la France (~250 Mo) vient de la release « habitat » (workflow habitat.yml).
+# Rien n'est commité : les données du jour vivent dans l'artefact déployé, pas dans git.
 on:
   schedule:
     - cron: "20 4 * * *"      # 05 h 20 ou 06 h 20 à Paris selon l'heure d'été
@@ -22,7 +22,7 @@ concurrency:
 jobs:
   construire:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -31,8 +31,18 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: python -m pytest tests -q
+      - name: Habitat de la France
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download habitat -p habitat.tar -D "$RUNNER_TEMP"
+          mkdir -p site/habitat
+          tar -xf "$RUNNER_TEMP/habitat.tar" -C site/habitat
+          du -sh site/habitat
       - name: Calculer la carte du jour
-        run: python -m champi.export
+        run: |
+          python -m champi.export_france
+          rm site/habitat/echantillon.npz   # lu par l'export seulement : pas à publier
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

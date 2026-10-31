@@ -46,15 +46,16 @@ def test_stockage_navigateur_declare():
 
 def test_carte_lit_les_fichiers_que_l_export_ecrit():
     js = (SITE / "carte.js").read_text(encoding="utf-8")
-    export = (SITE.parent / "champi" / "export.py").read_text(encoding="utf-8")
+    export = (SITE.parent / "champi" / "export_france.py").read_text(encoding="utf-8")
+    france = (SITE.parent / "champi" / "france.py").read_text(encoding="utf-8")
     for f in ("carte.json", "especes.json"):
         assert f in js and f in export
-    assert "data/${nom}.png" in js
-    for f in ("attributs", "lieux"):
-        assert f'fixes("{f}")' in js and f'"{f}.png"' in export
-    assert "data/indice/${cle}.png" in js and '"indice" / f"{esp.code}_{k}.png"' in export
-    assert "data/pluie/${cle}.png" in js and '"pluie" / f"{esp.code}_{k}.png"' in export
-    assert "data/sol_${k}.png" in js and 'f"sol_{k}.png"' in export
+    assert "data/apercu/${cle}.png" in js and '"apercu" / f"{esp.code}_{k}.png"' in export
+    assert "data/meteo/${nom}.bin" in js and '"meteo"' in export and 'f"{nom}.bin"' in export
+    assert "data/resumes/${dep}.json" in js and """"resumes" / f"{dep['code']}.json\"""" in export
+    assert "habitat/blocs/${nom}_${l}.png" in js and '"blocs" / f"{nom}_{lettre}.png"' in france
+    for f in ("communes.json", "blocs.json"):
+        assert f"habitat/{f}" in js and f in france
 
 
 @pytest.mark.parametrize("page", PAGES, ids=lambda p: p.name)

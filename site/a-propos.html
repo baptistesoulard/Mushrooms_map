@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Sources et mentions — Champignons en Haute-Savoie</title>
-<meta name="description" content="Sources des données (IGN, BRGM, INPN, Open-Meteo, GBIF), licences, données conservées dans le navigateur et mentions légales de la carte des champignons de Haute-Savoie.">
+<title>Sources et mentions — Champignons en France</title>
+<meta name="description" content="Sources des données (IGN, BRGM, INPN, Open-Meteo, GBIF), licences, données conservées dans le navigateur et mentions légales de la carte des champignons de France.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -26,7 +26,7 @@
     <tr><td>Roche</td><td>BRGM, lithologie simplifiée au 1/1 000 000 (Licence Ouverte)</td><td>à la construction de l'habitat</td></tr>
     <tr><td>Zones protégées</td><td>INPN / PatriNat, via la Géoplateforme</td><td>à la construction de l'habitat</td></tr>
     <tr><td>Communes</td><td>IGN, ADMIN EXPRESS, via geo.api.gouv.fr (Licence Ouverte)</td><td>à la construction de l'habitat</td></tr>
-    <tr><td>Météo des derniers jours et prévisions</td><td><a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), modèles de Météo-France, du DWD et du CEPMMT</td><td>chaque matin</td></tr>
+    <tr><td>Météo des derniers jours et prévisions</td><td>Modèles AROME et ARPEGE de Météo-France, IFS du CEPMMT (ECMWF), via le dépôt public d'<a href="https://open-meteo.com/">Open-Meteo</a> sur AWS (CC BY 4.0)</td><td>chaque matin</td></tr>
     <tr><td>Météo passée (validation)</td><td>Open-Meteo, réanalyse ERA5-Land de Copernicus</td><td>à chaque validation</td></tr>
     <tr><td>Observations (validation)</td><td><a href="https://www.gbif.org/">GBIF</a>, dont l'INPN et les sociétés mycologiques</td><td>à chaque validation</td></tr>
     <tr><td>Fonds de carte</td><td>IGN, Plan IGN et photographies aériennes (Géoplateforme)</td><td>en direct</td></tr>
@@ -37,8 +37,9 @@
   <h2>Ce que le site garde et ce qu'il appelle</h2>
   <ul>
     <li>Le site ne dépose aucun cookie et ne mesure pas l'audience.</li>
-    <li>Il garde dans votre navigateur une seule information : la dernière espèce consultée
-    (clé <code>champi-espece</code>), pour la rouvrir à la visite suivante. Elle ne quitte
+    <li>Il garde dans votre navigateur deux informations : la dernière espèce consultée
+    (clé <code>champi-espece</code>) et le dernier département affiché
+    (<code>champi-departement</code>), pour les rouvrir à la visite suivante. Elles ne quittent
     jamais votre appareil.</li>
     <li>Les fonds de carte sont chargés directement depuis les serveurs de l'IGN
     (<code>data.geopf.fr</code>), qui reçoivent donc votre adresse IP, comme pour toute carte

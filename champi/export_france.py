@@ -343,6 +343,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
         "classement": classement,
         "fiabilite": fiabilite,
         "habitat_construit_le": index["construit_le"],
+        "blocs_manquants": len(index.get("manquants", [])),
     }
     ecrire_json(SITE_DATA / "carte.json", carte)
     ecrire_json(SITE_DATA / "especes.json", regles)
