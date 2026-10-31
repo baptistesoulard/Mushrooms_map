@@ -19,14 +19,17 @@ class Espece:
     nom: str
     de: str          # « du cèpe », « de la girolle » : pour accorder les phrases
     latin: str
-    # Saison : (début de la montée, début du plein, fin du plein, fin), en « MM-JJ ».
+    # Saison : (début de la montée, début du plein, fin du plein, fin), en « MM-JJ », à la
+    # latitude de référence ; décalée ailleurs par la loi de Hopkins (`modele.dates_saison`).
     saison: tuple[str, str, str, str]
     # Affinité (0-1) pour chaque essence dominante de la BD Forêt.
     essences: dict[int, float]
     # Affinité (0-1) pour la réaction de la roche : 1 calcaire, 2 siliceuse, 3 mixte, 0 inconnue.
     roches: dict[int, float]
-    # Altitude (m) : nulle sous a0, pleine de a1 à a2, nulle au-dessus de a3.
-    altitude: tuple[float, float, float, float]
+    # Plafond d'altitude (m) à la latitude de référence : pleine jusqu'à altitude[0], nulle
+    # au-dessus de altitude[1] ; il monte vers le sud (`modele.plafond_altitude`). Pas de
+    # plancher : les cinq espèces poussent jusqu'au niveau de la mer (Landes, Sologne, Bretagne).
+    altitude: tuple[float, float]
     # Pluie déclenchante : cumul entre `pluie_jours[1]` et `pluie_jours[0]` jours avant.
     pluie_jours: tuple[int, int]
     # Nulle sous pluie_mm[0], pleine au-delà de pluie_mm[1].
@@ -54,6 +57,13 @@ GEL_SEUIL = -1.0        # °C, température minimale de l'air qui compte comme u
 FORET_OUVERTE = 0.8     # facteur pour une forêt ouverte (couvert clairsemé)
 PENTE_DEBUT, PENTE_FIN, PENTE_PLANCHER = 30.0, 45.0, 0.2   # sols minces, terrain dangereux
 
+# Les saisons et les plafonds d'altitude ont été écrits pour la Haute-Savoie (46° N). Ailleurs,
+# la loi bioclimatique de Hopkins (1918) : un degré de latitude vaut environ 4 jours de
+# décalage des saisons et 122 m (400 pieds) d'altitude. Ordre de grandeur, pas un réglage.
+LATITUDE_REF = 46.0
+HOPKINS_JOURS = 4.0     # jours par degré : printemps plus tard, automne plus tôt vers le nord
+HOPKINS_METRES = 122.0  # mètres par degré : plafond plus haut vers le sud
+
 ESPECES: list[Espece] = [
     Espece(
         code="cepe", nom="Cèpe", de="du cèpe", latin="Boletus edulis et cèpes proches",
@@ -61,7 +71,7 @@ ESPECES: list[Espece] = [
         essences={0: 0.0, 1: 0.6, 2: 0.9, 3: 0.9, 4: 0.9, 5: 0.3, 6: 0.05, 7: 0.85, 8: 1.0,
                   9: 0.4, 10: 0.8, 11: 0.5, 12: 0.85, 13: 0.1, 14: 0.1},
         roches={0: 0.8, 1: 0.6, 2: 1.0, 3: 0.8},
-        altitude=(200, 400, 1600, 2000),
+        altitude=(1600, 2000),
         pluie_jours=(6, 20), pluie_mm=(15, 45),
         sol=(8, 12, 18, 23), gel=0.5,
         habitat_texte="Pessières et sapinières, hêtraies, chênaies et châtaigneraies ; sols "
@@ -84,7 +94,7 @@ ESPECES: list[Espece] = [
         essences={0: 0.0, 1: 0.6, 2: 0.9, 3: 0.9, 4: 0.9, 5: 0.3, 6: 0.05, 7: 0.9, 8: 0.9,
                   9: 0.4, 10: 0.7, 11: 0.5, 12: 0.8, 13: 0.1, 14: 0.1},
         roches={0: 0.8, 1: 0.5, 2: 1.0, 3: 0.8},
-        altitude=(150, 300, 1500, 1900),
+        altitude=(1500, 1900),
         pluie_jours=(7, 25), pluie_mm=(10, 35),
         sol=(9, 13, 20, 25), gel=0.5,
         habitat_texte="Hêtraies, chênaies, pessières et sapinières moussues, sur sols acides. "
@@ -106,7 +116,7 @@ ESPECES: list[Espece] = [
         essences={0: 0.0, 1: 0.7, 2: 1.0, 3: 0.7, 4: 0.5, 5: 0.3, 6: 0.05, 7: 0.7, 8: 0.35,
                   9: 0.1, 10: 0.2, 11: 0.2, 12: 0.3, 13: 0.05, 14: 0.05},
         roches={0: 0.8, 1: 1.0, 2: 0.6, 3: 0.85},
-        altitude=(150, 300, 1200, 1600),
+        altitude=(1200, 1600),
         pluie_jours=(7, 25), pluie_mm=(20, 50),
         sol=(6, 9, 16, 21), gel=0.5,
         habitat_texte="Hêtraies surtout, parfois chênaies, sur sols calcaires à neutres, "
@@ -130,7 +140,7 @@ ESPECES: list[Espece] = [
         essences={0: 0.0, 1: 0.7, 2: 0.9, 3: 0.8, 4: 0.7, 5: 0.4, 6: 0.1, 7: 0.9, 8: 0.9,
                   9: 0.5, 10: 0.7, 11: 0.5, 12: 0.8, 13: 0.1, 14: 0.1},
         roches={0: 0.9, 1: 1.0, 2: 0.85, 3: 1.0},
-        altitude=(150, 300, 1500, 1900),
+        altitude=(1500, 1900),
         pluie_jours=(7, 25), pluie_mm=(15, 40),
         sol=(3, 6, 14, 20), gel=0.75,
         habitat_texte="Presque toutes les forêts, feuillus comme conifères, sur sols calcaires "
@@ -151,7 +161,7 @@ ESPECES: list[Espece] = [
         essences={0: 0.0, 1: 0.8, 2: 0.3, 3: 0.4, 4: 0.2, 5: 0.6, 6: 1.0, 7: 0.5, 8: 0.5,
                   9: 0.6, 10: 0.4, 11: 0.4, 12: 0.5, 13: 0.2, 14: 0.8},
         roches={0: 0.7, 1: 1.0, 2: 0.4, 3: 0.8},
-        altitude=(150, 300, 1300, 1800),
+        altitude=(1300, 1800),
         pluie_jours=(3, 21), pluie_mm=(10, 30),
         sol=(5, 8, 13, 17), gel=0.6,
         habitat_texte="Bords de rivières, frênaies, peupleraies et vergers en plaine ; "
@@ -184,6 +194,8 @@ REFERENCES = [
     "Ecological Applications 19(1) : fond « groupe cible » de la validation.",
     "Maclure M. (1991), The case-crossover design, American Journal of Epidemiology 133(2) : "
     "plan « cas-croisé » de la validation météo.",
+    "Hopkins A. D. (1918), Periodical events and natural law as guides to agricultural research "
+    "and practice, Monthly Weather Review, supplément 9 : loi bioclimatique (latitude, saison, altitude).",
 ]
 
 
@@ -196,6 +208,8 @@ def en_json() -> dict:
             "soleil_sol": SOLEIL_SOL, "secheresse_sud": SECHERESSE_SUD,
             "gel_seuil": GEL_SEUIL, "foret_ouverte": FORET_OUVERTE,
             "pente": [PENTE_DEBUT, PENTE_FIN, PENTE_PLANCHER],
+            "latitude_ref": LATITUDE_REF, "hopkins_jours": HOPKINS_JOURS,
+            "hopkins_metres": HOPKINS_METRES,
         },
         "references": REFERENCES,
     }

@@ -162,7 +162,7 @@ def intervalle(fonction, n: int, rng) -> tuple[float, float]:
 
 def test_habitat(esp: E.Espece, df: pd.DataFrame, fond: pd.DataFrame, contexte) -> dict:
     agregat, cases, rng = contexte["agregat"], contexte["cases"], contexte["rng"]
-    h = M.facteur_habitat(esp, cases.essence, cases.ouverte, cases.roche, cases.altitude, cases.pente)
+    h = M.facteur_habitat(esp, cases.essence, cases.ouverte, cases.roche, cases.altitude, cases.pente, cases.lat)
     indice_zone = agregat._moyenne(h) * agregat.couverture
     foret_zone = np.minimum(1.0, agregat.n_foret / FACTEUR_ZONE ** 2)
 
@@ -274,7 +274,7 @@ def meteo_passee(besoins: dict[tuple[float, float, int], tuple[date, date]]) -> 
     return cache
 
 
-def indices_meteo(esp: E.Espece, serie: dict, altitude: float, ensoleillement: float):
+def indices_meteo(esp: E.Espece, serie: dict, altitude: float, ensoleillement: float, lat: float):
     """Indice météo (saison × pluie × sol × gel) de chaque jour de la série, à la case."""
     debut = date.fromisoformat(serie["debut"])
     pluie = np.array([np.nan if v is None else v for v in serie["precipitation_sum"]], dtype=np.float32)
@@ -286,7 +286,7 @@ def indices_meteo(esp: E.Espece, serie: dict, altitude: float, ensoleillement: f
     sortie = {}
     for k in range(max(esp.pluie_jours[1], 7), len(pluie)):
         jour = debut + timedelta(days=k)
-        s = M.facteur_saison(esp, jour)
+        s = M.facteur_saison(esp, jour, lat)
         p, t, g = M.entrees_meteo(esp, k, pluie, tmin, tsol, ensoleillement)
         if np.isnan(p) or np.isnan(t):
             continue
@@ -305,7 +305,7 @@ def test_meteo(esp: E.Espece, df: pd.DataFrame, contexte) -> dict:
     d = d[d["alt"] > 0]
     # Un cas = une espèce, un jour, une maille de 0,1° (une sortie, pas dix spécimens).
     d = d.drop_duplicates(subset=["date", "lat1", "lon1"])
-    d = d[[M.facteur_saison(esp, t.date()) > 0 for t in d["date"]]] if len(d) else d
+    d = d[[M.facteur_saison(esp, t.date(), la) > 0 for t, la in zip(d["date"], d["lat"])]] if len(d) else d
     n_total = int(len(df.drop_duplicates(subset=["date"])))
     if len(d) < MIN_CAS:
         return {"n": int(len(d)), "n_brut": n_total}
@@ -317,7 +317,7 @@ def test_meteo(esp: E.Espece, df: pd.DataFrame, contexte) -> dict:
         serie = series.get(f"{o['lat1']:.1f}|{o['lon1']:.1f}|{jour.year}")
         if serie is None:
             continue
-        ind = indices_meteo(esp, serie, float(o["alt"]), float(o["ens"]))
+        ind = indices_meteo(esp, serie, float(o["alt"]), float(o["ens"]), float(o["lat"]))
         if jour not in ind:
             continue
         s_cas, w_cas = ind[jour]

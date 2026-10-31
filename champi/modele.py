@@ -18,10 +18,10 @@ from . import especes as E
 
 
 def trapeze(x, a, b, c, d):
-    """0 sous a, monte jusqu'à 1 en b, 1 jusqu'à c, redescend à 0 en d."""
+    """0 sous a, monte jusqu'à 1 en b, 1 jusqu'à c, redescend à 0 en d (bornes scalaires ou tableaux)."""
     x = np.asarray(x, dtype=np.float32)
-    montee = np.clip((x - a) / max(b - a, 1e-6), 0, 1)
-    descente = np.clip((d - x) / max(d - c, 1e-6), 0, 1)
+    montee = np.clip((x - a) / np.maximum(np.subtract(b, a), 1e-6), 0, 1)
+    descente = np.clip((d - x) / np.maximum(np.subtract(d, c), 1e-6), 0, 1)
     return np.minimum(montee, descente).astype(np.float32)
 
 
@@ -35,12 +35,40 @@ def _jour(mmjj: str, annee: int) -> int:
     return date(annee, m, j).toordinal()
 
 
-def facteur_saison(esp: E.Espece, jour: date) -> float:
-    a, b, c, d = (_jour(s, jour.year) for s in esp.saison)
-    return float(trapeze(jour.toordinal(), a, b, c, d))
+def decalage_jours(mmjj: str, lat):
+    """Loi de Hopkins : le printemps arrive plus tard vers le nord, l'automne plus tôt.
+
+    Une date de mars à juin recule de `HOPKINS_JOURS` par degré au nord de la latitude
+    de référence ; une date d'août à décembre avance d'autant ; juillet ne bouge pas.
+    """
+    mois = int(mmjj[:2])
+    sens = 1 if mois <= 6 else -1 if mois >= 8 else 0
+    return sens * E.HOPKINS_JOURS * (np.asarray(lat, dtype=np.float64) - E.LATITUDE_REF)
 
 
-def facteur_habitat(esp: E.Espece, essence, ouverte, roche, altitude, pente) -> np.ndarray:
+def dates_saison(esp: E.Espece, annee: int, lat) -> list:
+    """Les quatre bornes de la saison (ordinaux, décimaux) à cette latitude."""
+    return [_jour(s, annee) + decalage_jours(s, lat) for s in esp.saison]
+
+
+def facteur_saison(esp: E.Espece, jour: date, lat):
+    """Saison du jour à la latitude `lat` (scalaire ou tableau) ; une saison qui déborde sur
+    janvier (pied-de-mouton dans le Midi) compte aussi pour le début de l'année suivante."""
+    f = np.zeros(np.shape(lat), dtype=np.float32)
+    for annee in (jour.year - 1, jour.year):
+        a, b, c, d = (v - jour.toordinal() for v in dates_saison(esp, annee, lat))
+        f = np.maximum(f, trapeze(0.0, a, b, c, d))
+    return f if f.ndim else float(f)
+
+
+def plafond_altitude(esp: E.Espece, lat):
+    """Plafond (pleine jusqu'à, nulle au-dessus de) à cette latitude : la loi de Hopkins
+    l'élève de `HOPKINS_METRES` par degré vers le sud."""
+    monte = E.HOPKINS_METRES * (E.LATITUDE_REF - np.asarray(lat, dtype=np.float32))
+    return esp.altitude[0] + monte, esp.altitude[1] + monte
+
+
+def facteur_habitat(esp: E.Espece, essence, ouverte, roche, altitude, pente, lat) -> np.ndarray:
     tab_ess = np.zeros(256, dtype=np.float32)
     for k, v in esp.essences.items():
         tab_ess[k] = v
@@ -48,7 +76,8 @@ def facteur_habitat(esp: E.Espece, essence, ouverte, roche, altitude, pente) -> 
     for k, v in esp.roches.items():
         tab_roche[k] = v
     f = tab_ess[essence] * tab_roche[roche]
-    f = f * trapeze(altitude, *esp.altitude)
+    plein, nul = plafond_altitude(esp, lat)
+    f = f * np.clip((nul - np.asarray(altitude, dtype=np.float32)) / (nul - plein), 0, 1)
     f = f * facteur_pente(pente)
     return np.where(ouverte, f * E.FORET_OUVERTE, f).astype(np.float32)
 

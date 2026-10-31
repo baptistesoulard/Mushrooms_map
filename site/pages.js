@@ -38,19 +38,19 @@ async function methode() {
       .filter(([k, v]) => Number(k) > 0 && v >= min && v < max)
       .sort((a, b) => b[1] - a[1]).map(([k]) => essences[k].toLowerCase()).join(", ") || "—";
     const [s0, s1, s2, s3] = e.saison;
-    const [a0, a1, a2, a3] = e.altitude;
+    const [a1, a2] = e.altitude;
     const [t0, t1, t2, t3] = e.sol;
     const [jmin, jmax] = e.pluie_jours;
     const [p0, p1] = e.pluie_mm;
     const roches = Object.entries(ROCHES).map(([k, n]) => `${n} ${fr.format(e.roches[k])}`).join(" · ");
     const lignes = [
-      ["Saison", `pleine du ${dateCourte(s1)} au ${dateCourte(s2)}, possible du ${dateCourte(s0)} au ${dateCourte(s3)}`],
+      ["Saison", `pleine du ${dateCourte(s1)} au ${dateCourte(s2)}, possible du ${dateCourte(s0)} au ${dateCourte(s3)} (à ${fr.format(regles.communs.latitude_ref)}° N)`],
       ["Aspect", e.description],
       ["Milieu", e.habitat_texte],
       ["Forêts favorables", par(0.8, 2)],
       ["Forêts possibles", par(0.4, 0.8)],
       ["Roche (affinité)", roches],
-      ["Altitude", `pleine de ${fr.format(a1)} à ${fr.format(a2)} m, nulle sous ${fr.format(a0)} m et au-dessus de ${fr.format(a3)} m`],
+      ["Altitude", `pleine jusqu'à ${fr.format(a1)} m, nulle au-dessus de ${fr.format(a2)} m (à ${fr.format(regles.communs.latitude_ref)}° N), pas de plancher`],
       ["Pluie", `cumul entre ${jmax} et ${jmin} jours avant : pleine pousse au-delà de ${fr.format(p1)} mm, rien sous ${fr.format(p0)} mm`],
       ["Sol", `moyenne des 7 jours précédents : optimum de ${fr.format(t1)} à ${fr.format(t2)} °C, rien sous ${fr.format(t0)} °C ni au-dessus de ${fr.format(t3)} °C`],
       ["Gel", `chaque jour de gel de la semaine multiplie l'indice par ${fr.format(e.gel)}`],
@@ -70,6 +70,7 @@ async function methode() {
     ["Jour de gel", `température minimale de l'air sous ${fr.format(c.gel_seuil)} °C`],
     ["Forêt ouverte", `indice multiplié par ${fr.format(c.foret_ouverte)}`],
     ["Pente", `pleine jusqu'à ${fr.format(c.pente[0])}°, réduite jusqu'à ${pct(c.pente[2])} à ${fr.format(c.pente[1])}° et au-delà`],
+    ["Latitude (loi de Hopkins)", `règles écrites à ${fr.format(c.latitude_ref)}° N ; par degré vers le sud, saison de printemps ${fr.format(c.hopkins_jours)} jours plus tôt, d'automne ${fr.format(c.hopkins_jours)} jours plus tard, plafond d'altitude ${fr.format(c.hopkins_metres)} m plus haut`],
   ]));
   document.getElementById("references").replaceChildren(...regles.references.map((r) => el("li", {}, r)));
 }

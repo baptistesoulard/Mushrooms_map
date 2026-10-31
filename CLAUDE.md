@@ -53,6 +53,10 @@ champi.validation (à la main) → data/validation.json (versionné) → copié 
   que la validation utilise). Toute nouvelle entrée météo passe par les deux.
 - **Températures** : ramenées au niveau de la mer avec l'altitude qu'Open-Meteo a utilisée,
   puis redescendues à la case (`GRADIENT_AIR`, `GRADIENT_SOL`), plus l'effet du versant.
+- **Latitude** : saisons et plafonds d'altitude sont écrits à 46° N (la Haute-Savoie) et
+  décalés ailleurs par la loi de Hopkins (`modele.dates_saison`, `modele.plafond_altitude`) :
+  jamais de dates ou d'altitudes régionales en dur. Pas de plancher d'altitude (les cinq
+  espèces poussent jusqu'au niveau de la mer).
 - **Codage des PNG** (`export.py`, lu par `carte.js`) : indice R = valeur × 200, codes
   251 hors forêt, 252 protégé, 255 hors département ; G pluie, B sol. Changer un code =
   changer les deux fichiers.

@@ -192,7 +192,7 @@ def ecrire_png(chemin, image: np.ndarray) -> None:
 
 # --- Faits du jour ------------------------------------------------------------------
 
-def faits_du_jour(esp: E.Espece, jour: date, saison: float, habitat, indice_cases, facteurs,
+def faits_du_jour(esp: E.Espece, jour: date, saison_cases, habitat, indice_cases, facteurs,
                   pluie, tsol, cases: Cases, codes_publies: np.ndarray, noms_communes: list[str]) -> dict:
     libre = cases.protege == 0
     poids = habitat[libre]
@@ -200,6 +200,9 @@ def faits_du_jour(esp: E.Espece, jour: date, saison: float, habitat, indice_case
 
     def moy(v):
         return float((v[libre] * poids).sum() / total)
+
+    lat_moyenne = float(cases.lat.mean())
+    saison = float(M.facteur_saison(esp, jour, lat_moyenne))
 
     # Classes, sur les cases publiées boisées : ce que le lecteur voit sur la carte.
     visibles = codes_publies[codes_publies <= ECHELLE] / ECHELLE
@@ -236,7 +239,7 @@ def faits_du_jour(esp: E.Espece, jour: date, saison: float, habitat, indice_case
         trop_chaud = moy((tsol > esp.sol[2]).astype(np.float32))
         limitant = "sol_froid" if trop_froid >= trop_chaud else "sol_chaud"
 
-    a, b, c_, d = (M._jour(s, jour.year) for s in esp.saison)
+    a, b, c_, d = M.dates_saison(esp, jour.year, lat_moyenne)
     par_commune = []
     sel = libre & (cases.commune > 0)
     n = np.bincount(cases.commune[sel], minlength=len(noms_communes) + 1)
@@ -248,7 +251,7 @@ def faits_du_jour(esp: E.Espece, jour: date, saison: float, habitat, indice_case
 
     return {
         "saison": round(saison, 3),
-        "debut_saison": jour.toordinal() < (b + c_) / 2,
+        "debut_saison": bool(jour.toordinal() < (b + c_) / 2),
         "part_bon": round(sum(parts[3:]), 4),
         "part_moyen": round(sum(parts[2:]), 4),
         "classes": [round(p, 4) for p in parts],
@@ -289,11 +292,12 @@ def exporter(meteo: Meteo | None = None) -> dict:
     regles = E.en_json()
     resumes: dict[str, list] = {}
     for esp in E.ESPECES:
-        habitat = M.facteur_habitat(esp, cases.essence, cases.ouverte, cases.roche, cases.altitude, cases.pente)
+        habitat = M.facteur_habitat(esp, cases.essence, cases.ouverte, cases.roche, cases.altitude,
+                                    cases.pente, cases.lat)
         resumes[esp.code] = []
         for k in range(JOURS_FUTURS):
             jour = meteo.dates[k0 + k]
-            saison = M.facteur_saison(esp, jour)
+            saison = M.facteur_saison(esp, jour, cases.lat)
             pluie, tsol, gel = calcul.entrees(esp, k0 + k)
             facteurs = M.facteurs_meteo(esp, pluie, tsol, gel)
             ind = M.indice(habitat, saison, facteurs)

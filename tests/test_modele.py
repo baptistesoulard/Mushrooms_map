@@ -16,9 +16,34 @@ def test_trapeze():
 
 
 def test_saison_nulle_hors_saison_pleine_au_coeur():
-    assert M.facteur_saison(CEPE, date(2026, 2, 1)) == 0
-    assert M.facteur_saison(CEPE, date(2026, 9, 15)) == 1
-    assert 0 < M.facteur_saison(CEPE, date(2026, 6, 20)) < 1
+    assert M.facteur_saison(CEPE, date(2026, 2, 1), 46.0) == 0
+    assert M.facteur_saison(CEPE, date(2026, 9, 15), 46.0) == 1
+    assert 0 < M.facteur_saison(CEPE, date(2026, 6, 20), 46.0) < 1
+
+
+def test_loi_de_hopkins_sur_la_saison():
+    """Vers le sud, la morille sort plus tôt et le cèpe finit plus tard ; 4 jours par degré."""
+    morille = E.PAR_CODE["morille"]
+    assert M.facteur_saison(morille, date(2026, 3, 10), 43.0) > M.facteur_saison(morille, date(2026, 3, 10), 46.0)
+    assert M.facteur_saison(CEPE, date(2026, 11, 25), 43.0) > M.facteur_saison(CEPE, date(2026, 11, 25), 49.0)
+    nord = M.dates_saison(CEPE, 2026, 47.0)
+    ref = M.dates_saison(CEPE, 2026, 46.0)
+    assert nord[0] - ref[0] == pytest.approx(E.HOPKINS_JOURS)      # juin : plus tard au nord
+    assert nord[1] == ref[1]                                       # juillet : immobile
+    assert nord[3] - ref[3] == pytest.approx(-E.HOPKINS_JOURS)     # novembre : plus tôt au nord
+
+
+def test_saison_qui_deborde_sur_janvier():
+    """Le pied-de-mouton, au sud, court jusqu'en janvier : l'année précédente compte."""
+    pdm = E.PAR_CODE["pied_de_mouton"]
+    assert M.facteur_saison(pdm, date(2027, 1, 2), 42.0) > 0
+    assert M.facteur_saison(pdm, date(2027, 1, 2), 46.0) == 0
+
+
+def test_saison_par_case():
+    lats = np.array([43.0, 46.0, 50.0])
+    f = M.facteur_saison(CEPE, date(2026, 11, 25), lats)
+    assert f.shape == (3,) and f[0] > f[1] > f[2]
 
 
 def test_un_facteur_nul_ferme_la_porte():
@@ -66,8 +91,18 @@ def test_historique_insuffisant_refuse():
 
 def test_habitat_hors_foret_nul_et_pente_penalisee():
     h = M.facteur_habitat(CEPE, np.array([0, 8, 8]), np.array([False] * 3), np.array([2, 2, 2]),
-                          np.array([1000, 1000, 1000]), np.array([10, 10, 50]))
+                          np.array([1000, 1000, 1000]), np.array([10, 10, 50]), 46.0)
     assert h[0] == 0 and h[1] == pytest.approx(1.0) and h[2] == pytest.approx(E.PENTE_PLANCHER)
+
+
+def test_pas_de_plancher_et_plafond_plus_haut_au_sud():
+    """Une chênaie des Landes à 30 m n'est pas exclue ; à 2 000 m, Corse oui, Vosges non."""
+    un = np.ones(1)
+    plaine = M.facteur_habitat(CEPE, np.array([3]), np.array([False]), np.array([2]), np.array([30]), un * 10, 44.0)
+    assert plaine[0] == pytest.approx(CEPE.essences[3])
+    haut = [float(M.facteur_habitat(CEPE, np.array([8]), np.array([False]), np.array([2]), np.array([1900]),
+                                    un * 10, lat)[0]) for lat in (42.0, 46.0, 48.0)]
+    assert haut[0] == pytest.approx(1.0) and 0 < haut[1] < 1 and haut[2] == 0
 
 
 def test_classes_croissantes():
