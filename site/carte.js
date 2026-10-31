@@ -397,8 +397,10 @@ async function demarrer() {
   function choixDepartement() {
     const s = $("choix-departement");
     if (!s.options.length) {
-      const tri = carte.departements.filter((d) => d.centre).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
-      for (const d of tri) s.append(el("option", { value: d.code }, `${d.nom} (${d.code})`));
+      // Par numéro, la Corse (2A, 2B) à la place du 20.
+      const cle = (code) => code.replace(/^2([AB])$/, "20$1");
+      const tri = carte.departements.filter((d) => d.centre).sort((a, b) => cle(a.code).localeCompare(cle(b.code)));
+      for (const d of tri) s.append(el("option", { value: d.code }, `${d.code} – ${d.nom}`));
       s.addEventListener("change", () => allerDepartement(s.value, true));
     }
     s.value = etat.departement;
@@ -438,7 +440,8 @@ async function demarrer() {
 
   function fiche() {
     const e = especes[etat.espece];
-    const lat = deps[etat.departement]?.centre?.[0] ?? communs.latitude_ref;
+    const dep = deps[etat.departement];
+    const lat = dep?.centre?.[0] ?? communs.latitude_ref;
     // Dates de la saison à la latitude du département (loi de Hopkins, comme le calcul).
     const date = (mmjj) => {
       const [m, j] = mmjj.split("-").map(Number);
@@ -448,8 +451,8 @@ async function demarrer() {
     };
     const corps = [
       el("p", {}, e.description),
-      el("p", {}, el("strong", {}, "Saison : "), `surtout du ${date(e.saison[1])} au ${date(e.saison[2])} ` +
-        `à cette latitude. `, el("strong", {}, "Milieu : "), e.habitat_texte),
+      el("p", {}, el("strong", {}, dep ? `Saison (${dep.nom}) : ` : "Saison : "),
+        `surtout du ${date(e.saison[1])} au ${date(e.saison[2])}. `, el("strong", {}, "Milieu : "), e.habitat_texte),
     ];
     if (e.repere) corps.push(el("p", {}, el("strong", {}, "Repère de terrain : "), e.repere));
     if (e.confusions) corps.push(el("p", { class: "confusions" }, el("strong", {}, "Confusions possibles : "), e.confusions));
@@ -458,6 +461,28 @@ async function demarrer() {
       el("details", { open: "" },
         el("summary", {}, el("strong", {}, e.nom), " ", el("span", { class: "latin" }, e.latin)),
         ...corps));
+  }
+
+  // La semaine du département : le niveau de chaque espèce, jour par jour (celui du verdict).
+  // Un clic affiche l'espèce et le jour sur la carte.
+  function semaine() {
+    const tete = el("tr", {}, el("th", {}, ""), ...carte.jours.map((j, k) => {
+      const d = new Date(`${j.date}T12:00:00`);
+      return el("th", { scope: "col", title: j.libelle, class: k === etat.jour ? "actuel" : "" },
+        d.toLocaleDateString("fr-FR", { weekday: "short" }), el("br"), String(d.getDate()));
+    }));
+    const lignes = carte.especes.map((e) => el("tr", {}, el("th", { scope: "row" }, e.nom),
+      ...carte.jours.map((j, k) => {
+        const r = resume?.[e.code]?.[k];
+        const texte = `${e.nom}, ${j.libelle} : ${r ? r.verdict.toLowerCase() : "pas de forêt calculée"}`;
+        const choisi = e.code === etat.espece && k === etat.jour;
+        return el("td", {}, el("button", {
+          type: "button", class: `niveau n${r ? r.niveau : "x"}${choisi ? " choisi" : ""}`,
+          title: texte, "aria-label": texte,
+          onclick: () => { etat.espece = e.code; etat.jour = k; ecrire(CLE_ESPECE, e.code); tout(); },
+        }, r?.niveau === 0 ? "–" : ""));
+      })));
+    $("semaine").replaceChildren(el("thead", {}, tete), el("tbody", {}, ...lignes));
   }
 
   function classement() {
@@ -640,6 +665,7 @@ async function demarrer() {
     fiche();
     classement();
     verdict();
+    semaine();
   }
 
   function tout() {

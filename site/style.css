@@ -228,6 +228,26 @@ label.case { display: flex; gap: 6px; align-items: center; font-size: .85rem; co
 }
 .pastille.vide { background: transparent; }
 
+/* La semaine d'un département : niveau du verdict, espèce par espèce et jour par jour. */
+.tableau-semaine { overflow-x: auto; }
+.semaine { border-collapse: separate; border-spacing: 2px; font-size: .8rem; width: 100%; }
+.semaine thead th { font-weight: 400; color: var(--texte-3); text-align: center; line-height: 1.15; padding-bottom: 2px; }
+.semaine thead th.actuel { color: var(--texte); font-weight: 600; }
+.semaine tbody th { font-weight: 400; text-align: left; color: var(--texte-2); padding-right: 6px; line-height: 1.15; }
+.semaine td { padding: 0; }
+.semaine .niveau {
+  display: block; width: 100%; min-width: 22px; height: 24px; padding: 0;
+  border: 1px solid var(--trait); border-radius: 4px; background: transparent;
+  color: var(--texte-3); font: inherit; cursor: pointer;
+}
+.semaine .niveau.choisi { outline: 2px solid var(--texte); outline-offset: 1px; }
+.semaine .niveau:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.semaine .n2, .pastille.n2 { background: var(--classe-2); }
+.semaine .n3, .pastille.n3 { background: var(--classe-3); }
+.semaine .n4, .pastille.n4 { background: var(--classe-4); }
+.legende-semaine { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: .78rem; color: var(--texte-2); }
+.legende-semaine > span { display: inline-flex; align-items: center; gap: 5px; }
+
 .alerte {
   margin-top: 18px;
   padding: 10px 12px;
