@@ -43,6 +43,8 @@ class Espece:
     # Fiche du panneau : à quoi il ressemble. Jamais suffisant pour identifier (le site le dit).
     description: str = ""
     confusions: str = ""
+    # Repère de terrain tiré des guides : un indice pour chercher, jamais une règle du calcul.
+    repere: str = ""
     avertissement: str = ""
     limites: list[str] = field(default_factory=list)
 
@@ -87,6 +89,11 @@ ESPECES: list[Espece] = [
         confusions="Bolet amer (Tylopilus felleus) : pores rosés, réseau brun foncé sur le "
                    "pied, saveur très amère. Bolets à pores rouges, dont certains toxiques "
                    "(bolet de Satan), et bolets dont la chair bleuit.",
+        repere="L'amanite tue-mouches (chapeau rouge à flocons blancs, toxique) vit avec les "
+               "mêmes bouleaux, épicéas et pins, et sort en même temps à l'automne : visible de "
+               "loin, elle signale un coin où chercher. Sous les chênes, sur calcaire et pour le "
+               "cèpe d'été, où elle est rare, son absence ne dit rien. La BD Forêt n'a pas de "
+               "classe « bouleau » : la carte note ces bois comme des feuillus en mélange.",
     ),
     Espece(
         code="girolle", nom="Girolle", de="de la girolle", latin="Cantharellus cibarius et proches",

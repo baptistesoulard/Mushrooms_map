@@ -419,6 +419,7 @@ async function demarrer() {
       el("p", {}, el("strong", {}, "Saison : "), `surtout du ${date(e.saison[1])} au ${date(e.saison[2])} ` +
         `à cette latitude. `, el("strong", {}, "Milieu : "), e.habitat_texte),
     ];
+    if (e.repere) corps.push(el("p", {}, el("strong", {}, "Repère de terrain : "), e.repere));
     if (e.confusions) corps.push(el("p", { class: "confusions" }, el("strong", {}, "Confusions possibles : "), e.confusions));
     corps.push(el("p", { class: "muet" }, "Ce portrait ne suffit jamais pour identifier un champignon."));
     $("fiche").replaceChildren(
