@@ -67,3 +67,17 @@ def test_libelles_de_jours():
     assert R.libelle_jour(a, a) == "aujourd'hui, vendredi 30 octobre"
     assert R.libelle_jour(date(2026, 10, 31), a) == "demain, samedi 31 octobre"
     assert R.libelle_jour(date(2026, 11, 1), a) == "dimanche 1er novembre"
+
+
+def test_sol_qui_freine_sans_contredire_le_verdict():
+    """Sous le seuil, le sol freine l'indice sans le fermer : quand le verdict reste bon,
+    « trop froid » le contredirait (vu le 2026-10-31 : « Bonnes conditions » puis « trop froid
+    presque partout »). Contre-épreuve : verdict défavorable, « trop » reste juste."""
+    bon = R.rediger(esp("trompette"), _faits(part_bon=0.2, limitant="sol_froid"))
+    assert bon["verdict"] == "Bonnes conditions"
+    assert "trop" not in bon["phrases"][-1] and "frais presque partout" in bon["phrases"][-1]
+    mauvais = R.rediger(esp("trompette"), _faits(limitant="sol_froid"))
+    assert "trop froid presque partout" in mauvais["phrases"][-1]
+    chaud = R.rediger(esp("cepe"), _faits(part_bon=0.06, limitant="sol_chaud"))
+    assert "trop" not in chaud["phrases"][-1] and "chaud presque partout" in chaud["phrases"][-1]
+    assert "trop chaud" in R.rediger(esp("cepe"), _faits(limitant="sol_chaud"))["phrases"][-1]

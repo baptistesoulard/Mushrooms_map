@@ -82,6 +82,9 @@ def rediger(esp: dict, faits: dict) -> dict:
         if faits.get("froid_au_dessus") is not None:
             phrases.append(f"Le sol est trop froid au-dessus de {altitude(faits['froid_au_dessus'])} "
                            f"(moins de {nombre(seuil)}{NBSP}°C en moyenne sur la semaine).")
+        elif n >= 3:   # le sol freine sans fermer la porte : « trop » contredirait le verdict
+            phrases.append(f"Le sol est frais presque partout (moins de {nombre(seuil)}{NBSP}°C) : "
+                           f"c'est ce qui limite l'indice.")
         else:
             phrases.append(f"Le sol est trop froid presque partout (moins de {nombre(seuil)}{NBSP}°C).")
     elif lim == "sol_chaud":
@@ -89,6 +92,9 @@ def rediger(esp: dict, faits: dict) -> dict:
         if faits.get("chaud_en_dessous") is not None:
             phrases.append(f"Le sol est trop chaud en dessous de {altitude(faits['chaud_en_dessous'])} "
                            f"(plus de {nombre(seuil)}{NBSP}°C) : la pousse remonte en altitude.")
+        elif n >= 3:
+            phrases.append(f"Le sol est chaud presque partout (plus de {nombre(seuil)}{NBSP}°C) : "
+                           f"c'est ce qui limite l'indice.")
         else:
             phrases.append(f"Le sol est trop chaud (plus de {nombre(seuil)}{NBSP}°C).")
     elif lim == "gel":
