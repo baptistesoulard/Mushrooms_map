@@ -5,3 +5,4 @@ __pycache__/
 site/data/
 .claude/
 habitat/
+site/habitat/
