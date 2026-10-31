@@ -92,6 +92,8 @@ def test_regles_coherentes(esp):
     jours = [date(2026, *map(int, s.split("-"))) for s in esp.saison]
     assert jours == sorted(jours)
     assert 0 < esp.gel <= 1
+    assert len(esp.description) > 120, "la fiche du panneau a besoin d'un portrait"
+    assert esp.confusions, "chaque fiche dit avec quoi on peut confondre l'espèce"
 
 
 # --- Grille ---------------------------------------------------------------------------

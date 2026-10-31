@@ -37,6 +37,8 @@ class Espece:
     gel: float
     habitat_texte: str
     meteo_texte: str
+    # Fiche du panneau : à quoi il ressemble. Jamais suffisant pour identifier (le site le dit).
+    description: str = ""
     confusions: str = ""
     avertissement: str = ""
     limites: list[str] = field(default_factory=list)
@@ -68,8 +70,13 @@ ESPECES: list[Espece] = [
         meteo_texte="Une bonne pluie (40 à 50 mm sur deux semaines), puis une dizaine de "
                     "jours de douceur : la pousse suit la pluie d'une à trois semaines. "
                     "Le froid l'arrête, les premières gelées la terminent.",
-        confusions="Bolet amer (Tylopilus felleus), bolets à pores rouges dont certains "
-                   "sont toxiques.",
+        description="Chapeau brun clair à brun foncé, de 8 à 25 cm, épais, souvent bordé de "
+                    "blanc. Dessous : des tubes (une éponge, pas de lames), blancs puis jaunes "
+                    "puis vert olive. Pied ventru, blanchâtre à beige, couvert en haut d'un fin "
+                    "réseau blanc. Chair blanche qui ne change pas de couleur à la coupe.",
+        confusions="Bolet amer (Tylopilus felleus) : pores rosés, réseau brun foncé sur le "
+                   "pied, saveur très amère. Bolets à pores rouges, dont certains toxiques "
+                   "(bolet de Satan), et bolets dont la chair bleuit.",
     ),
     Espece(
         code="girolle", nom="Girolle", de="de la girolle", latin="Cantharellus cibarius et proches",
@@ -84,8 +91,14 @@ ESPECES: list[Espece] = [
                       "Elle revient aux mêmes endroits d'une année à l'autre.",
         meteo_texte="Moins exigeante que le cèpe : une pluie modérée suffit, et elle tient "
                     "plusieurs semaines quand le sol reste frais.",
-        confusions="Clitocybe de l'olivier (Omphalotus, toxique), fausse girolle "
-                   "(Hygrophoropsis).",
+        description="Jaune d'œuf à orangé, de 3 à 10 cm, en forme d'entonnoir à bord ondulé. "
+                    "Dessous : des plis épais et fourchus qui descendent sur le pied, pas de "
+                    "vraies lames. Chair blanche à jaunâtre, ferme, à l'odeur fruitée "
+                    "(abricot). Pousse dans la mousse ou la litière, jamais sur le bois.",
+        confusions="Clitocybe de l'olivier (Omphalotus), toxique : orange vif, vraies lames "
+                   "fines, en touffes sur souches ou racines de feuillus. Fausse girolle "
+                   "(Hygrophoropsis) : vraies lames orangées serrées, chair molle, sur débris "
+                   "de résineux.",
     ),
     Espece(
         code="trompette", nom="Trompette de la mort", de="de la trompette", latin="Craterellus cornucopioides",
@@ -100,6 +113,13 @@ ESPECES: list[Espece] = [
                       "frais et argileux ; en troupes dans la litière des versants ombragés.",
         meteo_texte="Il lui faut beaucoup d'eau : elle sort tard, après les grosses pluies "
                     "de fin d'été, et supporte la fraîcheur d'automne.",
+        description="Une trompette ou une corne d'abondance de 3 à 10 cm, creuse jusqu'à la "
+                    "base, gris-noir à brun-noir à l'intérieur. Extérieur gris cendré, lisse ou "
+                    "à peine ridé, sans lames. Chair mince et souple. Pousse en troupes, et se "
+                    "confond avec les feuilles mortes : on la cherche à genoux.",
+        confusions="Peu de sosies dangereux. La chanterelle sinueuse (Pseudocraterellus), "
+                   "plus petite et plissée, est comestible ; un champignon noir à lames, à "
+                   "pied plein ou poussant sur le bois n'est pas une trompette.",
         limites=["La BD Forêt n'isole le hêtre que sur une petite part du département ; "
                  "la plupart des hêtraies sont classées « feuillus en mélange » ou « forêt "
                  "mixte ». La carte de la trompette est donc plus floue que les autres."],
@@ -117,6 +137,13 @@ ESPECES: list[Espece] = [
                       "comme acides ; souvent en cercles ou en lignes.",
         meteo_texte="L'espèce de l'arrière-saison : elle résiste aux premières gelées et "
                     "pousse encore quand le sol est descendu sous 8 °C.",
+        description="Chapeau crème à orangé pâle, de 4 à 15 cm, charnu et bosselé. Dessous : "
+                    "des aiguillons (petites pointes serrées) qui se détachent sous le doigt, "
+                    "ni lames ni tubes. Pied court, blanc, souvent décentré. Chair blanche et "
+                    "cassante, qui jaunit au toucher. L'hydne roussissant (H. rufescens) est "
+                    "plus petit et plus roux.",
+        confusions="Peu de sosies grâce aux aiguillons. Les hydnes bruns ou écailleux "
+                   "(Sarcodon), plus foncés et souvent amers, ne sont pas des pieds-de-mouton.",
     ),
     Espece(
         code="morille", nom="Morille", de="de la morille", latin="Morchella spp.",
@@ -132,8 +159,14 @@ ESPECES: list[Espece] = [
                       "calcaire. Elle suit les perturbations (coupes, chantiers, brûlis).",
         meteo_texte="Au printemps, quand le sol se réchauffe vers 8 à 12 °C après la fonte "
                     "des neiges, avec de l'humidité ; un retour du gel la stoppe.",
-        confusions="Gyromitre (Gyromitra esculenta), MORTELLE ; la morille elle-même est "
-                   "toxique crue ou mal cuite.",
+        description="Chapeau conique à arrondi, de 5 à 15 cm, creusé d'alvéoles comme une "
+                    "éponge, séparées par des côtes ; beige, jaune, gris ou brun noir selon "
+                    "l'espèce. Pied blanchâtre et granuleux, soudé au chapeau. Coupée en deux, "
+                    "elle est entièrement creuse : une seule cavité du sommet à la base.",
+        confusions="Gyromitre (Gyromitra esculenta), MORTELLE : chapeau brun-rouge en "
+                   "circonvolutions de cerveau, sans alvéoles, intérieur cloisonné en plusieurs "
+                   "cavités. Verpe ou morillon : chapeau posé comme une cloche, libre du pied. "
+                   "La morille elle-même est toxique crue ou mal cuite.",
         limites=["Ses milieux de prédilection (frênes, ripisylves, coupes récentes, brûlis) "
                  "sont mal décrits par la BD Forêt : l'habitat de la morille est le moins "
                  "fiable des cinq."],

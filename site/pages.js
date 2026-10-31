@@ -45,6 +45,7 @@ async function methode() {
     const roches = Object.entries(ROCHES).map(([k, n]) => `${n} ${fr.format(e.roches[k])}`).join(" · ");
     const lignes = [
       ["Saison", `pleine du ${dateCourte(s1)} au ${dateCourte(s2)}, possible du ${dateCourte(s0)} au ${dateCourte(s3)}`],
+      ["Aspect", e.description],
       ["Milieu", e.habitat_texte],
       ["Forêts favorables", par(0.8, 2)],
       ["Forêts possibles", par(0.4, 0.8)],
@@ -55,7 +56,7 @@ async function methode() {
       ["Gel", `chaque jour de gel de la semaine multiplie l'indice par ${fr.format(e.gel)}`],
       ["En pratique", e.meteo_texte],
     ];
-    if (e.confusions) lignes.push(["Sosies dangereux", e.confusions]);
+    if (e.confusions) lignes.push(["Confusions possibles", e.confusions]);
     const carteEsp = el("section", { class: "carte-espece" },
       el("h3", {}, `${e.nom} `, el("span", { class: "latin" }, e.latin)), tableau(lignes));
     for (const l of e.limites) carteEsp.append(el("p", { class: "muet" }, `Limite : ${l}`));
