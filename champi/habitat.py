@@ -61,7 +61,13 @@ PROTECTIONS = {
     "patrinat_rnr:rnr": "Réserve naturelle régionale",
     "patrinat_apb:apb": "Arrêté de protection de biotope",
     "patrinat_rb:rb": "Réserve biologique",
+    "patrinat_pn:parc_national": "Cœur de parc national",
 }
+
+
+def _retenue(couche: str, p: dict) -> bool:
+    """Des parcs nationaux, seul le cœur a une réglementation propre (pas l'aire d'adhésion)."""
+    return couche != "patrinat_pn:parc_national" or (p.get("zone") or "").startswith("C")
 
 
 def _sans_accents(s: str) -> str:
@@ -83,20 +89,28 @@ def grille_du_departement(com: dict) -> Grille:
     return grille_englobante(lon0, lat0, lon1, lat1, PAS_FIN, PAS_ZONE, MARGE_M)
 
 
-def relief(grille: Grille) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Altitude (RGE ALTI, IGN), pente (°), indice d'ensoleillement [-1, 1], orientation (classe)."""
-    chemin = CACHE / f"altitude_{DEPARTEMENT}.npy"
+def relief(grille: Grille, cle: str = DEPARTEMENT, marge: int = 0) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Altitude (RGE ALTI, IGN), pente (°), indice d'ensoleillement [-1, 1], orientation (classe).
+
+    `marge` cases de plus de chaque côté sont lues puis retirées : la pente d'une case de
+    bord se calcule alors avec ses vraies voisines (blocs jointifs sans couture).
+    """
+    chemin = CACHE / f"altitude_{cle}.npy"
+    lue = Grille(grille.x0 - marge * grille.pas, grille.y1 + marge * grille.pas, grille.pas,
+                 grille.nx + 2 * marge, grille.ny + 2 * marge)
     if chemin.exists():
         alt = np.load(chemin)
     else:
-        alt = wms_bil("ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES", grille)
+        alt = wms_bil("ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES", lue)
+        CACHE.mkdir(parents=True, exist_ok=True)
         np.save(chemin, alt)
-    # Hors de France (Suisse), le service renvoie des valeurs négatives de remplissage.
+    # Hors de France (Suisse, mer), le service renvoie des valeurs négatives de remplissage.
     alt = np.where(alt < -100, np.nan, alt).astype(np.float32)
+    grille = lue
 
     # Le Mercator est conforme : à chaque ligne, même échelle dans les deux directions.
     d = grille.pas_au_sol()[:, None]
-    rempli = np.where(np.isnan(alt), np.nanmean(alt), alt)
+    rempli = np.where(np.isnan(alt), np.nanmean(alt) if np.isfinite(alt).any() else 0.0, alt)
     dz_ligne, dz_col = np.gradient(rempli)
     gx = dz_col / d            # dz/dx vers l'est
     gy = -dz_ligne / d         # dz/dy vers le nord (les lignes vont vers le sud)
@@ -106,12 +120,13 @@ def relief(grille: Grille) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarr
     ensoleillement = np.sin(np.radians(pente)) * -np.cos(np.radians(azimut))
     classe = (np.floor(((azimut + 22.5) % 360) / 45).astype(np.uint8) + 1)
     classe[pente < 5] = 0
-    return alt, pente.astype(np.float32), ensoleillement.astype(np.float32), classe
+    c = (slice(marge, alt.shape[0] - marge), slice(marge, alt.shape[1] - marge))
+    return alt[c], pente.astype(np.float32)[c], ensoleillement.astype(np.float32)[c], classe[c]
 
 
-def forets(grille: Grille) -> tuple[np.ndarray, np.ndarray]:
+def forets(grille: Grille, cle: str = DEPARTEMENT) -> tuple[np.ndarray, np.ndarray]:
     """Essence dominante (codes ESSENCES) et drapeau « forêt ouverte » (BD Forêt V2, IGN)."""
-    donnees = json_en_cache(f"bdforet_{DEPARTEMENT}", lambda: {
+    donnees = json_en_cache(f"bdforet_{cle}", lambda: {
         "type": "FeatureCollection",
         "features": wfs_geopf("LANDCOVER.FORESTINVENTORY.V2:formation_vegetale", grille),
     })
@@ -149,7 +164,7 @@ def _classe_roche(descr: str) -> int:
     return 3
 
 
-def roches(grille: Grille) -> tuple[np.ndarray, dict]:
+def roches(grille: Grille, cle: str = DEPARTEMENT) -> tuple[np.ndarray, dict]:
     """Lithologie simplifiée au 1/1 000 000 (BRGM), en trois classes de réaction du sol.
 
     La carte au 1/50 000 (BD Charm-50) serait bien plus fine, mais son téléchargement
@@ -170,7 +185,7 @@ def roches(grille: Grille) -> tuple[np.ndarray, dict]:
             texte = r.content.decode("latin-1")
         return json.loads(texte)
 
-    donnees = json_en_cache(f"lithologie_{DEPARTEMENT}", charger)
+    donnees = json_en_cache(f"lithologie_{cle}", charger)
     entites, vues = [], {}
     for f in donnees["features"]:
         descr = f["properties"].get("DESCR") or ""
@@ -185,14 +200,16 @@ def _bbox_lonlat(grille: Grille):
     return b["ouest"], b["sud"], b["est"], b["nord"]
 
 
-def zones_protegees(grille: Grille) -> tuple[np.ndarray, list[dict]]:
+def zones_protegees(grille: Grille, cle: str = DEPARTEMENT) -> tuple[np.ndarray, list[dict]]:
     """Espaces protégés à réglementation propre (INPN) : index dans la liste renvoyée (0 = aucun)."""
     entites, liste = [], []
     for couche, nature in PROTECTIONS.items():
-        lot = json_en_cache(f"{couche.split(':')[1]}_{DEPARTEMENT}", lambda c=couche: {
+        lot = json_en_cache(f"{couche.split(':')[1]}_{cle}", lambda c=couche: {
             "features": wfs_geopf(c, grille)})["features"]
         for f in lot:
             p = f["properties"]
+            if not _retenue(couche, p):
+                continue
             nom = p.get("nom_site") or p.get("nom") or p.get("NOM_SITE") or nature
             liste.append({"nature": nature, "nom": nom})
             entites.append((f["geometry"], len(liste)))
@@ -201,9 +218,9 @@ def zones_protegees(grille: Grille) -> tuple[np.ndarray, list[dict]]:
     return rasteriser(entites, grille), liste
 
 
-def forets_publiques(grille: Grille) -> np.ndarray:
+def forets_publiques(grille: Grille, cle: str = DEPARTEMENT) -> np.ndarray:
     """Forêts relevant du régime forestier (domaniales, communales…), BD TOPO (IGN)."""
-    lot = json_en_cache(f"foret_publique_{DEPARTEMENT}", lambda: {
+    lot = json_en_cache(f"foret_publique_{cle}", lambda: {
         "features": wfs_geopf("BDTOPO_V3:foret_publique", grille)})["features"]
     return rasteriser([(f["geometry"], 1) for f in lot], grille).astype(bool)
 

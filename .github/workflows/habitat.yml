@@ -1,0 +1,97 @@
+name: Habitat de la France
+
+# À la main, rarement (les sources changent tous les quelques ans) : forêts, relief, roche,
+# zones protégées et communes, bloc par bloc, publiés comme asset de la release « habitat ».
+# Le job quotidien télécharge cet asset ; rien de tout cela n'entre dans git.
+on:
+  # Changer le format des blocs oblige à les reconstruire : la poussée le fait.
+  push:
+    branches: [main]
+    paths: [".github/workflows/habitat.yml", "champi/france.py"]
+  workflow_dispatch:
+    inputs:
+      groupes:
+        description: "Nombre de tâches parallèles"
+        default: "40"
+
+permissions:
+  contents: write
+
+jobs:
+  preparer:
+    runs-on: ubuntu-latest
+    outputs:
+      groupes: ${{ steps.liste.outputs.groupes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - id: liste
+        run: echo "groupes=$(python -m champi.france preparer --groupes ${{ inputs.groupes || 40 }} | tail -1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: habitat-preparation
+          path: |
+            habitat/communes.json
+            habitat/liste.json
+
+  blocs:
+    needs: preparer
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        groupe: ${{ fromJSON(needs.preparer.outputs.groupes) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: habitat-preparation
+          path: habitat
+      - run: python -m champi.france groupe ${{ matrix.groupe }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: habitat-groupe-${{ matrix.groupe }}
+          path: |
+            habitat/blocs
+            habitat/meta
+            habitat/echantillon
+            habitat/vides
+          if-no-files-found: ignore
+
+  assembler:
+    needs: blocs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: habitat-*
+          path: habitat
+          merge-multiple: true
+      - run: python -m champi.france assembler
+      - name: Publier la release « habitat »
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tar -cf habitat.tar -C habitat blocs blocs.json communes.json echantillon.npz
+          ls -la habitat.tar
+          gh release view habitat >/dev/null 2>&1 || gh release create habitat --title "Habitat de la France" \
+            --notes "Forêts, relief, roche, zones protégées et communes par blocs de 25 km (workflow habitat.yml). Sources IGN, BRGM, INPN, Licence Ouverte."
+          gh release upload habitat habitat.tar --clobber

@@ -53,6 +53,11 @@ champi.validation (à la main) → data/validation.json (versionné) → copié 
   que la validation utilise). Toute nouvelle entrée météo passe par les deux.
 - **Températures** : ramenées au niveau de la mer avec l'altitude qu'Open-Meteo a utilisée,
   puis redescendues à la case (`GRADIENT_AIR`, `GRADIENT_SOL`), plus l'effet du versant.
+- **Habitat de la France** (`champi/france.py`) : blocs de 512 × 512 cases (25 km),
+  construits par `.github/workflows/habitat.yml` (jamais sur le poste : ~20 Go de sources)
+  et publiés comme asset de la release `habitat`. Le format des trois PNG est documenté en
+  tête du module ; le site et l'export le lisent tous deux. Un bloc refait sur la
+  Haute-Savoie retombe sur `habitat_74` à 99,98 % des cases.
 - **Latitude** : saisons et plafonds d'altitude sont écrits à 46° N (la Haute-Savoie) et
   décalés ailleurs par la loi de Hopkins (`modele.dates_saison`, `modele.plafond_altitude`) :
   jamais de dates ou d'altitudes régionales en dur. Pas de plancher d'altitude (les cinq
