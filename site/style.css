@@ -238,7 +238,9 @@ label.case { display: flex; gap: 6px; align-items: center; font-size: .85rem; co
 
 /* La semaine d'un département : niveau du verdict, espèce par espèce et jour par jour. */
 .tableau-semaine { overflow-x: auto; }
-.semaine { border-collapse: separate; border-spacing: 2px; font-size: .8rem; width: 100%; }
+/* Largeurs fixes : les noms ont leur colonne, les huit jours se partagent le reste à parts égales. */
+.semaine { border-collapse: separate; border-spacing: 2px; font-size: .8rem; width: 100%; table-layout: fixed; }
+.semaine thead th:first-child { width: 30%; }
 .semaine thead th { font-weight: 400; color: var(--texte-3); text-align: center; line-height: 1.15; padding-bottom: 2px; }
 .semaine thead th.actuel { color: var(--texte); font-weight: 600; }
 .semaine tbody th { font-weight: 400; text-align: left; color: var(--texte-2); padding-right: 6px; line-height: 1.15; }
