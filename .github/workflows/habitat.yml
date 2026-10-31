@@ -44,7 +44,7 @@ jobs:
     timeout-minutes: 180
     strategy:
       fail-fast: false
-      max-parallel: 20
+      max-parallel: 8   # au-delà, les services de l'IGN refusent une partie des requêtes
       matrix:
         groupe: ${{ fromJSON(needs.preparer.outputs.groupes) }}
     steps:

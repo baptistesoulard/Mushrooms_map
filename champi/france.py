@@ -189,30 +189,40 @@ def _index_communes() -> dict[str, int]:
     return {c["insee"]: i + 1 for i, c in enumerate(com)}
 
 
-def groupe(n: int) -> None:
+def groupe(n: int, passes: int = 3) -> None:
+    """Construit les blocs du groupe ; ceux qui échouent (service saturé) sont repris après une
+    pause, jusqu'à `passes` fois."""
     liste = json.loads((SORTIE / "liste.json").read_text(encoding="utf-8"))
     index = _index_communes()
     t0 = time.time()
-    noms = liste["groupes"][n]
-    echecs = []
-    for k, nom in enumerate(noms, 1):
-        if (SORTIE / "meta" / f"{nom}.json").exists() or (SORTIE / "vides" / nom).exists():
-            continue
-        t = time.time()
-        try:
-            meta = construire_bloc(nom, index)
-        except Exception as e:   # un service indisponible : les autres blocs continuent
-            print(f"[{k}/{len(noms)}] {nom} : ÉCHEC {e!r}", flush=True)
-            echecs.append(nom)
-            continue
-        if meta is None:   # bloc sans forêt en France : on le note pour ne pas le refaire
-            (SORTIE / "vides").mkdir(parents=True, exist_ok=True)
-            (SORTIE / "vides" / nom).write_text("", encoding="utf-8")
-        n_foret = meta["n_foret"] if meta else 0
-        print(f"[{k}/{len(noms)}] {nom} : {n_foret} cases boisées ({time.time() - t:.0f} s, "
-              f"total {time.time() - t0:.0f} s)", flush=True)
-    if echecs:
-        raise SystemExit(f"{len(echecs)} blocs en échec : {', '.join(echecs)}")
+    restants = liste["groupes"][n]
+    for passe in range(1, passes + 1):
+        echecs = []
+        for k, nom in enumerate(restants, 1):
+            if (SORTIE / "meta" / f"{nom}.json").exists() or (SORTIE / "vides" / nom).exists():
+                continue
+            t = time.time()
+            try:
+                meta = construire_bloc(nom, index)
+            except Exception as e:   # un service indisponible : les autres blocs continuent
+                print(f"[{k}/{len(restants)}] {nom} : ÉCHEC {e!r}", flush=True)
+                if passe == passes:  # annotation GitHub Actions : lisible sans connexion
+                    print(f"::error title=bloc {nom}::{type(e).__name__} {str(e)[:300]}", flush=True)
+                echecs.append(nom)
+                continue
+            if meta is None:   # bloc sans forêt en France : on le note pour ne pas le refaire
+                (SORTIE / "vides").mkdir(parents=True, exist_ok=True)
+                (SORTIE / "vides" / nom).write_text("", encoding="utf-8")
+            n_foret = meta["n_foret"] if meta else 0
+            print(f"[{k}/{len(restants)}] {nom} : {n_foret} cases boisées ({time.time() - t:.0f} s, "
+                  f"total {time.time() - t0:.0f} s)", flush=True)
+        if not echecs:
+            return
+        restants = echecs
+        if passe < passes:
+            print(f"{len(echecs)} blocs à reprendre après une pause", flush=True)
+            time.sleep(120 * passe)
+    raise SystemExit(f"{len(restants)} blocs en échec : {', '.join(restants)}")
 
 
 # --- Assemblage ---------------------------------------------------------------------

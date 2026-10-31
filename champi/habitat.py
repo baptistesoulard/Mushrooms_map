@@ -48,6 +48,7 @@ _ESSENCE_BDFORET = {
     "Châtaignier": 4, "Robinier": 5, "Peuplier": 6, "Mixte": 7, "Sapin, épicéa": 8,
     "Mélèze": 9, "Pin sylvestre": 10, "Pin laricio, pin noir": 10, "Pin maritime": 10,
     "Pin d'Alep": 10, "Pin à crochets, pin cembro": 10, "Pins mélangés": 10, "Autres pins": 10,
+    "Pin autre": 10,
     "Douglas": 11, "Conifères": 12, "Autres conifères autre que pin": 12,
 }
 

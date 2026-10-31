@@ -31,10 +31,13 @@ def http_get(url: str, params: dict | None = None, essais: int = 5, delai: float
                 raise requests.HTTPError(f"HTTP {r.status_code}", response=r)
             r.raise_for_status()
             return r
-        except (requests.RequestException, ValueError):
+        except (requests.RequestException, ValueError) as e:
             if essai == essais:
                 raise
-            time.sleep(min(60, 2 ** essai))
+            # Service saturé (429, 503) : il dit parfois combien attendre ; sinon on double.
+            reponse = getattr(e, "response", None)
+            attente = reponse.headers.get("Retry-After") if reponse is not None else None
+            time.sleep(min(120, float(attente)) if attente and attente.isdigit() else min(120, 3 * 2 ** essai))
     raise AssertionError("inatteignable")
 
 
