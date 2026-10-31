@@ -41,17 +41,50 @@
     (clé <code>champi-espece</code>) et le dernier département affiché
     (<code>champi-departement</code>), pour les rouvrir à la visite suivante. Elles ne quittent
     jamais votre appareil.</li>
-    <li>Vos coins (« Mes coins ») sont gardés au même endroit (clé <code>champi-coins</code>) et
-    nulle part ailleurs : le site n'a pas de serveur qui pourrait les recevoir. Ils
-    disparaissent si vous effacez les données du site, et Safari les efface de lui-même après
-    sept jours sans visite (sauf si le site est ajouté à l'écran d'accueil) : sauvegardez-les
-    dans un fichier. Partager vos coins crée un fichier que vous envoyez vous-même ; ceux qu'on
-    vous a confiés n'y figurent pas.</li>
+    <li>Vos coins (« Mes coins ») sont gardés au même endroit (clés <code>champi-coins</code> et
+    <code>champi-coins-effaces</code>, la liste des trouvailles effacées) : le site n'a pas de
+    serveur qui pourrait les recevoir. Ils disparaissent si vous effacez les données du site,
+    et Safari les efface de lui-même après sept jours sans visite (sauf si le site est ajouté à
+    l'écran d'accueil) : sauvegardez-les dans un fichier, ou synchronisez-les (ci-dessous).
+    Partager vos coins crée un fichier que vous envoyez vous-même ; ceux qu'on vous a confiés
+    n'y figurent pas.</li>
+    <li>Si vous activez la synchronisation, le jeton GitHub est gardé dans le navigateur (clé
+    <code>champi-synchro</code>) et vos coins sont envoyés à <code>api.github.com</code>, dans
+    votre propre dépôt privé, et nulle part ailleurs.</li>
     <li>« Noter une trouvaille à ma position » demande la position de l'appareil, seulement
     quand vous appuyez sur le bouton ; elle sert à placer le coin et n'est envoyée nulle part.</li>
     <li>Les fonds de carte sont chargés directement depuis les serveurs de l'IGN
     (<code>data.geopf.fr</code>), qui reçoivent donc votre adresse IP, comme pour toute carte
     en ligne. La bibliothèque de carte (Leaflet) est servie par le site lui-même.</li>
+  </ul>
+
+  <h2 id="synchro">Retrouver ses coins sur tous ses appareils</h2>
+  <p>Les coins peuvent se synchroniser entre votre téléphone, votre ordinateur et tout autre
+  appareil, par un dépôt GitHub privé qui vous appartient. Le site n'a toujours pas de
+  serveur : chaque navigateur lit et écrit lui-même un fichier dans ce dépôt.</p>
+  <ol>
+    <li>Sur GitHub, créez un dépôt <strong>privé</strong> (par exemple
+    <code>champi-coins</code>), en cochant « Add a README file ».</li>
+    <li>Créez un jeton à accès limité : Settings → Developer settings → Personal access tokens →
+    Fine-grained tokens → Generate new token. Dans « Repository access », choisissez « Only
+    select repositories » et ce seul dépôt ; dans « Permissions », donnez à « Contents »
+    l'accès « Read and write ». Rien d'autre.</li>
+    <li>Composez le lien : l'adresse de la carte suivie de
+    <code>#depot=votre-compte/champi-coins&amp;jeton=</code> et du jeton. Ouvrez-le une fois
+    sur chaque appareil : le jeton est gardé dans le navigateur et retiré de la barre
+    d'adresse. Le panneau « Mes coins » dit ensuite quand a eu lieu la dernière
+    synchronisation.</li>
+  </ol>
+  <ul>
+    <li>Le lien vaut une clé : qui l'a peut lire et modifier vos coins, et rien d'autre (le jeton
+    n'ouvre que ce dépôt). Gardez-le dans vos notes ou votre gestionnaire de mots de passe ; il
+    peut aussi rester dans l'historique du navigateur. Pour confier des coins à quelqu'un, le
+    partage par fichier reste le bon outil.</li>
+    <li>La carte garde sa copie : elle marche sans réseau, et ce qui a été noté en forêt part
+    au prochain passage en ligne. Un coin effacé sur un appareil l'est partout. Chaque envoi
+    est une version du dépôt : une erreur se rattrape dans son historique.</li>
+    <li>Un jeton finit par expirer : la carte le dit, garde tout, et il suffit d'un nouveau
+    jeton et d'un nouveau lien. Si Safari a effacé les données du site, rouvrez le lien.</li>
   </ul>
 
   <h2>Mentions légales</h2>

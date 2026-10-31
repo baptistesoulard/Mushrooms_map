@@ -1,10 +1,21 @@
-// Mes coins : les trouvailles de l'utilisateur, gardées dans CE navigateur et nulle part
-// ailleurs (le site n'a pas de serveur). Elles se partagent par fichier, avec qui l'on veut :
-// le partage n'envoie que ses propres coins, jamais ceux qu'un ami a confiés.
-const CLE = "champi-coins";            // déclarée dans a-propos.html
+// Mes coins : les trouvailles de l'utilisateur, gardées dans CE navigateur (le site n'a pas de
+// serveur). Elles se partagent par fichier, avec qui l'on veut : le partage n'envoie que ses
+// propres coins, jamais ceux qu'un ami a confiés. Entre ses propres appareils, elles peuvent se
+// synchroniser par un dépôt GitHub privé à soi, ouvert par un lien qui porte le jeton.
+const CLE = "champi-coins";            // les trois clés sont déclarées dans a-propos.html
+const CLE_EFFACES = "champi-coins-effaces";
+const CLE_SYNCHRO = "champi-synchro";
 const RAYON_M = 100;                   // deux trouvailles à moins de 100 m : le même coin
 const ZOOM_PRECIS = 14;                // en deçà, un appui long tomberait à des centaines de mètres
 const FORMAT = "champi-coins";
+const API = "https://api.github.com";
+const FICHIER_DEPOT = "coins.json";
+const DEPOT = /^[\w.-]+\/[\w.-]+$/;    // « compte/dépôt »
+const RELANCE_MS = 15000;              // au retour sur la page, pas plus d'une synchro par 15 s
+
+class ErreurSynchro extends Error {
+  constructor(statut) { super(`synchronisation : ${statut}`); this.statut = statut; }
+}
 
 const el = (tag, attrs = {}, ...enfants) => {
   const n = document.createElement(tag);
@@ -18,6 +29,7 @@ const el = (tag, attrs = {}, ...enfants) => {
 };
 
 const auJour = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
+const maintenant = () => new Date().toISOString();
 const majuscule = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 const dateFr = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
@@ -35,7 +47,8 @@ function nouvelId() {
 function valide(c, codes) {
   return c && typeof c.id === "string" && Number.isFinite(c.lat) && Number.isFinite(c.lon)
     && Math.abs(c.lat) <= 90 && Math.abs(c.lon) <= 180 && codes.has(c.espece)
-    && /^\d{4}-\d{2}-\d{2}$/.test(c.date) && (c.de == null || typeof c.de === "string");
+    && /^\d{4}-\d{2}-\d{2}$/.test(c.date) && (c.de == null || typeof c.de === "string")
+    && (c.maj == null || typeof c.maj === "string");
 }
 
 function propre(c) {
@@ -43,7 +56,56 @@ function propre(c) {
               espece: c.espece, date: c.date };
   if (c.note) o.note = String(c.note).slice(0, 200);
   if (c.de) o.de = String(c.de).slice(0, 40);
+  if (c.maj) o.maj = String(c.maj).slice(0, 30);
   return o;
+}
+
+// Les effacements : { id: date de l'effacement }, pour qu'un coin effacé sur un appareil ne
+// revienne pas depuis un autre.
+function nettoyerEffaces(v) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+  return Object.fromEntries(Object.entries(v).filter(([, quand]) => typeof quand === "string"));
+}
+
+/**
+ * Fusion de deux états { coins, effaces }. Une trouvaille ne se modifie pas : chaque id garde
+ * sa version la plus récente (`maj`), et un effacement l'emporte sur toute version plus
+ * ancienne ou du même instant. Ré-importer un coin effacé (nouvelle `maj`) le fait revenir.
+ */
+export function fusionner(a, b) {
+  const effaces = new Map();
+  for (const [id, quand] of [...Object.entries(a.effaces), ...Object.entries(b.effaces)]) {
+    if (!effaces.has(id) || quand > effaces.get(id)) effaces.set(id, quand);
+  }
+  const vivants = new Map();
+  for (const c of [...a.coins, ...b.coins]) {
+    const deja = vivants.get(c.id);
+    if (!deja || (c.maj ?? "") > (deja.maj ?? "")) vivants.set(c.id, c);
+  }
+  for (const [id, c] of vivants) {
+    const quand = effaces.get(id);
+    if (quand === undefined) continue;
+    if (quand >= (c.maj ?? "")) vivants.delete(id);
+    else effaces.delete(id);
+  }
+  return { coins: [...vivants.values()], effaces: Object.fromEntries(effaces) };
+}
+
+// Le fichier du dépôt, trié pour que deux états égaux s'écrivent pareil.
+function contenu(etat) {
+  return { format: FORMAT, version: 2,
+           coins: etat.coins.slice().sort((x, y) => x.id.localeCompare(y.id)),
+           effaces: Object.fromEntries(Object.entries(etat.effaces).sort()) };
+}
+
+// L'API GitHub échange le contenu des fichiers en base64 ; les notes ont des accents.
+export function versBase64(texte) {
+  let s = "";
+  for (const o of new TextEncoder().encode(texte)) s += String.fromCharCode(o);
+  return btoa(s);
+}
+export function depuisBase64(b64) {
+  return new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), (c) => c.charCodeAt(0)));
 }
 
 // Les trouvailles d'une espèce regroupées en coins : chacune rejoint le coin de la plus récente
@@ -70,16 +132,24 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
     const v = JSON.parse(localStorage.getItem(CLE) || "[]");
     coins = Array.isArray(v) ? v.filter((c) => valide(c, codes)) : [];
   } catch { coins = []; }
+  let effaces = {};
+  try { effaces = nettoyerEffaces(JSON.parse(localStorage.getItem(CLE_EFFACES) || "{}")); } catch { effaces = {}; }
+  let synchro = lireSynchro();
+  let enCours = null, encore = false, derniere = 0;
 
   const message = (texte) => { document.getElementById("coins-message").textContent = texte; };
-  function sauver() {
+  // Garde l'état dans le navigateur, puis l'envoie au dépôt si la synchronisation est active.
+  function sauver({ envoyer = true } = {}) {
+    let ok = true;
     try {
       localStorage.setItem(CLE, JSON.stringify(coins));
-      return true;
+      localStorage.setItem(CLE_EFFACES, JSON.stringify(effaces));
     } catch {
       message("Ce navigateur refuse de garder les coins (navigation privée ?) : ils seront perdus en fermant la page.");
-      return false;
+      ok = false;
     }
+    if (envoyer) synchroniser();
+    return ok;
   }
 
   const calque = L.layerGroup().addTo(map);
@@ -104,7 +174,7 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
       ev.preventDefault();
       if (!date.value) return;
       coins.push(propre({ id: nouvelId(), lat: latlng.lat, lon: latlng.lng, espece: choix.value,
-                          date: date.value, note: note.value.trim() }));
+                          date: date.value, note: note.value.trim(), maj: maintenant() }));
       sauver();
       // Demande au navigateur de ne pas effacer ces données pour faire de la place.
       navigator.storage?.persist?.().catch(() => {});
@@ -166,6 +236,7 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
   function effacer(t) {
     if (!confirm(`Effacer la trouvaille du ${dateFr(t.date)} ?`)) return;
     coins = coins.filter((c) => c.id !== t.id);
+    effaces[t.id] = maintenant();
     sauver();
     map.closePopup();
     rafraichir();
@@ -218,6 +289,8 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
     for (const [de, n] of par) {
       zone.append(el("li", {}, `Coins de ${de} (${n}) `, el("button", { type: "button", class: "lien", onclick: () => {
         if (!confirm(`Retirer les ${n} coins de ${de} ?`)) return;
+        const quand = maintenant();
+        for (const c of coins) if (c.de === de) effaces[c.id] = quand;
         coins = coins.filter((c) => c.de !== de);
         sauver();
         rafraichir();
@@ -276,11 +349,14 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
     const de = (prompt("De qui viennent ces coins ? Laissez vide s'il s'agit de votre propre sauvegarde.", "") ?? null);
     if (de === null) return;
     const connus = new Set(coins.map((c) => c.id));
+    const quand = maintenant();
     let ajoutes = 0, rejetes = 0;
     for (const c of doc.coins) {
       if (!valide(c, codes)) { rejetes++; continue; }
       if (connus.has(c.id)) continue;
-      coins.push(propre({ ...c, de: c.de || de.trim() || null }));
+      // Un import est un choix explicite : il fait revenir un coin effacé auparavant.
+      coins.push(propre({ ...c, de: c.de || de.trim() || null, maj: quand }));
+      delete effaces[c.id];
       connus.add(c.id);
       ajoutes++;
     }
@@ -290,6 +366,139 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
       (doc.coins.length - ajoutes - rejetes ? `, ${doc.coins.length - ajoutes - rejetes} déjà présent(s)` : "") +
       (rejetes ? `, ${rejetes} illisible(s)` : "") + ".");
   });
+
+  // --- Synchronisation entre ses appareils (dépôt GitHub privé) ---------------------------
+  // Le navigateur garde sa copie (la carte marche sans réseau en forêt) ; chaque passage lit
+  // le fichier du dépôt, fusionne, et ne réécrit que s'il y a du nouveau.
+  const zoneSynchro = document.getElementById("coins-synchro");
+
+  function lireSynchro() {
+    try {
+      const s = JSON.parse(localStorage.getItem(CLE_SYNCHRO) || "null");
+      return s && DEPOT.test(s.depot) && typeof s.jeton === "string" && s.jeton ? s : null;
+    } catch { return null; }
+  }
+
+  // Le lien « #depot=compte/dépôt&jeton=… », ouvert une fois sur chaque appareil : le jeton est
+  // gardé dans ce navigateur, puis retiré de la barre d'adresse.
+  function lienSynchro() {
+    const p = new URLSearchParams(location.hash.slice(1));
+    const depot = p.get("depot"), jeton = p.get("jeton");
+    if (!depot && !jeton) return false;
+    history.replaceState(null, "", location.pathname + location.search);
+    if (!DEPOT.test(depot || "") || !jeton) {
+      etatSynchro("Lien de synchronisation incomplet : il faut le dépôt et le jeton.");
+      return true;
+    }
+    synchro = { depot, jeton };
+    try { localStorage.setItem(CLE_SYNCHRO, JSON.stringify(synchro)); } catch { /* gardé le temps de la page */ }
+    synchroniser();
+    return true;
+  }
+
+  function etatSynchro(texte) {
+    zoneSynchro.hidden = !synchro && !texte;
+    zoneSynchro.replaceChildren(texte, synchro ? " " : "", synchro
+      ? el("button", { type: "button", class: "lien", onclick: oublier }, "Ne plus synchroniser cet appareil")
+      : "");
+  }
+
+  function oublier() {
+    if (!confirm("Ne plus synchroniser cet appareil ? Les coins restent ici ; rouvrir le lien relancera la synchronisation.")) return;
+    synchro = null;
+    try { localStorage.removeItem(CLE_SYNCHRO); } catch { /* rien à retirer */ }
+    etatSynchro("");
+  }
+
+  async function appel(s, methode, corps) {
+    const r = await fetch(`${API}/repos/${s.depot}/contents/${FICHIER_DEPOT}`, {
+      method: methode, cache: "no-store",
+      headers: { Authorization: `Bearer ${s.jeton}`, Accept: "application/vnd.github+json",
+                 ...(corps ? { "Content-Type": "application/json" } : {}) },
+      body: corps ? JSON.stringify(corps) : undefined,
+    });
+    if (!r.ok && r.status !== 404 && r.status !== 409 && r.status !== 422) throw new ErreurSynchro(r.status);
+    return r;
+  }
+
+  function lireDistant(j) {
+    let doc;
+    try { doc = JSON.parse(depuisBase64(j.content)); } catch { doc = null; }
+    if (doc?.format !== FORMAT || !Array.isArray(doc.coins)) throw new ErreurSynchro("fichier");
+    return { coins: doc.coins.filter((c) => valide(c, codes)).map(propre), effaces: nettoyerEffaces(doc.effaces) };
+  }
+
+  async function uneSynchro() {
+    const s = synchro;
+    derniere = Date.now();
+    etatSynchro("Synchronisation…");
+    for (let essai = 0; essai < 3; essai++) {
+      const r = await appel(s, "GET");
+      let distant = { coins: [], effaces: {} }, sha;
+      if (r.ok) {
+        const j = await r.json();
+        sha = j.sha;
+        distant = lireDistant(j);
+      } else if (r.status !== 404) {
+        throw new ErreurSynchro(r.status);
+      }
+      // 404 : pas encore de fichier (premier passage), ou dépôt inaccessible (l'écriture le dira).
+      const f = fusionner({ coins, effaces }, distant);
+      const texte = JSON.stringify(contenu(f), null, 1);
+      if (texte !== JSON.stringify(contenu({ coins, effaces }), null, 1)) {
+        coins = f.coins;          // du nouveau venu d'un autre appareil
+        effaces = f.effaces;
+        sauver({ envoyer: false });
+        rafraichir();
+      }
+      if (sha && texte === JSON.stringify(contenu(distant), null, 1)) return s;   // rien à écrire
+      const n = f.coins.length;
+      const p = await appel(s, "PUT", { message: `Coins : ${n} trouvaille${n > 1 ? "s" : ""}`,
+                                        content: versBase64(texte), ...(sha ? { sha } : {}) });
+      if (p.ok) return s;
+      if (p.status === 404) throw new ErreurSynchro(404);
+      // 409 ou 422 : un autre appareil a écrit entre la lecture et l'écriture. On recommence.
+    }
+    throw new ErreurSynchro("conflit");
+  }
+
+  function motif(err, s) {
+    const statut = err instanceof ErreurSynchro ? err.statut : null;
+    if (statut === 401) return "Jeton refusé ou expiré : créez-en un nouveau et rouvrez le lien. Vos coins restent ici.";
+    if (statut === 403 || statut === 404) return `Le jeton n'ouvre pas le dépôt ${s.depot} en écriture : vérifiez son accès (Contents, lecture et écriture).`;
+    if (statut === "fichier") return `Le fichier ${FICHIER_DEPOT} du dépôt n'est pas un fichier de coins : rien n'a été écrasé.`;
+    if (statut === "conflit") return "Le dépôt a changé pendant l'envoi : nouvel essai au prochain passage.";
+    return "Pas de réseau, ou GitHub ne répond pas : vos coins sont gardés ici et partiront au prochain passage.";
+  }
+
+  // Une synchronisation à la fois ; une demande pendant qu'elle tourne en relance une après.
+  function synchroniser() {
+    if (!synchro) return Promise.resolve();
+    if (enCours) { encore = true; return enCours; }
+    const s = synchro;
+    enCours = uneSynchro()
+      .then(() => {
+        if (synchro !== s) return;
+        const heure = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+        etatSynchro(`Synchronisé avec le dépôt ${s.depot} à ${heure}.`);
+      })
+      .catch((err) => { console.error(err); if (synchro === s) etatSynchro(motif(err, s)); })
+      .finally(() => {
+        enCours = null;
+        if (encore) { encore = false; synchroniser(); }
+      });
+    return enCours;
+  }
+
+  window.addEventListener("hashchange", lienSynchro);
+  window.addEventListener("online", () => synchroniser());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && Date.now() - derniere > RELANCE_MS) synchroniser();
+  });
+  if (!lienSynchro()) {
+    etatSynchro("");
+    synchroniser();
+  }
 
   return { rafraichir, formulaire };
 }

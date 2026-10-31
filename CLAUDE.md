@@ -42,6 +42,14 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   enverrait tout le monde aux mêmes coins, souvent en forêt privée. Le partage passe par un
   fichier que l'utilisateur envoie lui-même, et ne contient que SES coins : jamais ceux
   qu'un ami lui a confiés (la sauvegarde, elle, garde tout).
+- **Synchro de ses coins entre SES appareils : un dépôt GitHub privé à lui**, lu et écrit par
+  le navigateur (API « contents », fichier `coins.json`), ouvert par un lien
+  `#depot=compte/dépôt&jeton=…` gardé dans `champi-synchro` puis retiré de l'adresse. Le
+  jeton est créé par l'utilisateur, limité à ce dépôt (Contents, lecture et écriture) ; il ne
+  passe jamais par la conversation ni par le dépôt du site. Fusion par id, la version la plus
+  récente (`maj`) gagne, effacements gardés (`champi-coins-effaces`) pour qu'un coin effacé
+  ne revienne pas d'un autre appareil (`coins.fusionner`, testé sous Node). Pas de serveur à
+  nous : ce n'est pas un pas vers la carte communautaire.
 - **Zones protégées : hachurées, sans indice** (réserves, arrêtés de biotope, cœurs de parcs
   nationaux). Leur règlement varie ; le site ne dit jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur
@@ -50,8 +58,9 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   utile ; les huit centres antipoison (`avant-de-partir.html`, `carte.js` pour le plus
   proche), vérifiés sur centres-antipoison.net.
 - **Aucun script tiers** : Leaflet est servi depuis `site/vendor/`. Seuls les fonds de carte
-  IGN sont appelés depuis le navigateur (déclaré dans `a-propos.html`). Toute nouvelle clé
-  `localStorage` se déclare dans `a-propos.html` (test).
+  IGN sont appelés depuis le navigateur, plus `api.github.com` si la synchro des coins est
+  active (déclarés dans `a-propos.html`). Toute nouvelle clé `localStorage` se déclare dans
+  `a-propos.html` (test).
 
 ## Calcul
 
