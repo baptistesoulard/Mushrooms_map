@@ -76,7 +76,7 @@ def _wfs_attributs(couche: str, proprietes: str) -> list[dict]:
             "SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature", "TYPENAMES": couche,
             "OUTPUTFORMAT": "application/json", "PROPERTYNAME": proprietes,
             "COUNT": 5000, "STARTINDEX": debut, "SORTBY": "code_insee",
-        }, delai=180).json()["features"]
+        }, delai=180, attendre_json=True)["features"]
         sortie.extend(f["properties"] for f in lot)
         if len(lot) < 5000:
             return sortie

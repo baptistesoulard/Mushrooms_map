@@ -22,15 +22,33 @@ GEOPF_WMS_R = "https://data.geopf.fr/wms-r/wms"
 BRGM_WFS = "https://geoservices.brgm.fr/geologie"
 
 
-def http_get(url: str, params: dict | None = None, essais: int = 5, delai: float = 60.0) -> requests.Response:
-    """GET avec reprises (attente croissante). Lève l'erreur au dernier essai."""
+def _json(r: requests.Response):
+    """Le JSON d'une réponse (UTF-8, ou Latin-1 pour le BRGM) ; sinon une erreur qui montre
+    ce que le service a renvoyé à la place (page d'erreur, exception XML d'un WFS saturé)."""
+    try:
+        texte = r.content.decode("utf-8")
+    except UnicodeDecodeError:
+        texte = r.content.decode("latin-1")
+    try:
+        return json.loads(texte)
+    except ValueError:
+        raise ValueError(f"réponse illisible de {r.url[:120]} : {texte[:200]!r}") from None
+
+
+def http_get(url: str, params: dict | None = None, essais: int = 5, delai: float = 60.0,
+             attendre_json: bool = False):
+    """GET avec reprises (attente croissante). Lève l'erreur au dernier essai.
+
+    Avec `attendre_json`, renvoie le JSON décodé, et une réponse « 200 » qui n'en est pas
+    (service saturé) est reprise comme un refus.
+    """
     for essai in range(1, essais + 1):
         try:
             r = requests.get(url, params=params, timeout=delai, headers={"User-Agent": USER_AGENT})
             if r.status_code == 429 or r.status_code >= 500:
                 raise requests.HTTPError(f"HTTP {r.status_code}", response=r)
             r.raise_for_status()
-            return r
+            return _json(r) if attendre_json else r
         except (requests.RequestException, ValueError) as e:
             if essai == essais:
                 raise
@@ -63,7 +81,7 @@ def wfs_geopf(couche: str, grille: Grille, page: int = 5000, **params) -> list[d
             "BBOX": f"{grille.x0},{grille.y0},{grille.x1},{grille.y1},EPSG:3857",
             "COUNT": page, "STARTINDEX": debut, **params,
         }
-        lot = http_get(GEOPF_WFS, p, delai=180).json().get("features", [])
+        lot = http_get(GEOPF_WFS, p, delai=180, attendre_json=True).get("features", [])
         entites.extend(lot)
         if len(lot) < page:
             return entites

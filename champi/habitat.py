@@ -181,16 +181,11 @@ def roches(grille: Grille, cle: str = DEPARTEMENT) -> tuple[np.ndarray, dict]:
     """
     def charger():
         ouest, sud, est, nord = _bbox_lonlat(grille)
-        r = http_get(BRGM_WFS, {
+        return http_get(BRGM_WFS, {
             "SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature",
             "TYPENAMES": "ms:LITHO_1M_SIMPLIFIEE", "OUTPUTFORMAT": "geojson",
             "BBOX": f"{sud},{ouest},{nord},{est},urn:ogc:def:crs:EPSG::4326",
-        }, delai=120)
-        try:
-            texte = r.content.decode("utf-8")
-        except UnicodeDecodeError:
-            texte = r.content.decode("latin-1")
-        return json.loads(texte)
+        }, delai=120, attendre_json=True)
 
     donnees = json_en_cache(f"lithologie_{cle}", charger)
     entites, vues = [], {}
