@@ -7,7 +7,7 @@ on:
   # Changer le format des blocs oblige à les reconstruire : la poussée le fait.
   push:
     branches: [main]
-    paths: [".github/workflows/habitat.yml", "champi/france.py"]
+    paths: [".github/workflows/habitat.yml", "champi/france.py", "champi/habitat.py", "champi/sources.py"]
   workflow_dispatch:
     inputs:
       groupes:
@@ -16,6 +16,11 @@ on:
 
 permissions:
   contents: write
+
+# Une construction en remplace une autre : seule la plus récente compte.
+concurrency:
+  group: habitat
+  cancel-in-progress: true
 
 jobs:
   preparer:

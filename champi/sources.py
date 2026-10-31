@@ -91,6 +91,51 @@ def wms_bil(couche: str, grille: Grille, tuile: int = 1024) -> np.ndarray:
     return sortie
 
 
+def wms_bil_lonlat(couche: str, grille: Grille, pas_deg: float = 0.0003, tuile: int = 1024) -> np.ndarray:
+    """Comme `wms_bil`, mais lu en latitude/longitude puis interpolé (bilinéaire) aux centres
+    des cases Mercator.
+
+    Demandé directement en Mercator, le relief de l'IGN revient avec une ligne sur trois en
+    double (rééchantillonnage au plus proche) : la pente et l'exposition en sortent striées.
+    En latitude/longitude, un peu plus fin que les cases, il n'y a aucun doublon (mesuré le
+    2026-10-31 sur le bloc d'Annecy). Hors de France, le service renvoie des valeurs négatives
+    de remplissage : NaN.
+    """
+    b = grille.bornes_lonlat()
+    marge = 2 * pas_deg
+    lat0, lat1 = b["sud"] - marge, b["nord"] + marge
+    lon0, lon1 = b["ouest"] - marge, b["est"] + marge
+    ny = int(np.ceil((lat1 - lat0) / pas_deg))
+    nx = int(np.ceil((lon1 - lon0) / (pas_deg * 4 / 3)))      # pixels à peu près carrés vers 45° N
+    dlat, dlon = (lat1 - lat0) / ny, (lon1 - lon0) / nx
+    brut = np.full((ny, nx), np.nan, dtype=np.float32)        # ligne 0 au nord
+    for i0 in range(0, ny, tuile):
+        for j0 in range(0, nx, tuile):
+            h, w = min(tuile, ny - i0), min(tuile, nx - j0)
+            nord, ouest = lat1 - i0 * dlat, lon0 + j0 * dlon
+            p = {
+                "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetMap", "LAYERS": couche,
+                "STYLES": "", "CRS": "EPSG:4326", "WIDTH": w, "HEIGHT": h,
+                "BBOX": f"{nord - h * dlat},{ouest},{nord},{ouest + w * dlon}",
+                "FORMAT": "image/x-bil;bits=32",
+            }
+            r = http_get(GEOPF_WMS_R, p, delai=180)
+            if not r.headers.get("Content-Type", "").startswith("image/x-bil"):
+                raise RuntimeError(f"WMS {couche} : réponse inattendue {r.text[:200]}")
+            brut[i0:i0 + h, j0:j0 + w] = np.frombuffer(r.content, dtype="<f4").reshape(h, w)
+    brut[brut < -100] = np.nan
+    # Bilinéaire séparable : les centres des cases forment une grille (lat par ligne, lon par colonne).
+    fi = (lat1 - grille.latitudes()) / dlat - 0.5
+    fj = (grille.longitudes() - lon0) / dlon - 0.5
+    i0 = np.clip(np.floor(fi).astype(int), 0, ny - 2)
+    j0 = np.clip(np.floor(fj).astype(int), 0, nx - 2)
+    wi = np.clip(fi - i0, 0, 1)[:, None]
+    wj = np.clip(fj - j0, 0, 1)[None, :]
+    a, c = brut[i0][:, j0], brut[i0][:, j0 + 1]
+    d, e = brut[i0 + 1][:, j0], brut[i0 + 1][:, j0 + 1]
+    return ((a * (1 - wj) + c * wj) * (1 - wi) + (d * (1 - wj) + e * wj) * wi).astype(np.float32)
+
+
 # --- Géométries --------------------------------------------------------------------
 
 def polygones(geometrie: dict):

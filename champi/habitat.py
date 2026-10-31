@@ -20,7 +20,7 @@ from .config import CACHE, DATA, DEPARTEMENT, MARGE_M, NOM_DEPARTEMENT, PAS_FIN,
 from .grille import Grille, grille_englobante
 from .sources import (
     BRGM_WFS, geometrie_lonlat_vers_merc, http_get, json_en_cache, polygones, rasteriser,
-    wfs_geopf, wms_bil,
+    wfs_geopf, wms_bil_lonlat,
 )
 
 # --- Légendes (codes stockés dans le .npz, relus par le site) ----------------------
@@ -102,7 +102,7 @@ def relief(grille: Grille, cle: str = DEPARTEMENT, marge: int = 0) -> tuple[np.n
     if chemin.exists():
         alt = np.load(chemin)
     else:
-        alt = wms_bil("ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES", lue)
+        alt = wms_bil_lonlat("ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES", lue)
         CACHE.mkdir(parents=True, exist_ok=True)
         np.save(chemin, alt)
     # Hors de France (Suisse, mer), le service renvoie des valeurs négatives de remplissage.
@@ -112,6 +112,12 @@ def relief(grille: Grille, cle: str = DEPARTEMENT, marge: int = 0) -> tuple[np.n
     # Le Mercator est conforme : à chaque ligne, même échelle dans les deux directions.
     d = grille.pas_au_sol()[:, None]
     rempli = np.where(np.isnan(alt), np.nanmean(alt) if np.isfinite(alt).any() else 0.0, alt)
+    # Lissage binomial 3 × 3 avant la pente : le relief du service garde de fines stries
+    # horizontales que la dérivée amplifie (pente et exposition à l'échelle d'environ 100 m).
+    for axe in (0, 1):
+        p = np.pad(rempli, [(1, 1) if a == axe else (0, 0) for a in (0, 1)], mode="edge")
+        rempli = (np.take(p, range(0, p.shape[axe] - 2), axis=axe) + 2 * np.take(p, range(1, p.shape[axe] - 1), axis=axe)
+                  + np.take(p, range(2, p.shape[axe]), axis=axe)) / 4
     dz_ligne, dz_col = np.gradient(rempli)
     gx = dz_col / d            # dz/dx vers l'est
     gy = -dz_ligne / d         # dz/dy vers le nord (les lignes vont vers le sud)
