@@ -1,0 +1,66 @@
+name: Diagnostic des services
+
+# Temporaire : mesure, depuis un runner GitHub, la réponse de chaque service appelé par la
+# construction de l'habitat. Résultat dans les annotations (lisibles sans connexion).
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/diagnostic.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  mesurer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Un bloc, requête par requête
+        run: |
+          python - <<'EOF'
+          import collections, threading, time, requests
+          from urllib.parse import urlparse
+          vrai_get = requests.get
+          stats = collections.defaultdict(list)
+          def get(url, params=None, **kw):
+              t = time.time()
+              cle = urlparse(url).netloc + " " + str((params or {}).get("TYPENAMES") or (params or {}).get("LAYERS") or "")
+              try:
+                  r = vrai_get(url, params=params, **kw)
+              except Exception as e:
+                  stats[cle].append((time.time() - t, type(e).__name__, 0, ""))
+                  print(f"{cle} EXC {type(e).__name__} {time.time() - t:.1f}s", flush=True)
+                  raise
+              stats[cle].append((time.time() - t, r.status_code, len(r.content), r.headers.get("Content-Type", "")))
+              print(f"{cle} {r.status_code} {len(r.content)} {r.headers.get('Content-Type', '')} {time.time() - t:.1f}s {r.content[:80]!r}", flush=True)
+              return r
+          requests.get = get
+          from champi import france
+          france.SORTIE.mkdir(parents=True, exist_ok=True)
+          com = france.communes_nationales()
+          index = {c["insee"]: i + 1 for i, c in enumerate(com)}
+          def bilan(quand):
+              hotes = collections.defaultdict(list)
+              for cle, v in list(stats.items()):
+                  codes = collections.Counter(str(x[1]) for x in v)
+                  hotes[cle.split()[0]].append(f"{cle.partition(' ')[2] or '-'}: {len(v)} req, {sum(x[0] for x in v):.0f} s, max {max(x[0] for x in v):.0f} s, {dict(codes)}, {sorted(set(x[3][:25] for x in v))}")
+              for hote, lignes in hotes.items():
+                  print(f"::notice title={quand} {hote}::" + " %0A".join(lignes), flush=True)
+          for minutes in (6, 12, 18):
+              threading.Timer(60 * minutes, bilan, args=(f"{minutes} min",)).start()
+          for nom in ["18_156", "13_148"]:
+              t = time.time()
+              try:
+                  m = france.construire_bloc(nom, index)
+                  print(f"::notice title=bloc {nom}::{m and m['n_foret']} cases, {time.time() - t:.0f} s", flush=True)
+              except Exception as e:
+                  print(f"::error title=bloc {nom}::{type(e).__name__} {str(e)[:400]} ({time.time() - t:.0f} s)", flush=True)
+          bilan("fin")
+          import os; os._exit(0)
+          EOF
