@@ -618,6 +618,15 @@ async function demarrer() {
       zone.append(el("label", pre ? { class: "pre", title: "Espèce des prés : par département et par commune, sans carte fine" } : {},
         input, e.nom, el("span", { class: "niv" }, r ? NIVEAU_COURT[r.niveau] : "")));
     }
+    enVue(zone);
+  }
+
+  // Sur téléphone, les choix tiennent sur une ligne qui défile : le choix courant au milieu.
+  function enVue(zone) {
+    const c = zone.querySelector("label:has(input:checked)");
+    if (c && zone.scrollWidth > zone.clientWidth) {
+      zone.scrollLeft += c.getBoundingClientRect().left - zone.getBoundingClientRect().left - (zone.clientWidth - c.offsetWidth) / 2;
+    }
   }
 
   function choisirEspece(code) {
@@ -635,6 +644,7 @@ async function demarrer() {
       input.addEventListener("change", () => { etat.jour = k; tout(); });
       zone.append(el("label", { title: j.libelle }, input, jourCourt(j.date, aujourdhui)));
     });
+    enVue(zone);
   }
 
   function fiche() {
