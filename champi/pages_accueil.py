@@ -13,9 +13,9 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, article, cle_departement, date_courte, date_longue,
-                    departements_de, e, entete, enumerer, instant_paris, meilleur_niveau, national,
-                    ordre_saison, pct, pied, tete)
+from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, cle_departement, date_courte,
+                    date_longue, departements_de, e, entete, enumerer, image_partage, instant_paris,
+                    meilleur_niveau, national, ordre_saison, pct, pied, tete)
 from .redaction import NBSP, nombre
 
 # Avant tout affichage : la carte reçoit ses anciens liens, et l'appli installée quand la carte
@@ -219,7 +219,7 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
                 "Les forêts de France où les conditions sont favorables aux cèpes, girolles, trompettes, "
                 "pieds-de-mouton, lactaires délicieux et morilles, aujourd'hui et pour les sept prochains "
                 "jours, case par case de 50 m, d'après la pluie, la température du sol et la saison.",
-                "", "", plus=APPLI + RENVOI)
+                "", "", image=image_partage("france", genere_le), plus=APPLI + RENVOI)
     lignes = [entete("", ("carte/", "La carte"), ("en-ce-moment.html", "En ce moment"),
                      ("especes/", "Les espèces"), ("departements/", "Par département")),
               '  <div class="accueil">',
@@ -231,10 +231,17 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
               '<a class="bouton" href="departements/" id="mon-departement">Mon département</a></p>',
               "  <h2>Ce matin</h2>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}, sur les forêts de chaque département.</p>',
+              '  <div class="ce-matin-bloc">',
               '  <ul class="ce-matin">']
     lignes += [f"    <li>{x}</li>" for x in ce_matin(especes, nat, phases, jours, noms)]
     lignes += ["  </ul>",
-               '  <p><a href="en-ce-moment.html">Toute la semaine en France, espèce par espèce</a></p>',
+               f'  <figure class="vignette"><a href="carte/"><img src="{image_partage("carte-france", genere_le)}" '
+               'alt="Carte de France du jour : les forêts aux meilleures conditions, toutes espèces, en orange '
+               'foncé"></a><figcaption>Aujourd\'hui, toutes espèces : la meilleure de chaque forêt, par carrés '
+               "d'un kilomètre.</figcaption></figure>",
+               "  </div>",
+               f'  <p class="actions"><a class="bouton" href="en-ce-moment.html">Toute la semaine en France</a>'
+               f"{PARTAGER}</p>",
                "  <h2>Comment ça marche</h2>",
                '  <ol class="etapes">',
                "    <li><strong>La forêt.</strong> Pour chaque case de 50 m : l'essence des arbres, la "
@@ -287,7 +294,8 @@ def page_en_ce_moment(departements: list[dict], especes: list[dict], nat: dict, 
     haut = tete("Champignons en ce moment en France : les conditions de la semaine",
                 "Où les conditions sont bonnes pour les cèpes, girolles, trompettes, pieds-de-mouton, "
                 "lactaires délicieux et morilles en ce moment, département par département, pour "
-                "aujourd'hui et les sept jours suivants.", "", "en-ce-moment.html")
+                "aujourd'hui et les sept jours suivants.", "", "en-ce-moment.html",
+                image=image_partage("france", genere_le))
     lignes = [entete("", ("carte/", "La carte"), ("especes/", "Les espèces"), ("departements/", "Par département")),
               "  <h1>Les champignons en ce moment</h1>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}, pour aujourd\'hui et les sept jours '
@@ -295,6 +303,7 @@ def page_en_ce_moment(departements: list[dict], especes: list[dict], nat: dict, 
               '  <ul class="ce-matin">']
     lignes += [f"    <li>{x}</li>" for x in ce_matin(especes, nat, phases, jours, noms)]
     lignes += ["  </ul>",
+               f'  <p class="actions"><a class="bouton principal" href="carte/">Voir la carte</a>{PARTAGER}</p>',
                "  <h2>La semaine en France</h2>"]
     lignes += tableau_national(especes, nat, jours)
     lignes += ['  <p class="muet">Dans chaque case, le nombre de départements aux bonnes conditions, au '

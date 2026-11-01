@@ -5,6 +5,7 @@
 import { installerAlertes } from "./alertes.js";
 import { installerCoins } from "./coins.js";
 import { evaluer, facteurPh, indices, preparer } from "./modele.js";
+import { partager } from "./partage.js";
 
 const R = 6378137;
 const MONDE = 2 * Math.PI * R;
@@ -640,8 +641,13 @@ async function demarrer() {
       })));
     $("semaine").replaceChildren(el("thead", {}, tete), el("tbody", {}, ...lignes));
     const d = deps[etat.departement];
-    $("lien-departement").replaceChildren(d
-      ? el("a", { href: `departements/${etat.departement}.html` }, `La semaine en ${d.nom}, sur une page à part`) : "");
+    const page = `departements/${etat.departement}.html`;
+    $("lien-departement").replaceChildren(...(d ? [
+      el("a", { href: page }, `La semaine en ${d.nom}, sur une page à part`), " · ",
+      el("button", { type: "button", class: "lien", onclick: (ev) => partager(
+        { titre: `Champignons en ${d.nom} : les conditions de la semaine`, url: new URL(page, document.baseURI).href },
+        ev.currentTarget) }, "Partager"),
+    ] : []));
   }
 
   function classement() {

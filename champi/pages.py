@@ -26,7 +26,16 @@ PLAN = [("./", "Accueil"), ("carte/", "La carte"), ("en-ce-moment.html", "En ce 
         ("methode.html", "Méthode"), ("validation.html", "Face aux observations"),
         ("avant-de-partir.html", "Avant de partir"), ("a-propos.html", "À propos")]
 
+# Le bouton Partager : caché sans JavaScript (pages.js le montre), la page reste lisible.
+PARTAGER = '<button type="button" class="bouton" data-partager hidden>Partager</button>'
+
 e = html.escape
+
+
+def image_partage(nom: str, genere_le: str) -> str:
+    """L'image de partage d'une page (`partage.py`), depuis la racine. L'heure du calcul change
+    l'adresse à chaque export : les messageries gardent longtemps l'image d'une adresse vue."""
+    return f"data/partage/{nom}.png?v={''.join(c for c in genere_le[:16] if c.isdigit())}"
 
 
 def article(de: str) -> str:
@@ -84,6 +93,7 @@ def tete(titre: str, description: str, racine: str, chemin: str, image: str | No
     robots = "index, follow" if INDEXER else "noindex, nofollow"
     canonique = f'\n<link rel="canonical" href="{ADRESSE}{chemin}">' if INDEXER else ""
     apercu = (f'\n<meta property="og:image" content="{ADRESSE}{image}">'
+              '\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">'
               '\n<meta name="twitter:card" content="summary_large_image">') if image else ""
     return f"""<!doctype html>
 <html lang="fr">

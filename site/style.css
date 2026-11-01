@@ -349,11 +349,13 @@ code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-
 
 /* Boutons-liens des pages : la carte d'abord. */
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px; }
-a.bouton {
+a.bouton, button.bouton {
   display: inline-block; padding: 8px 14px; border: 1px solid var(--trait); border-radius: var(--rayon);
-  background: var(--surface); color: var(--texte); text-decoration: none; font-weight: 600; font-size: .92rem;
+  background: var(--surface); color: var(--texte); text-decoration: none; font: inherit; font-weight: 600;
+  font-size: .92rem; cursor: pointer;
 }
-a.bouton:hover { background: var(--surface-2); }
+button.bouton[hidden] { display: none; }
+a.bouton:hover, button.bouton:hover { background: var(--surface-2); }
 a.bouton.principal { background: var(--accent); border-color: var(--accent); color: #fff; }
 a.bouton.principal:hover { filter: brightness(1.08); }
 @media (prefers-color-scheme: dark) {
@@ -362,6 +364,11 @@ a.bouton.principal:hover { filter: brightness(1.08); }
 :root[data-theme="dark"] a.bouton.principal { color: #1d1b17; }
 
 /* Accueil et « en ce moment » */
+.ce-matin-bloc { display: grid; grid-template-columns: 1fr 260px; gap: 8px 20px; align-items: start; }
+@media (max-width: 640px) { .ce-matin-bloc { grid-template-columns: 1fr; } }
+.vignette { margin: 0; }
+.vignette img { display: block; width: 100%; height: auto; border-radius: var(--rayon); border: 1px solid var(--trait); }
+.vignette figcaption { font-size: .8rem; color: var(--texte-3); margin-top: 4px; }
 .ce-matin { padding-left: 1.1em; }
 .ce-matin li { margin-bottom: .45em; }
 .etapes li { margin-bottom: .5em; }

@@ -1,6 +1,7 @@
 // Pages Méthode et Face aux observations : tableaux construits depuis les JSON publiés,
 // pour qu'un seuil changé dans champi/especes.py ne laisse jamais une page en retard.
 // Chargé aussi par les pages générées chaque matin (champi/pages.py), qui se lisent sans lui.
+import { partager } from "./partage.js";
 
 const fr = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
 const pct = (v) => `${Math.round(v * 100)} %`;
@@ -171,3 +172,8 @@ function monDepartement(bouton) {
 if (document.getElementById("especes")) methode();
 if (document.getElementById("resultats")) validation();
 if (document.getElementById("mon-departement")) monDepartement(document.getElementById("mon-departement"));
+// Le bouton Partager des pages générées : caché tant que ce script n'a pas tourné.
+for (const b of document.querySelectorAll("[data-partager]")) {
+  b.hidden = false;
+  b.addEventListener("click", () => partager({ titre: document.title, url: location.href.split("#")[0] }, b));
+}

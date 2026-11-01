@@ -3,10 +3,12 @@ import re
 from datetime import date, timedelta
 from pathlib import Path
 
+import numpy as np
+
 from champi import especes as E
 from champi import pages
 from champi import pages_accueil as A
-from champi import pages_departements, pages_especes
+from champi import pages_departements, pages_especes, partage
 from champi.habitat import ESSENCES, ROCHES
 
 SITE = Path(__file__).resolve().parent.parent / "site"
@@ -138,17 +140,23 @@ def test_fiches_especes():
 
 
 def test_pages_generees_completes_et_liens_valides(tmp_path):
-    """Toutes les pages du matin, écrites à côté du site : chaque lien mène à une page écrite
-    ou à un fichier du site, et aucune n'est indexée."""
+    """Toutes les pages du matin et leurs images, écrites à côté du site : chaque lien mène à
+    une page ou une image écrite, ou à un fichier du site, et aucune page n'est indexée."""
     r = resumes({"85": {"cepe": [4] * 8, "girolle": [3] * 8}, "01": {"bolet_bai": [2] * 8}})
     chemins = pages_departements.ecrire(tmp_path, DEPS, ESPECES, r, JOURS, GENERE_LE)
     chemins += A.ecrire(tmp_path, DEPS, ESPECES, r, JOURS, GENERE_LE, None)
     chemins += pages_especes.ecrire(tmp_path, DEPS, REGLES, LEGENDES, r, JOURS, GENERE_LE, None)
     assert len(chemins) == (1 + len(DEPS)) + 2 + (1 + len(ESPECES))
+    codes = np.full((30, 30), 100, dtype=np.uint8)                # une bande de forêt par département
+    pixel_dep = np.repeat(np.arange(3, dtype=np.int16), 300)
+    partage.ecrire(tmp_path / "data" / "partage", DEPS, {d["code"]: k for k, d in enumerate(DEPS)}, ESPECES, r,
+                   pages.national(ESPECES, DEPS, r, 8), JOURS, codes, pixel_dep, 200, [0.1, 0.25, 0.4, 0.55, 1.01])
     for page in tmp_path.rglob("*.html"):
         html = page.read_text(encoding="utf-8")
         assert '<meta name="robots" content="noindex, nofollow">' in html, page
         assert not re.search(r'<script[^>]+src="https?://', html)
+        image = re.search(rf'<meta property="og:image" content="{re.escape(pages.ADRESSE)}([^"?]+)\?v=\d+">', html)
+        assert image and (tmp_path / image.group(1)).exists(), page
         for cible in re.findall(r'(?:href|src)="([^"#:?]+)["#?]', html):
             chemin = (page.parent / cible).resolve()
             rel = chemin.relative_to(tmp_path.resolve())

@@ -28,9 +28,11 @@ champi/depot.py          (chaque jour) météo de la France sur la grille AROME 
 champi/export_france.py  (chaque jour) champs météo par bloc, aperçu national, résumés → site/data/
 champi/pages*.py         (chaque jour) les pages lisibles sans JavaScript : accueil, « en ce moment »,
                          fiches espèces, une page par département
+champi/partage.py        (chaque jour) images de partage : l'aperçu des liens dans les messageries
 champi/alertes.py        (chaque jour) notifications des alertes personnalisées (Web Push), envoyées depuis GitHub Actions
 site/modele.js           le calcul de l'indice dans le navigateur, case par case
 site/sw.js               l'appli hors ligne : copie du site, des données consultées et de l'habitat
+site/partage.js          le bouton Partager : feuille de partage du téléphone, sinon lien copié
 site/alertes.js          mes alertes : département, espèces, seuil ; abonnement de l'appareil par le lien de groupe
 site/coins.js            mes coins : trouvailles gardées dans le navigateur, partage par fichier, synchro par un dépôt GitHub privé
 champi/sol.py            couche « d » des blocs : pH du sol (SoilGrids) et zones urbanisées (Corine)

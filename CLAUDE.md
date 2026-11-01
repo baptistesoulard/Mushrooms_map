@@ -70,6 +70,13 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   Aucun coin : départements, altitudes, communes, comme le panneau. Rien en dur : seuils et
   saisons viennent des règles, les chiffres de fiabilité de `validation.json`. Non indexées tant
   que `INDEXER` est faux (il ouvre les pages et écrit `sitemap.xml`).
+- **Images de partage** (`partage.py` → `data/partage/`) : l'aperçu des liens dans les
+  messageries (`og:image`, 1200 × 630), la carte du jour (la meilleure espèce de chaque pixel
+  de 1,15 km, jamais plus fin) et la semaine. Leur adresse change à chaque export
+  (`pages.image_partage`) : les messageries gardent longtemps l'image d'une adresse déjà vue.
+  Couleurs = jetons de `style.css` (test). Police DejaVu sur les serveurs de GitHub, repli sur
+  celle de Pillow. Le bouton Partager (`site/partage.js`) : la feuille de partage du téléphone,
+  sinon le lien copié.
 - **Classement national « surtout … »** : par surface de forêt aux bonnes conditions
   (`pages.surface_bonne`), pas par indice moyen, qui met en tête Paris et la petite couronne
   (quelques bois suffisent à la moyenne). « Où chercher en France » sur la carte garde l'indice

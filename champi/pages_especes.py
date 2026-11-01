@@ -10,8 +10,8 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from .pages import (date_courte, departements_de, e, entete, instant_paris, meilleur_niveau, national,
-                    ordre_saison, pct, pied, tete)
+from .pages import (PARTAGER, date_courte, departements_de, e, entete, image_partage, instant_paris,
+                    meilleur_niveau, national, ordre_saison, pct, pied, tete)
 from .pages_accueil import etat_espece
 from .redaction import NBSP, fiabilite, nombre
 
@@ -84,7 +84,7 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
     haut = tete(f"{nom} ({x['latin']}) : où et quand le chercher en France",
                 f"{nom} : les forêts, l'altitude, la saison et la météo qui lui conviennent, à quoi "
                 f"{il} ressemble et ses sosies, et les départements où les conditions sont bonnes "
-                "aujourd'hui.", "../", f"{DOSSIER}/{code}.html")
+                "aujourd'hui.", "../", f"{DOSSIER}/{code}.html", image=image_partage("france", genere_le))
     carte = f"../carte/?espece={code}"
     lignes = [entete("../", (carte, "La carte"), ("./", "Toutes les espèces")),
               f'  <h1>{e(nom)} <span class="latin">{e(x["latin"])}</span></h1>',
@@ -105,8 +105,8 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
                               "forêt favorable d'abord) : "
                               + ", ".join(f'<a href="../departements/{c}.html">{e(noms.get(c, c))}</a>'
                                           for c in j0[n]) + ".</p>")
-    lignes += [f'  <p><a class="bouton principal" href="{carte}">Voir la carte {e(x["de"])}</a> '
-               f'<a class="bouton" href="../en-ce-moment.html#{code}">La semaine en France</a></p>',
+    lignes += [f'  <p class="actions"><a class="bouton principal" href="{carte}">Voir la carte {e(x["de"])}</a>'
+               f'<a class="bouton" href="../en-ce-moment.html#{code}">La semaine en France</a>{PARTAGER}</p>',
                "  <h2>Où le chercher</h2>",
                "  <ul>"]
     favorables = essences_entre(x, legendes["essences"], 0.8, 2)
@@ -157,7 +157,7 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
     haut = tete("Les champignons de la carte : où et quand les chercher",
                 "Cèpe, bolet bai, girolle, trompette de la mort, pied-de-mouton, lactaire délicieux et "
                 "morille : leurs forêts, leur saison, leurs sosies, et où les conditions sont bonnes "
-                "aujourd'hui en France.", "../", f"{DOSSIER}/")
+                "aujourd'hui en France.", "../", f"{DOSSIER}/", image=image_partage("france", genere_le))
     lignes = [entete("../", ("../carte/", "La carte"), ("../en-ce-moment.html", "En ce moment")),
               "  <h1>Les espèces de la carte</h1>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}. Les espèces aux meilleures conditions '

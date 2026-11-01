@@ -15,7 +15,8 @@ l'habitat (release « habitat », copié dans `site/habitat/`) et de la météo 
 
 Puis les pages lisibles sans JavaScript, à côté de la carte (`site/carte/`) : l'accueil et « en
 ce moment » (`pages_accueil`), les fiches espèces (`pages_especes`), les départements
-(`pages_departements`).
+(`pages_departements`) ; et leurs images de partage, `partage/<département>.png`, `france.png`
+et `carte-france.png` (`partage`).
 
 Les calculs de ce job (aperçu, résumés) se font sur l'échantillon de l'habitat (une case sur
 16), avec les MÊMES champs arrondis que le navigateur : le panneau et la carte disent la même chose.
@@ -35,6 +36,7 @@ from . import especes as E
 from . import modele as M
 from . import pages
 from . import pages_accueil
+from . import partage
 from . import pages_departements
 from . import pages_especes
 from . import redaction
@@ -302,6 +304,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
     par_dep = [ech.departement == k for k in range(len(departements))]
     resumes = {d["code"]: {} for d in departements}
     classement = {}
+    meilleure = None
     for esp in E.ESPECES:
         habitat = M.facteur_habitat(esp, ech.essence, ech.ouverte, ech.roche, ech.altitude, ech.pente, ech.lat,
                                     ph=ech.ph)
@@ -313,7 +316,10 @@ def exporter(meteo: Meteo | None = None) -> dict:
             pluie, tsol, gel = calcul.entrees(esp, k)
             facteurs = M.facteurs_meteo(esp, pluie, tsol, gel)
             ind = M.indice(habitat, saison, facteurs)
-            ecrire_png(SITE_DATA / "apercu" / f"{esp.code}_{k}.png", apercu.image(ind))
+            image = apercu.image(ind)
+            ecrire_png(SITE_DATA / "apercu" / f"{esp.code}_{k}.png", image)
+            if k == 0:   # l'image de partage : la meilleure espèce de chaque pixel, aujourd'hui
+                meilleure = image if meilleure is None else np.maximum(meilleure, image)
             jour_classement = []
             for dep, sel in zip(departements, par_dep):
                 if not sel.any():
@@ -336,6 +342,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
             ecrire_json(SITE_DATA / "resumes" / f"{dep['code']}.json", resumes[dep["code"]])
     # Un « département » sans forêt échantillonnée n'est pas à proposer : Saint-Pierre-et-
     # Miquelon (« NR » dans ADMIN EXPRESS) dans les listes de communes d'avant le 2026-10-31.
+    rang = {d["code"]: k for k, d in enumerate(departements)}      # celui de `ech.departement`
     departements = [d for d in departements if "centre" in d]
 
     chemin_validation = DATA / "validation.json"
@@ -381,6 +388,11 @@ def exporter(meteo: Meteo | None = None) -> dict:
     chemins += pages_especes.ecrire(SITE, departements, regles, carte["legendes"], resumes, jours,
                                     carte["genere_le"], validation)
     pages.ecrire_plan(SITE, chemins)
+    pixel_dep = np.full(apercu.nb, -1, dtype=np.int16)
+    pixel_dep[apercu.pixel] = ech.departement
+    partage.ecrire(SITE_DATA / "partage", departements, rang, regles["especes"], resumes,
+                   pages.national(regles["especes"], departements, resumes, len(jours)), jours,
+                   meilleure, pixel_dep, ECHELLE, [s for s, _ in M.CLASSES])
     print(f"Écrit site/data/ et {len(chemins)} pages en {time.time() - t0:.0f} s")
     return carte
 

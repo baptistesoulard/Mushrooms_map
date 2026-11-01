@@ -11,8 +11,8 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, article, cle_departement, date_longue, e,
-                    entete, enumerer, instant_paris, pied, tete)
+from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, PARTAGER, article, cle_departement, date_longue, e,
+                    entete, enumerer, image_partage, instant_paris, pied, tete)
 
 DOSSIER = "departements"                  # sous site/, à côté de la carte
 
@@ -60,12 +60,14 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
     noms = ", ".join(x["nom"].lower() for x in especes[:4])
     haut = tete(f"Champignons en {nom} ({code}) : les conditions de la semaine",
                 f"Où en sont les champignons en {nom} cette semaine ? {noms}… : les conditions jour "
-                "par jour, d'après la météo, les forêts et la saison.", "../", f"{DOSSIER}/{code}.html")
+                "par jour, d'après la météo, les forêts et la saison.", "../", f"{DOSSIER}/{code}.html",
+                image=image_partage(code, genere_le))
     lignes = [entete("../", (carte, f"La carte : {nom}"), ("./", "Tous les départements")),
               f"  <h1>Champignons en {e(nom)} cette semaine</h1>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}, pour aujourd\'hui et les sept jours '
               "suivants, sur les forêts du département.</p>"]
     lignes += [f"  <p>{e(p)}</p>" for p in synthese(especes, resumes, jours)]
+    lignes.append(f'  <p class="actions"><a class="bouton principal" href="{carte}">Voir sur la carte</a>{PARTAGER}</p>')
 
     actuel = ' class="actuel"'
     colonnes = "".join(f'<th scope="col"{actuel if k == 0 else ""}>{JOURS_COURTS[d.weekday()]}<br>{d.day}</th>'
@@ -118,7 +120,7 @@ def page_index(departements: list[dict], especes: list[dict], resumes: dict, gen
     haut = tete("Champignons par département : les conditions de la semaine",
                 "Les conditions de pousse des champignons dans chaque département de France "
                 "métropolitaine, espèce par espèce, pour aujourd'hui et les sept jours suivants.",
-                "../", f"{DOSSIER}/")
+                "../", f"{DOSSIER}/", image=image_partage("france", genere_le))
     lignes = [entete("../", ("../carte/", "La carte")),
               "  <h1>Champignons par département</h1>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}. Pour chaque département, les '
