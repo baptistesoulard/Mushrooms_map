@@ -88,7 +88,7 @@ def test_preuve_chiffres_de_la_validation():
                     "meteo": {"auc_saison": 0.678, "auc_calendrier": 0.701, "ic_ecart": [-0.06, 0.02]}}}}}}
     html = "\n".join(A.preuve(ESPECES, v))
     assert "vérifiées sur 1\u00a0700 observations datées de toute la France (GBIF, 1995 à 2026)" in html
-    assert "Pour 1 espèce sur 2, la météo" in html and "pour 1 sur 2, ses forêts" in html
+    assert "Pour 1 espèce sur 2, la météo" in html and "pour 1 sur 1 (les espèces de forêt" in html
     assert "63 % (forêt seule : 61 %)" in html and "65 % (calendrier seul : 58 %)" in html
     assert "trop peu de cas" in html                            # la morille, sans test d'habitat
     assert A.preuve(ESPECES, None) == ["  <p>La vérification face aux observations n'est pas encore publiée.</p>"]

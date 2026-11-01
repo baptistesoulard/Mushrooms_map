@@ -153,16 +153,20 @@ def preuve(especes: list[dict], validation: dict | None, racine: str = "") -> li
         return ["  <p>La vérification face aux observations n'est pas encore publiée.</p>"]
     v = validation["regions"]["france"]["especes"]
     testees = [x for x in especes if x["code"] in v]
-    moment = [x for x in testees if v[x["code"]]["meteo"].get("ic_ecart", [0])[0] > 0]
-    lieu = [x for x in testees if v[x["code"]]["habitat"].get("ic_ecart", [0])[0] > 0]
+    # Chaque compte sur les espèces que ce test a pu juger : assez de cas datés pour le moment ;
+    # pour le lieu, assez de lieux précis, et une carte fine (pas les espèces des prés).
+    au_moment = [x for x in testees if "auc_saison" in v[x["code"]]["meteo"]]
+    au_lieu = [x for x in testees if "auc" in v[x["code"]]["habitat"]]
+    moment = [x for x in au_moment if v[x["code"]]["meteo"]["ic_ecart"][0] > 0]
+    lieu = [x for x in au_lieu if v[x["code"]]["habitat"]["ic_ecart"][0] > 0]
     observations = sum(v[x["code"]]["observations"] for x in testees)
     lignes = [f"  <p>Les règles de la carte ont été écrites avant de regarder les observations, puis "
               f"vérifiées sur {nombre(observations)} observations datées de toute la France (GBIF, "
               f"{validation['periode'][0]} à {validation['periode'][1]}). Pour {len(moment)} "
               f"espèce{'s' if len(moment) > 1 else ''} sur "
-              f"{len(testees)}, la météo de la carte repère mieux les jours de pousse que le seul calendrier ; "
-              f"pour {len(lieu)} sur {len(testees)}, ses forêts distinguent mieux les lieux que la seule "
-              "présence de forêt.</p>",
+              f"{len(au_moment)}, la météo de la carte repère mieux les jours de pousse que le seul calendrier ; "
+              f"pour {len(lieu)} sur {len(au_lieu)} (les espèces de forêt aux lieux assez précis), ses forêts "
+              "distinguent mieux les lieux que la seule présence de forêt.</p>",
               '  <div class="tableau"><table>',
               '  <thead><tr><th>Espèce</th><th>Le bon endroit</th><th>Le bon moment</th></tr></thead><tbody>']
     for x in testees:
