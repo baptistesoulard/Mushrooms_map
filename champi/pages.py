@@ -102,7 +102,7 @@ def lien(racine: str, chemin: str) -> str:
 
 
 def tete(titre: str, description: str, racine: str, chemin: str, image: str | None = None,
-         plus: str = "") -> str:
+         plus: str = "", large: bool = False) -> str:
     """Le haut d'une page : `chemin` depuis la racine (adresse canonique), `image` de partage
     depuis la racine aussi, `plus` ajouté en fin d'en-tête."""
     robots = "index, follow" if INDEXER else "noindex, nofollow"
@@ -126,7 +126,7 @@ def tete(titre: str, description: str, racine: str, chemin: str, image: str | No
 </head>
 <body>
 {barre(racine, chemin)}
-<div class="page">
+<div class="page{" large" if large else ""}">
 """
 
 

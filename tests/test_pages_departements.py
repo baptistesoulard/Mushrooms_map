@@ -58,6 +58,25 @@ def test_page_departement():
 def test_index_par_numero():
     deps = [{"code": c, "nom": n} for c, n in (("21", "Côte-d'Or"), ("2A", "Corse-du-Sud"), ("19", "Corrèze"))]
     r = {d["code"]: resumes([4] * 8, [4] * 8, [0] * 8) for d in deps}
-    page = P.page_index(deps, ESPECES, r, "2026-11-01T05:20+00:00")
+    page = P.page_index(deps, ESPECES, r, JOURS, "2026-11-01T05:20+00:00")
     assert [m for m in re.findall(r'href="(\w+)\.html"', page)] == ["19", "2A", "21"]
     assert "bon : cèpe et girolle" in page
+
+
+def test_carte_des_departements():
+    """Chaque département est un lien coloré au verdict de l'espèce du moment ; les données du
+    choix (espèce, jour) suivent l'ordre des tracés."""
+    import json
+    deps = [{"code": c, "nom": n} for c, n in (("21", "Côte-d'Or"), ("2A", "Corse-du-Sud"), ("19", "Corrèze"))]
+    r = {"21": resumes([4] * 8, [1] * 8, [0] * 8), "2A": resumes([2] * 8, [3] * 8, [0] * 8),
+         "19": resumes([3] + [4] * 7, [0] * 8, [0] * 8)}
+    contours = {"largeur": 100, "hauteur": 90, "traces": {"21": "M1 1l1 0 0 1z", "2A": "M5 5l1 0 0 1z",
+                                                          "19": "M9 9l1 0 0 1z"}}
+    page = P.page_index(deps, ESPECES, r, JOURS, "2026-11-01T05:20+00:00", contours)
+    assert re.findall(r'<a href="(\w+)\.html" data-dep="\1"><path class="n(\w)"', page) == \
+        [("19", "3"), ("2A", "2"), ("21", "4")]                       # le cèpe, le mieux placé aujourd'hui
+    donnees = json.loads(re.search(r'<script type="application/json" id="niveaux-deps">(.+?)</script>', page).group(1))
+    assert donnees["defaut"] == "cepe" and donnees["ordre"] == ["19", "2A", "21"]
+    assert donnees["especes"]["cepe"]["niveaux"][:2] == ["324", "424"]
+    assert donnees["especes"]["girolle"]["niveaux"][0] == "031"
+    assert '<strong>Bonnes conditions</strong> (1) : <a href="21.html">Côte-d&#x27;Or</a>' in page

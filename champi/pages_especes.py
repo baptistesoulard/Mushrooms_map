@@ -78,14 +78,16 @@ def ce_que_la_carte_en_sait(x: dict, v: dict | None) -> list[str]:
 
 
 def figure_photo(x: dict, photo: dict | None, racine: str = "../", classe: str = "photo",
-                 paresseuse: bool = True) -> str:
+                 paresseuse: bool = True, credit: bool = True) -> str:
     """La photo de l'espèce et son crédit ; son dessin quand elle n'en a pas. Les photos du haut de
-    page se chargent tout de suite, les autres à l'approche."""
+    page se chargent tout de suite, les autres à l'approche. Sans crédit (`credit=False`) dans une
+    fiche qui est elle-même un lien : un lien dans un lien casse la page (le navigateur coupe la
+    fiche en morceaux) ; les crédits sont alors en bas de page."""
     if not photo:
         return f'<figure class="{classe} dessin">{icone(racine, x["code"], 120)}</figure>'
     return (f'<figure class="{classe}"><img src="{racine}img/especes/{x["code"]}.jpg" alt="{e(x["nom"])}" '
             f'width="{photo["largeur"]}" height="{photo["hauteur"]}"{' loading="lazy"' if paresseuse else ""}>'
-            f"<figcaption>{credit_photo(photo)}</figcaption></figure>")
+            + (f"<figcaption>{credit_photo(photo)}</figcaption>" if credit else "") + "</figure>")
 
 
 def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: list[date], noms: dict,
@@ -204,7 +206,7 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
     haut = tete("Les champignons de la carte : saisons, milieux, où les chercher",
                 f"{noms_especes(especes)[:1].upper()}{noms_especes(especes)[1:]} : leurs milieux, leur "
                 "saison mois par mois, leurs sosies, et où les conditions sont bonnes aujourd'hui en France.",
-                "../", f"{DOSSIER}/", image=image_partage("france", genere_le))
+                "../", f"{DOSSIER}/", image=image_partage("france", genere_le), large=True)
     mois = jours[0].month
     ordre = ordre_saison(especes, nat)
     lignes = ["  <h1>Les champignons de la carte</h1>",
@@ -235,8 +237,9 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
         etat = ("hors saison" if n in (0, None) else "défavorable partout" if n == 1 else
                 f"{NIVEAUX_COURTS[n]} dans {departements_de(len(j0[n]))}")
         milieu = "Prés" if x.get("milieu") == "pre" else "Forêt"
-        return (f'    <li><a href="{x["code"]}.html">'
-                f'{figure_photo(x, photos.get(x["code"]), classe="photo vignette-espece")}'
+        return (f'    <li data-milieu="{x.get("milieu", "foret")}" data-saison="{"non" if n in (0, None) else "oui"}">'
+                f'<a href="{x["code"]}.html">'
+                f'{figure_photo(x, photos.get(x["code"]), classe="photo vignette-espece", credit=False)}'
                 f'<span class="badges"><span class="badge">{milieu}</span>'
                 f'<span class="badge n{n or 0}">{e(etat)}</span></span>'
                 f'<strong>{e(x["nom"])}</strong><span class="latin">{e(x["latin"])}</span>'
@@ -248,6 +251,12 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
                '<span class="mois legende-mois"><span class="possible">J</span></span> possible, le mois en cours '
                "entouré (à 46° N, la Haute-Savoie : plus au sud, le printemps avance et l'automne recule "
                "d'environ quatre jours par degré).</p>",
+               # Les filtres : cachés sans JavaScript (toutes les fiches restent visibles).
+               '  <p class="filtres" data-filtres hidden>'
+               '<button type="button" data-filtre="tout" aria-pressed="true">Toutes</button>'
+               '<button type="button" data-filtre="saison" aria-pressed="false">En saison</button>'
+               '<button type="button" data-filtre="foret" aria-pressed="false">Forêt</button>'
+               '<button type="button" data-filtre="pre" aria-pressed="false">Prés</button></p>',
                '  <ul class="fiches-especes">'] + [fiche(x) for x in ordre] + ["  </ul>"]
 
     # Le calendrier : toutes les espèces, mois par mois.

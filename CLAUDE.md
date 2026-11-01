@@ -119,6 +119,19 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   main : liste de la carte, pages) ; une photo de Wikimedia Commons, l'image de l'article de
   Wikipédia (`python -m champi.photos` → `<code>.jpg` et `data/photos.json`), licences libres
   seulement et CRÉDITÉE partout où elle paraît. Une photo aide à chercher, jamais à identifier.
+- **Accueil** (`pages_accueil.page_accueil`) : la une (la réponse du jour en une phrase,
+  `en_bref`, la carte de France, la carte, autour de moi, un département au choix), les espèces
+  en saison en fiches illustrées, la semaine, puis comment ça marche, les fonctions, la
+  vérification (détail replié), les départements (repliés) et les questions.
+- **Page des départements** : une carte de France cliquable (`carte_departements.py` →
+  `data/departements_carte.json`, contours ADMIN EXPRESS simplifiés à ~2 km, versionnés), chaque
+  département au verdict de l'espèce et du jour choisis (dessins des espèces pour choisir, l'espèce
+  vue sur la carte d'abord) ; sans JavaScript, l'espèce du moment aujourd'hui. Le classement à côté
+  suit l'ordre de « surtout » (`pages.national`).
+- **Jamais un lien dans un lien** : le navigateur coupe alors l'élément en morceaux (bug du
+  2026-11-01, le crédit d'une photo dans une fiche cliquable). Une photo dans un lien n'a pas son
+  crédit à côté (`figure_photo(..., credit=False)`), il est en bas de page ; le test d'intégration
+  des pages générées le contrôle.
 - **Le panneau de la carte** : l'espèce (bouton illustré, liste en boîte de dialogue, en saison
   d'abord), le jour, puis quatre onglets — Ici (que chercher ici, légende), Département (verdict,
   semaine, altitude, communes, France), L'espèce (fiche), Mes outils (coins, alertes, exploration).
@@ -232,6 +245,8 @@ python -m champi.france bloc 18_156     # un bloc, pour essayer (habitat/)
 python -m champi.validation meteo       # réseau ; la météo passée des cas, sans attendre le fond
 python -m champi.validation             # réseau (~1 h la 1re fois) ; demande site/habitat/ ; caches dans cache/validation/
 python -m champi.prairies               # réseau, ~10 min : data/prairies.npz (les prés), à refaire avec l'habitat
+python -m champi.carte_departements     # réseau, quelques secondes : data/departements_carte.json (contours)
+python -m champi.photos                 # réseau : les photos des espèces (Wikimedia Commons), avec leurs crédits
 python -m http.server 8765 --directory site   # la carte : /carte/ ; les pages du matin demandent l'export
 ```
 

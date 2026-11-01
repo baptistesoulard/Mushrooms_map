@@ -179,3 +179,34 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
             chemin = (page.parent / cible).resolve()
             rel = chemin.relative_to(tmp_path.resolve())
             assert chemin.exists() or (SITE / rel).exists(), f"{page.relative_to(tmp_path)} → {cible}"
+        assert not liens_imbriques(html), f"{page.relative_to(tmp_path)} : un lien dans un lien"
+
+
+def liens_imbriques(html: str) -> list[str]:
+    """Les liens ouverts dans un lien : le navigateur coupe alors la fiche en morceaux (bug du
+    2026-11-01 sur la page des espèces, le crédit d'une photo dans une fiche cliquable)."""
+    from html.parser import HTMLParser
+
+    class Lecteur(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.ouverts, self.fautes = 0, []
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "a":
+                if self.ouverts:
+                    self.fautes.append(dict(attrs).get("href", ""))
+                self.ouverts += 1
+
+        def handle_endtag(self, tag):
+            if tag == "a":
+                self.ouverts = max(0, self.ouverts - 1)
+
+    lecteur = Lecteur()
+    lecteur.feed(html)
+    return lecteur.fautes
+
+
+def test_le_controle_des_liens_imbriques_marche():
+    assert liens_imbriques('<a href="x"><figure><a href="y">licence</a></figure></a>') == ["y"]
+    assert liens_imbriques('<a href="x">un</a> <a href="y">deux</a>') == []

@@ -39,6 +39,7 @@ site/feuille.js          sur téléphone, le panneau qui glisse du bas
 site/guide.js            la présentation de la première visite
 site/img/especes/        un dessin (SVG) et une photo (Wikimedia Commons, crédits dans data/photos.json) par espèce
 champi/photos.py         (rarement) les photos des espèces, depuis Wikipédia et Wikimedia Commons
+champi/carte_departements.py  (rarement) les contours des départements de la page des départements (IGN)
 site/alertes.js          mes alertes : département, espèces, seuil ; abonnement de l'appareil par le lien de groupe
 site/coins.js            mes coins : trouvailles gardées dans le navigateur, partage par fichier, synchro par un dépôt GitHub privé
 champi/sol.py            couche « d » des blocs : pH du sol (SoilGrids) et zones urbanisées (Corine)

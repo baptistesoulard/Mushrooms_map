@@ -170,11 +170,81 @@ function monDepartement(bouton) {
   if (!lien) return;
   bouton.href = lien.getAttribute("href");
   bouton.textContent = `Mon département : ${lien.textContent.replace(/^\S+\s/, "")}`;
+  const choix = document.getElementById("aller-departement");
+  if (choix) choix.value = code;
+}
+
+// Accueil : le choix d'un département mène à sa page ; sans choix, à la liste.
+function allerDepartement(formulaire) {
+  const choix = formulaire.querySelector("select");
+  const aller = () => { location.href = choix.value ? `departements/${choix.value}.html` : "departements/"; };
+  choix.addEventListener("change", aller);
+  formulaire.addEventListener("submit", (ev) => { ev.preventDefault(); aller(); });
 }
 
 if (document.getElementById("especes")) methode();
 if (document.getElementById("resultats")) validation();
+// Les espèces : filtrer les fiches (toutes, en saison, forêt, prés).
+function filtres(barre) {
+  barre.hidden = false;
+  const fiches = [...document.querySelectorAll(".fiches-especes li")];
+  for (const b of barre.querySelectorAll("button")) {
+    b.addEventListener("click", () => {
+      const f = b.dataset.filtre;
+      for (const x of barre.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x === b));
+      for (const li of fiches) {
+        li.hidden = !(f === "tout" || (f === "saison" ? li.dataset.saison === "oui" : li.dataset.milieu === f));
+      }
+    });
+  }
+}
+
+// Les départements : la carte se repeint à l'espèce et au jour choisis, le classement aussi.
+const NIVEAUX = ["hors saison", "conditions défavorables", "pousse possible, sans plus",
+  "bonnes conditions par endroits", "bonnes conditions"];
+function carteDepartements(choix) {
+  const d = JSON.parse(document.getElementById("niveaux-deps").textContent);
+  const liens = [...document.querySelectorAll(".carte-deps a[data-dep]")];
+  let espece = d.defaut, jour = 0;
+  // L'espèce regardée sur la carte, si elle en a une (clé déclarée dans a-propos.html).
+  try {
+    const vue = localStorage.getItem("champi-espece");
+    if (vue && d.especes[vue]) espece = vue;
+  } catch { /* rien de gardé */ }
+  choix.hidden = false;
+  const lien = (c) => el("a", { href: `${c}.html` }, d.noms[c] ?? c);
+  function peindre() {
+    const x = d.especes[espece];
+    const niveaux = x.niveaux[jour];
+    liens.forEach((a, i) => {
+      const n = niveaux[i];
+      a.querySelector("path").setAttribute("class", `n${n}`);
+      a.querySelector("title").textContent = `${d.noms[a.dataset.dep]} : ${n === "x" ? "rien de calculé" : NIVEAUX[n]}`;
+    });
+    document.getElementById("titre-carte-deps").textContent = `${x.nom}, ${d.jours[jour]}`;
+    const [bons, endroits] = x.tete[jour];
+    const zone = document.getElementById("classement-deps");
+    zone.replaceChildren();
+    for (const [codes, quoi] of [[bons, "Bonnes conditions"], [endroits, "Par endroits"]]) {
+      if (!codes.length) continue;
+      const p = el("p", {}, el("strong", {}, quoi), ` (${codes.length}) : `);
+      codes.forEach((c, k) => p.append(k ? ", " : "", lien(c)));
+      p.append(".");
+      zone.append(p);
+    }
+    if (!bons.length && !endroits.length) zone.append(el("p", {}, "Aucun département aux bonnes conditions ce jour-là."));
+    for (const b of choix.querySelectorAll("[data-espece]")) b.setAttribute("aria-pressed", String(b.dataset.espece === espece));
+    for (const b of choix.querySelectorAll("[data-jour]")) b.setAttribute("aria-pressed", String(Number(b.dataset.jour) === jour));
+  }
+  for (const b of choix.querySelectorAll("[data-espece]")) b.addEventListener("click", () => { espece = b.dataset.espece; peindre(); });
+  for (const b of choix.querySelectorAll("[data-jour]")) b.addEventListener("click", () => { jour = Number(b.dataset.jour); peindre(); });
+  if (espece !== d.defaut) peindre();
+}
+
 if (document.getElementById("mon-departement")) monDepartement(document.getElementById("mon-departement"));
+for (const b of document.querySelectorAll("[data-filtres]")) filtres(b);
+for (const c of document.querySelectorAll("[data-carte-deps]")) carteDepartements(c);
+for (const f of document.querySelectorAll("[data-aller-departement]")) allerDepartement(f);
 // Le bouton Partager des pages générées : caché tant que ce script n'a pas tourné.
 for (const b of document.querySelectorAll("[data-partager]")) {
   b.hidden = false;

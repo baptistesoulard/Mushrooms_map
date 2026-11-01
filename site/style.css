@@ -570,17 +570,48 @@ figure.dessin { display: grid; place-items: center; background: var(--surface-2)
 .calendrier { min-width: 640px; }
 .calendrier th, .calendrier td { padding: 4px 3px; border-bottom: 1px solid var(--trait); }
 .calendrier thead th { font-weight: 600; font-size: .75rem; text-align: center; color: var(--texte-3); }
-.calendrier thead th.actuel { color: var(--texte); }
+.calendrier thead th.actuel { color: var(--accent); }
 .calendrier tbody th { white-space: nowrap; font-weight: 400; }
 .calendrier tbody th a { display: inline-flex; align-items: center; gap: 6px; color: var(--texte); text-decoration: none; }
 .calendrier td { width: 7%; }
-.calendrier td.actuel { box-shadow: inset 2px 0 0 var(--texte), inset -2px 0 0 var(--texte); }
+.calendrier td.actuel { box-shadow: inset 0 0 0 999px rgb(0 0 0 / .07); }
+/* Les filtres des espèces, et les choix de la carte des départements : des pastilles. */
+.filtres, .jours-dep { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; }
+.filtres button, .jours-dep button {
+  padding: 6px 12px; border: 1px solid var(--trait); border-radius: 999px; background: var(--surface);
+  color: var(--texte); font: inherit; font-size: .88rem; cursor: pointer;
+}
+.filtres button[aria-pressed="true"], .jours-dep button[aria-pressed="true"] {
+  border-color: var(--accent); background: var(--accent-doux); font-weight: 600;
+}
+.especes-dep { display: flex; flex-wrap: wrap; gap: 6px; }
+.especes-dep button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 6px; border: 1px solid var(--trait);
+  border-radius: 999px; background: var(--surface); color: var(--texte); font: inherit; font-size: .88rem; cursor: pointer;
+}
+.especes-dep button.hors { opacity: .55; }
+.especes-dep button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-doux); font-weight: 600; opacity: 1; }
+.carte-deps-bloc { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px 28px; align-items: start; }
+@media (max-width: 760px) { .carte-deps-bloc { grid-template-columns: 1fr; } }
+.carte-deps { margin: 0; }
+.carte-deps svg { display: block; width: 100%; height: auto; }
+.carte-deps path { fill: #ffffff; stroke: var(--surface-2); stroke: #cfc9bd; stroke-width: .8; stroke-linejoin: round; }
+.carte-deps a:hover path, .carte-deps a:focus-visible path { stroke: var(--texte); stroke-width: 2; }
+.carte-deps path.n1, .pastille.n1 { fill: #efece5; background: #efece5; }
+.carte-deps path.n0, .pastille.n0 { fill: #e2ded5; background: #e2ded5; }
+.carte-deps path.n2 { fill: var(--classe-2); }
+.carte-deps path.n3 { fill: var(--classe-3); }
+.carte-deps path.n4 { fill: var(--classe-4); }
+.carte-deps-cote h2 { margin-top: 0; }
+.carte-deps-cote .legende-semaine { margin: 4px 0 12px; }
 .credits { font-size: .8rem; color: var(--texte-3); }
 .credits a { color: inherit; }
-.page { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+.page { max-width: 1000px; margin: 0 auto; padding: 28px 24px 56px; font-size: 16px; }
+.page.large { max-width: 1180px; }
+@media (max-width: 600px) { .page { padding: 20px 16px 48px; } }
 
-.page h1 { font-size: 1.6rem; margin-top: .4em; }
-.page h2 { font-size: 1.2rem; margin-top: 1.6em; }
+.page h1 { font-size: 1.75rem; margin-top: .4em; }
+.page h2 { font-size: 1.3rem; margin-top: 1.6em; }
 .page li { margin-bottom: .3em; }
 .page table { border-collapse: collapse; width: 100%; font-size: .88rem; margin: .6em 0 1.2em; }
 .page th, .page td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--trait); vertical-align: top; }
@@ -601,6 +632,7 @@ figure.dessin { display: grid; place-items: center; background: var(--surface-2)
 }
 .page .departements a:hover { color: var(--accent); }
 .page .departements .cl { color: var(--texte-3); font-size: .85rem; text-align: right; }
+.page .departements a { flex-wrap: wrap; }
 .tableau { overflow-x: auto; }
 .carte-espece { border: 1px solid var(--trait); border-radius: var(--rayon); padding: 12px 14px; margin: 12px 0; background: var(--surface); }
 .carte-espece h3 { font-size: 1.05rem; }
@@ -626,6 +658,58 @@ a.bouton.principal:hover { filter: brightness(1.08); }
 }
 :root[data-theme="dark"] a.bouton.principal { color: #1d1b17; }
 
+/* Accueil : la une (la réponse du jour et la carte de France), puis des blocs. */
+.une {
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 20px 32px; align-items: center;
+  margin: 4px 0 8px; padding: 26px 28px; border-radius: 18px; background: var(--surface);
+  border: 1px solid var(--trait);
+}
+.une h1 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); margin: 4px 0 10px; line-height: 1.15; }
+.une .chapeau { margin-bottom: 12px; }
+.en-bref {
+  font-size: 1.05rem; font-weight: 600; color: var(--texte); background: var(--accent-doux);
+  border-left: 4px solid var(--accent); border-radius: 0 var(--rayon) var(--rayon) 0; padding: 10px 14px;
+}
+.aller-departement { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.aller-departement label { font-size: .9rem; color: var(--texte-2); }
+.aller-departement select {
+  font: inherit; padding: 7px 8px; border: 1px solid var(--trait); border-radius: var(--rayon);
+  background: var(--surface); color: var(--texte); max-width: 100%;
+}
+.une-carte { margin: 0; }
+.une-carte img { display: block; width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--trait); }
+.une-carte figcaption { font-size: .8rem; color: var(--texte-3); margin-top: 6px; }
+@media (max-width: 760px) {
+  .une { grid-template-columns: 1fr; padding: 20px 18px; }
+  .une-carte { max-width: 420px; }
+}
+.bloc { margin-top: 40px; }
+.bloc > h2:first-child { margin-top: 0; }
+.saison-cartes { list-style: none; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.saison-cartes li {
+  margin: 0; display: grid; grid-template-rows: auto 1fr; border: 1px solid var(--trait); border-radius: 14px;
+  overflow: hidden; background: var(--surface);
+}
+.saison-photo { display: block; background: var(--surface-2); }
+.saison-photo img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.saison-photo img.icone { width: 96px; height: 96px; aspect-ratio: auto; margin: 36px auto; object-fit: contain; }
+.saison-cartes li > div { padding: 10px 14px 14px; }
+.saison-cartes h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.saison-cartes h3 a { color: var(--texte); text-decoration: none; }
+.saison-cartes h3 a:hover { color: var(--accent); }
+.saison-cartes .badges { margin: 0 0 6px !important; }
+.saison-cartes .etat { margin: 0; font-size: .9rem; color: var(--texte-2); }
+.etapes-cartes { list-style: none; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.etapes-cartes li, .fonctions li {
+  margin: 0; padding: 14px 16px; border: 1px solid var(--trait); border-radius: 14px; background: var(--surface);
+  color: var(--texte-2); font-size: .93rem;
+}
+.etapes-cartes strong, .fonctions strong { display: block; color: var(--texte); margin: 6px 0 2px; font-size: 1rem; }
+.trait { display: block; color: var(--accent); }
+details.detail { margin: 10px 0; }
+details.detail summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+details.detail[open] summary { margin-bottom: 8px; }
+
 /* Accueil et « en ce moment » */
 .ce-matin-bloc { display: grid; grid-template-columns: 1fr 260px; gap: 8px 20px; align-items: start; }
 @media (max-width: 640px) { .ce-matin-bloc { grid-template-columns: 1fr; } }
@@ -635,11 +719,8 @@ a.bouton.principal:hover { filter: brightness(1.08); }
 .ce-matin { padding-left: 1.1em; }
 .ce-matin li { margin-bottom: .45em; }
 .etapes li { margin-bottom: .5em; }
-.fonctions, .especes { list-style: none; padding: 0; display: grid; gap: 8px;
+.fonctions, .especes { list-style: none; padding: 0; display: grid; gap: 12px;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-.fonctions li { margin: 0; padding: 10px 12px; border: 1px solid var(--trait); border-radius: var(--rayon);
-  background: var(--surface); font-size: .9rem; color: var(--texte-2); }
-.fonctions strong { display: block; color: var(--texte); margin-bottom: 2px; }
 .especes li { margin: 0; }
 .especes a { display: flex; gap: 12px; align-items: center; height: 100%; padding: 10px 12px; border: 1px solid var(--trait);
   border-radius: var(--rayon); background: var(--surface); color: var(--texte); text-decoration: none; }
