@@ -1,0 +1,46 @@
+name: pH du sol dans l'habitat
+
+# Ajoute la couche « d » (pH du sol, champi.sol) aux blocs de la release « habitat », sans
+# reconstruire le reste : quelques dizaines de secondes sur la copie versionnée de SoilGrids
+# (data/ph_sol.npz). Les blocs construits ensuite par habitat.yml l'ont d'emblée.
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/sol.yml", "champi/sol.py", "data/ph_sol.npz"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Même groupe que habitat.yml : jamais deux publications de la release en même temps.
+concurrency:
+  group: habitat
+  cancel-in-progress: false
+
+jobs:
+  sol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Release « habitat »
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p habitat
+          gh release download habitat -p habitat.tar -D "$RUNNER_TEMP"
+          tar -xf "$RUNNER_TEMP/habitat.tar" -C habitat
+          rm "$RUNNER_TEMP/habitat.tar"
+      - run: python -m champi.sol blocs habitat
+      - name: Publier la release « habitat »
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tar -cf habitat.tar -C habitat blocs blocs.json communes.json echantillon.npz
+          ls -la habitat.tar
+          gh release upload habitat habitat.tar --clobber

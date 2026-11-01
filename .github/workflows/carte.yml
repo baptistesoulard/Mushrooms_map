@@ -8,6 +8,10 @@ on:
     - cron: "20 4 * * *"      # 05 h 20 ou 06 h 20 à Paris selon l'heure d'été
   push:
     branches: [main]
+  # La release « habitat » vient de changer (blocs construits, couche « d ») : la carte suit.
+  workflow_run:
+    workflows: ["Habitat de la France", "pH du sol dans l'habitat"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
