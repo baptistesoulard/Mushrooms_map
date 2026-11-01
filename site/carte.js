@@ -89,7 +89,7 @@ function couleurs() {
     return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
   };
   return { classes: [null, hex("--classe-1"), hex("--classe-2"), hex("--classe-3"), hex("--classe-4")],
-           hachure: hex("--hachure") };
+           hachure: hex("--hachure"), exploration: hex("--exploration") };
 }
 
 function classeDe(v, classes) {
@@ -210,12 +210,31 @@ async function demarrer() {
     return codes;
   });
 
+  // Mode exploration : les cases boisées qui passent les filtres (essence, roche, altitude,
+  // exposition, forêts publiques), sans météo ni saison, sur la même grille que l'indice.
+  const RETENUE = 1;
+  const codesFiltre = memoire(60, async (cle) => {
+    const k = cle.indexOf("#");
+    const nom = cle.slice(0, k), f = JSON.parse(cle.slice(k + 1));
+    const h = await habitats(nom);
+    const c = h.cases;
+    const essences = new Set(f.essences), roches = new Set(f.roches), orientations = new Set(f.orientations);
+    const codes = new Uint8Array(B.taille * B.taille);
+    h.foret.forEach((i, q) => {
+      if (!essences.has(c.essence[q]) || !roches.has(c.roche[q]) || !orientations.has(c.orientation[q])) return;
+      if (c.altitude[q] < f.altitude[0] || c.altitude[q] > f.altitude[1] || (f.publique && !c.public[q])) return;
+      codes[i] = h.protege[i] ? PROTEGE : RETENUE;
+    });
+    return codes;
+  });
+
   // --- État ---------------------------------------------------------------------
   const memoDep = lire(CLE_DEPARTEMENT);
   const etat = {
     departement: deps[memoDep]?.centre ? memoDep : "74",
     espece: especes[lire(CLE_ESPECE)] ? lire(CLE_ESPECE) : carte.especes[0].code,
     jour: jourDepart,
+    filtre: null,       // mode exploration : les critères, ou null pour l'indice
   };
 
   // --- Carte ----------------------------------------------------------------------
@@ -290,7 +309,7 @@ async function demarrer() {
     createTile(coords) {
       const tuile = document.createElement("canvas");
       tuile.width = tuile.height = 256;
-      if (!apercu) return tuile;
+      if (!apercu || etat.filtre) return tuile;   // l'exploration ne se lit que de près
       const { xs, ys } = axes(coords);
       const ctx = tuile.getContext("2d");
       const img = ctx.createImageData(256, 256);
@@ -316,14 +335,18 @@ async function demarrer() {
       const tuile = document.createElement("canvas");
       tuile.width = tuile.height = 256;
       const { xs, ys } = axes(coords);
-      const cle = `${etat.espece}|${etat.jour}`;
+      const filtre = etat.filtre;
+      const codesDe = filtre
+        ? (nom) => codesFiltre(`${nom}#${JSON.stringify(filtre)}`)
+        : (nom) => codesBlocs(`${nom}|${etat.espece}|${etat.jour}`);
+      const [er, eg, eb] = pal.exploration;
       const noms = new Set();
       for (const x of [xs[0], xs[255]]) for (const y of [ys[0], ys[255]]) {
         const nom = `${Math.floor(x / B.cote)}_${Math.floor(y / B.cote)}`;
         if (blocsPresents.has(nom)) noms.add(nom);
       }
       if (!noms.size) { setTimeout(() => fini(null, tuile)); return tuile; }
-      Promise.all([...noms].map((nom) => codesBlocs(`${nom}|${cle}`).then((c) => [nom, c])))
+      Promise.all([...noms].map((nom) => codesDe(nom).then((c) => [nom, c])))
         .then((liste) => {
           const blocs = new Map(liste);
           const ctx = tuile.getContext("2d");
@@ -338,7 +361,12 @@ async function demarrer() {
               const col = Math.floor((xs[i] - bx * B.cote) / B.pas);
               const code = codes[lig * B.taille + col];
               if (code === 0) continue;
-              peindre(img.data, (j * 256 + i) * 4, code, (coords.x * 256 + i + coords.y * 256 + j) % 7 < 2);
+              const p = (j * 256 + i) * 4;
+              if (filtre && code === RETENUE) {
+                img.data[p] = er; img.data[p + 1] = eg; img.data[p + 2] = eb; img.data[p + 3] = OPACITE;
+                continue;
+              }
+              peindre(img.data, p, code, (coords.x * 256 + i + coords.y * 256 + j) % 7 < 2);
             }
           }
           ctx.putImageData(img, 0, 0);
@@ -779,6 +807,46 @@ async function demarrer() {
     semaine();
   }
 
+  // --- Explorer les forêts ----------------------------------------------------------
+  // Les critères du mode exploration, cochés dans le panneau ; « Partir de l'espèce » coche ce
+  // que ses règles jugent favorable (affinité ≥ 0,8, plafond d'altitude à la latitude).
+  function installerExploration() {
+    const leg = carte.legendes;
+    const cases = (zone, legende, cles) => $(zone).replaceChildren(...cles.map((k) =>
+      el("label", { class: "case" }, el("input", { type: "checkbox", value: k, checked: "" }), legende[k])));
+    cases("explorer-essences", leg.essences, Object.keys(leg.essences).filter((k) => k !== "0"));
+    cases("explorer-roches", leg.roches, Object.keys(leg.roches));
+    cases("explorer-orientations", leg.orientations, Object.keys(leg.orientations));
+    const coches = (zone) => [...$(zone).querySelectorAll("input:checked")].map((x) => Number(x.value));
+    const message = () => {
+      $("explorer-message").textContent = etat.filtre && map.getZoom() < DETAIL
+        ? "Rapprochez-vous : les forêts retenues s'affichent case par case, de près." : "";
+    };
+    function appliquer() {
+      etat.filtre = $("explorer-actif").checked ? {
+        essences: coches("explorer-essences"), roches: coches("explorer-roches"),
+        orientations: coches("explorer-orientations"),
+        altitude: [Number($("explorer-alt-min").value) || 0, Number($("explorer-alt-max").value) || 5000],
+        publique: $("explorer-public").checked,
+      } : null;
+      message();
+      calqueApercu.redraw();
+      calqueDetail.redraw();
+    }
+    $("explorer").addEventListener("change", appliquer);
+    map.on("zoomend", message);
+    $("explorer-espece").addEventListener("click", () => {
+      const e = especes[etat.espece];
+      const lat = deps[etat.departement]?.centre?.[0] ?? communs.latitude_ref;
+      for (const x of $("explorer-essences").querySelectorAll("input")) x.checked = (e.essences[x.value] ?? 0) >= 0.8;
+      for (const x of $("explorer-roches").querySelectorAll("input")) x.checked = (e.roches[x.value] ?? 0) >= 0.8;
+      $("explorer-alt-min").value = 0;
+      $("explorer-alt-max").value = Math.round(e.altitude[0] + communs.hopkins_metres * (communs.latitude_ref - lat));
+      $("explorer-actif").checked = true;
+      appliquer();
+    });
+  }
+
   function tout() {
     choixJours();
     panneau();
@@ -787,6 +855,7 @@ async function demarrer() {
   }
 
   legende();
+  installerExploration();
   antipoison();
   resume = await resumes(etat.departement);
   if (!lire(CLE_ESPECE)) {   // première visite : l'espèce la mieux placée dans le département

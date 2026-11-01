@@ -38,6 +38,24 @@
       <div class="choix" id="choix-jour"></div>
     </fieldset>
 
+    <details class="section explorer" id="explorer">
+      <summary><h3>Explorer les forêts</h3></summary>
+      <p class="muet">Sans météo ni saison : les forêts qui répondent à vos critères, case par
+      case. Les zones protégées restent hachurées.</p>
+      <label class="case"><input type="checkbox" id="explorer-actif"> Afficher ces forêts
+      <span class="pastille exploration"></span> au lieu de l'indice</label>
+      <button type="button" class="lien" id="explorer-espece">Partir des préférences de l'espèce choisie</button>
+      <fieldset><legend>Essences</legend><div class="cases" id="explorer-essences"></div></fieldset>
+      <fieldset><legend>Roche</legend><div class="cases" id="explorer-roches"></div></fieldset>
+      <fieldset><legend>Altitude</legend>
+        <label class="altitudes">de <input type="number" id="explorer-alt-min" value="0" min="0" max="5000" step="100">
+        à <input type="number" id="explorer-alt-max" value="5000" min="0" max="5000" step="100"> m</label>
+      </fieldset>
+      <fieldset><legend>Exposition</legend><div class="cases" id="explorer-orientations"></div></fieldset>
+      <label class="case"><input type="checkbox" id="explorer-public"> Forêts publiques seulement</label>
+      <p class="muet" id="explorer-message" aria-live="polite"></p>
+    </details>
+
     <div class="section coins">
       <h3>Mes coins</h3>
       <p class="muet" id="coins-resume"></p>

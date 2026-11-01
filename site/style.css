@@ -17,6 +17,8 @@
   --classe-3: #d9662b;
   --classe-4: #9c3510;
   --hachure: #6b6b6b;
+  /* Mode exploration : une teinte hors de la gamme de l'indice et du vert des forêts IGN. */
+  --exploration: #6a3d9a;
   --barre: #d9662b;
   --rayon: 10px;
   --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -183,6 +185,17 @@ label.case { display: flex; gap: 6px; align-items: center; font-size: .85rem; co
 
 .section { margin-top: 18px; }
 .section h3 { color: var(--texte-2); }
+
+/* Explorer les forêts : replié par défaut, cases à cocher sur deux colonnes. */
+.explorer summary { cursor: pointer; }
+.explorer summary h3 { display: inline; }
+.explorer > p, .explorer > label { margin-top: 8px; }
+.explorer > button { display: block; margin-top: 8px; font-size: .85rem; }
+.explorer .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; }
+.explorer .cases label.case { font-size: .8rem; }
+.explorer .altitudes { font-size: .85rem; color: var(--texte-2); }
+.explorer .altitudes input { width: 5.5em; }
+.pastille.exploration { display: inline-block; background: var(--exploration); vertical-align: middle; }
 
 .tranches { display: grid; gap: 3px; }
 .tranche {
