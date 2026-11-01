@@ -2,9 +2,12 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<!-- La carte vit sous /carte/ depuis le 2026-11-01 : tout ce qu'elle charge (scripts, données,
+     habitat, appli hors ligne) reste à la racine, d'où cette base. -->
+<base href="../">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Champignons en France</title>
+<title>La carte — Champignons en France</title>
 <meta name="description" content="Carte des forêts de France où les conditions sont favorables aux cèpes, bolets bais, girolles, trompettes, pieds-de-mouton, lactaires délicieux et morilles, aujourd'hui et pour les sept prochains jours, case par case de 50 m. Météo, essences, roche, altitude et exposition, à partir de données publiques.">
 <meta property="og:title" content="Champignons en France">
 <meta property="og:description" content="Où les conditions sont favorables aux champignons, forêt par forêt, aujourd'hui et pour les sept prochains jours.">
@@ -20,7 +23,7 @@
 <div class="appli">
   <aside class="panneau">
     <div class="entete">
-      <h1>Champignons en France</h1>
+      <h1><a class="titre" href="./">Champignons en France</a></h1>
       <p>Les forêts où la météo, l'essence, la roche, l'altitude et l'exposition sont
       réunies pour une pousse, aujourd'hui et pour les sept prochains jours. C'est un
       indice de conditions favorables, pas la promesse d'un panier : la carte dit où
@@ -157,6 +160,9 @@
     </div>
 
     <nav class="pied">
+      <a href="./">Accueil</a>
+      <a href="en-ce-moment.html">En ce moment</a>
+      <a href="especes/">Les espèces</a>
       <a href="departements/">Par département</a>
       <a href="methode.html">Méthode</a>
       <a href="validation.html">Face aux observations</a>

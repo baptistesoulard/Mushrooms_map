@@ -22,7 +22,7 @@ import urllib.request
 from datetime import date
 
 from .config import SITE_DATA, USER_AGENT
-from .pages_departements import ADRESSE, article, date_longue, enumerer
+from .pages import ADRESSE, article, date_longue, enumerer
 
 FENETRE = 7                      # jours à venir surveillés, aujourd'hui compris
 CONFIRMER_APRES = 3              # au-delà de 3 jours, la prévision se dit « à confirmer »

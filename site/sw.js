@@ -1,15 +1,15 @@
-// L'appli hors ligne : la carte s'ouvre sans réseau en forêt, avec les données du dernier passage
-// en ligne. Seuls les fichiers du site sont gardés (ni les fonds IGN, ni GitHub, ni ntfy) ;
-// vider les données du site efface tout (déclaré dans a-propos.html).
+// L'appli hors ligne : la carte (carte/) s'ouvre sans réseau en forêt, avec les données du dernier
+// passage en ligne. Seuls les fichiers du site sont gardés (ni les fonds IGN, ni GitHub) ; vider
+// les données du site efface tout (déclaré dans a-propos.html).
 //
 // - le site et les données du jour (data/, pages) : le réseau d'abord, la copie s'il manque
 //   (au-delà de 5 s, la copie, pour ne pas attendre un réseau qui traîne en forêt) ;
 // - l'habitat (habitat/) : la copie d'abord, il ne change qu'avec une reconstruction.
 //   Changer le format des blocs (france.FORMAT) = incrémenter VERSION, sinon les copies restent.
 const VERSION = "champi-hors-ligne-1";
-const COQUILLE = ["./", "index.html", "carte.js", "coins.js", "modele.js", "style.css", "favicon.svg",
-  "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css", "manifest.webmanifest", "icone-192.png",
-  "avant-de-partir.html", "a-propos.html"];
+const COQUILLE = ["carte/", "./", "carte.js", "coins.js", "alertes.js", "modele.js", "style.css",
+  "favicon.svg", "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css", "manifest.webmanifest",
+  "icone-192.png", "avant-de-partir.html", "a-propos.html"];
 const LIMITES = { coquille: 100, donnees: 400, habitat: 600 };   // entrées gardées par cache
 const DELAI_MS = 5000;
 

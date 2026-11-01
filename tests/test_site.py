@@ -5,11 +5,26 @@ from pathlib import Path
 import pytest
 
 SITE = Path(__file__).resolve().parent.parent / "site"
-PAGES = sorted(SITE.glob("*.html"))
-GENERES = {"departements/"}   # écrits chaque matin par l'export (pages_departements), hors git
+# Les pages versionnées ; l'accueil (index.html) est écrit chaque matin par l'export, hors git.
+PAGES = sorted(p for p in [*SITE.glob("*.html"), *SITE.glob("carte/*.html")] if p != SITE / "index.html")
+# Écrits chaque matin par l'export (champi/pages*.py), hors git : vérifiés par tests/test_pages_accueil.py.
+GENERES = {"departements", "especes", "en-ce-moment.html", "index.html"}
 
 
-@pytest.mark.parametrize("page", PAGES, ids=lambda p: p.name)
+def nom(p):
+    return p.relative_to(SITE).as_posix()
+
+
+def liens(page: Path) -> list[Path]:
+    """Les liens et sources internes d'une page, résolus comme le navigateur (avec sa `<base>`)."""
+    html = page.read_text(encoding="utf-8")
+    base = re.search(r'<base href="([^"]+)">', html)
+    dossier = page.parent / base.group(1) if base else page.parent
+    html = re.sub(r"<base [^>]+>", "", html)
+    return [(dossier / c).resolve() for c in re.findall(r'(?:href|src)="([^"#:?]+)["#?]', html)]
+
+
+@pytest.mark.parametrize("page", PAGES, ids=nom)
 def test_page_complete(page):
     html = page.read_text(encoding="utf-8")
     assert '<html lang="fr">' in html
@@ -18,16 +33,23 @@ def test_page_complete(page):
     assert 'name="viewport"' in html
 
 
-@pytest.mark.parametrize("page", PAGES, ids=lambda p: p.name)
+@pytest.mark.parametrize("page", PAGES, ids=nom)
 def test_liens_internes_existent(page):
-    html = page.read_text(encoding="utf-8")
-    for cible in re.findall(r'(?:href|src)="([^"#:]+)"', html):
-        if cible == "./" or cible in GENERES:
+    for cible in liens(page):
+        rel = cible.relative_to(SITE).as_posix() if cible.is_relative_to(SITE) else str(cible)
+        if rel.split("/")[0] in GENERES or cible == SITE:
             continue
-        assert (SITE / cible).exists(), f"{page.name} → {cible} introuvable"
+        assert cible.exists(), f"{nom(page)} → {rel} introuvable"
 
 
-@pytest.mark.parametrize("page", PAGES, ids=lambda p: p.name)
+def test_la_carte_charge_tout_depuis_la_racine():
+    """Sous /carte/, la carte garde ses fichiers à la racine : scripts, données, habitat, appli."""
+    carte = SITE / "carte" / "index.html"
+    assert '<base href="../">' in carte.read_text(encoding="utf-8")
+    assert all(c.is_relative_to(SITE) and c.parent != SITE / "carte" for c in liens(carte))
+
+
+@pytest.mark.parametrize("page", PAGES, ids=nom)
 def test_aucun_script_tiers(page):
     """Leaflet est servi par le site ; seuls les fonds de carte viennent de l'IGN."""
     html = page.read_text(encoding="utf-8")
@@ -59,7 +81,7 @@ def test_carte_lit_les_fichiers_que_l_export_ecrit():
         assert f"habitat/{f}" in js and f in france
 
 
-@pytest.mark.parametrize("page", PAGES, ids=lambda p: p.name)
+@pytest.mark.parametrize("page", PAGES, ids=nom)
 def test_site_personnel_non_indexe(page):
     """Publié à 50 m pour un usage personnel : jamais indexé (CLAUDE.md)."""
     assert '<meta name="robots" content="noindex, nofollow">' in page.read_text(encoding="utf-8")

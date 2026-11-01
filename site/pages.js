@@ -1,5 +1,6 @@
 // Pages Méthode et Face aux observations : tableaux construits depuis les JSON publiés,
 // pour qu'un seuil changé dans champi/especes.py ne laisse jamais une page en retard.
+// Chargé aussi par les pages générées chaque matin (champi/pages.py), qui se lisent sans lui.
 
 const fr = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
 const pct = (v) => `${Math.round(v * 100)} %`;
@@ -156,5 +157,17 @@ function espece(e, minCas, ou) {
   return s;
 }
 
+// Accueil : « Mon département » mène au dernier département affiché sur la carte (gardé tel quel
+// par carte.js), sinon à la liste des départements.
+function monDepartement(bouton) {
+  let code = null;
+  try { code = localStorage.getItem("champi-departement"); } catch { /* rien de gardé */ }
+  const lien = code && document.querySelector(`[data-departement="${CSS.escape(code)}"]`);
+  if (!lien) return;
+  bouton.href = lien.getAttribute("href");
+  bouton.textContent = `Mon département : ${lien.textContent.replace(/^\S+\s/, "")}`;
+}
+
 if (document.getElementById("especes")) methode();
 if (document.getElementById("resultats")) validation();
+if (document.getElementById("mon-departement")) monDepartement(document.getElementById("mon-departement"));

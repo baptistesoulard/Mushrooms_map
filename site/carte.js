@@ -528,6 +528,9 @@ async function demarrer() {
   // souvient, et le bouton dit comment revenir dessus.
   async function positionOuverture() {
     if (!navigator.geolocation) return;
+    // « Autour de moi » (accueil, carte/?autour) : la carte se centre sur la position, et dit
+    // pourquoi si elle est refusée.
+    if (demande.has("autour")) { activer({ centrer: true, auto: false }); return; }
     try {
       if ((await navigator.permissions?.query({ name: "geolocation" }))?.state === "denied") return;
     } catch { /* sans l'API des permissions : on demande */ }

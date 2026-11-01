@@ -343,6 +343,52 @@ nav.pied { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 4px 14px; font
 .carte-espece h3 { font-size: 1.05rem; }
 .carte-espece .latin { font-style: italic; color: var(--texte-3); font-weight: 400; }
 code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-size: .9em; }
+.carte-espece h2 { font-size: 1.1rem; margin-top: 0; }
+.carte-espece h2 a { color: inherit; }
+.page .chapeau { font-size: 1.08rem; color: var(--texte-2); }
+
+/* Boutons-liens des pages : la carte d'abord. */
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px; }
+a.bouton {
+  display: inline-block; padding: 8px 14px; border: 1px solid var(--trait); border-radius: var(--rayon);
+  background: var(--surface); color: var(--texte); text-decoration: none; font-weight: 600; font-size: .92rem;
+}
+a.bouton:hover { background: var(--surface-2); }
+a.bouton.principal { background: var(--accent); border-color: var(--accent); color: #fff; }
+a.bouton.principal:hover { filter: brightness(1.08); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) a.bouton.principal { color: #1d1b17; }
+}
+:root[data-theme="dark"] a.bouton.principal { color: #1d1b17; }
+
+/* Accueil et « en ce moment » */
+.ce-matin { padding-left: 1.1em; }
+.ce-matin li { margin-bottom: .45em; }
+.etapes li { margin-bottom: .5em; }
+.fonctions, .especes { list-style: none; padding: 0; display: grid; gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.fonctions li { margin: 0; padding: 10px 12px; border: 1px solid var(--trait); border-radius: var(--rayon);
+  background: var(--surface); font-size: .9rem; color: var(--texte-2); }
+.fonctions strong { display: block; color: var(--texte); margin-bottom: 2px; }
+.especes li { margin: 0; }
+.especes a { display: grid; gap: 2px; height: 100%; padding: 10px 12px; border: 1px solid var(--trait);
+  border-radius: var(--rayon); background: var(--surface); color: var(--texte); text-decoration: none; }
+.especes a:hover { border-color: var(--accent); }
+.especes .latin { font-style: italic; color: var(--texte-3); font-size: .85rem; }
+.especes .cl { color: var(--texte-2); font-size: .85rem; }
+.liste-departements { list-style: none; padding: 0; columns: 3 12em; column-gap: 18px; font-size: .9rem; }
+.liste-departements li { margin: 0 0 .25em; break-inside: avoid; }
+details.question { border-bottom: 1px solid var(--trait); padding: 8px 0; }
+details.question summary { cursor: pointer; font-weight: 600; }
+details.question p { margin: .5em 0 .2em; color: var(--texte-2); }
+/* La semaine en France : un nombre de départements dans chaque case. */
+.nationale a.niveau { color: var(--texte); font-variant-numeric: tabular-nums; }
+.nationale a.n3, .nationale a.n4 { color: #fff; }
+.nationale tbody th a { color: inherit; text-decoration: none; }
+.nationale tbody th a:hover { color: var(--accent); }
+/* Le titre de la carte mène à l'accueil. */
+h1 a.titre { color: inherit; text-decoration: none; }
+h1 a.titre:hover { color: var(--accent); }
 
 /* Face aux observations : une région par volet */
 .region { border: 1px solid var(--trait); border-radius: var(--rayon); padding: 8px 12px; margin: 12px 0; }

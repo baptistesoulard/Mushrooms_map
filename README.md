@@ -26,7 +26,8 @@ les observations publiques de GBIF, sur toute la France et à part dans le Midi.
 champi/france.py         (GitHub Actions, rarement) habitat par blocs de 25 km → release « habitat »
 champi/depot.py          (chaque jour) météo de la France sur la grille AROME (2,5 km)
 champi/export_france.py  (chaque jour) champs météo par bloc, aperçu national, résumés → site/data/
-champi/pages_departements.py  (chaque jour) une page par département, la semaine de chaque espèce
+champi/pages*.py         (chaque jour) les pages lisibles sans JavaScript : accueil, « en ce moment »,
+                         fiches espèces, une page par département
 champi/alertes.py        (chaque jour) notifications des alertes personnalisées (Web Push), envoyées depuis GitHub Actions
 site/modele.js           le calcul de l'indice dans le navigateur, case par case
 site/sw.js               l'appli hors ligne : copie du site, des données consultées et de l'habitat
@@ -37,7 +38,7 @@ champi/especes.py        les règles, espèce par espèce : le seul fichier à t
 champi/modele.py         le même calcul en Python (export, validation), sans entrée-sortie
 champi/redaction.py      les phrases du panneau, à partir de faits
 champi/validation.py     (à la main) GBIF + météo passée → data/validation.json (France, régions)
-site/                    le site statique (HTML, CSS, JS, Leaflet servi localement)
+site/                    le site statique (HTML, CSS, JS, Leaflet servi localement) ; la carte est sous site/carte/
 ```
 
 Le navigateur calcule l'indice des blocs qu'il affiche : chaque matin, le site ne publie que
@@ -50,7 +51,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 python -m pytest tests -q                 # le test Python/JS du calcul demande Node
 python -m champi.depot                    # réseau : météo de la France, ~3 min, ~500 Mo lus
 python -m champi.export_france            # demande site/habitat/ (release « habitat ») ; écrit site/data/
-python -m http.server 8765 --directory site
+python -m http.server 8765 --directory site   # la carte : http://localhost:8765/carte/
 python -m champi.france bloc 18_156       # réseau : construit un bloc (essai) dans habitat/
 python -m champi.validation               # réseau : GBIF et météo passée, ~1 h la première fois
 ```

@@ -13,6 +13,10 @@ l'habitat (release « habitat », copié dans `site/habitat/`) et de la météo 
 - `resumes/<département>.json` : faits et phrases du panneau, par espèce et par jour ;
 - `carte.json` (jours, classement des départements, légendes), `especes.json`, `validation.json`.
 
+Puis les pages lisibles sans JavaScript, à côté de la carte (`site/carte/`) : l'accueil et « en
+ce moment » (`pages_accueil`), les fiches espèces (`pages_especes`), les départements
+(`pages_departements`).
+
 Les calculs de ce job (aperçu, résumés) se font sur l'échantillon de l'habitat (une case sur
 16), avec les MÊMES champs arrondis que le navigateur : le panneau et la carte disent la même chose.
 """
@@ -29,7 +33,10 @@ import numpy as np
 from . import depot
 from . import especes as E
 from . import modele as M
+from . import pages
+from . import pages_accueil
 from . import pages_departements
+from . import pages_especes
 from . import redaction
 from .config import DATA, PAS_FIN, RACINE, SITE, SITE_DATA, VAPID_PUBLIQUE
 from .export import COUVERTURE_PLEINE, ECHELLE, HORS_FORET, JOURS_FUTURS, TRANCHE_M, ecrire_png
@@ -250,6 +257,8 @@ def faits(esp: E.Espece, jour: date, sel: np.ndarray, ech: Echantillon, km2: np.
         "saison": round(saison, 3),
         "debut_saison": bool(jour.toordinal() < (b + c_) / 2),
         "indice_moyen": round(float(indice[libre].mean()) if libre.any() else 0.0, 4),
+        "km2": round(float(km2[libre].sum()), 1),       # forêt hors zones protégées
+
         "part_bon": round(sum(parts[3:]), 4),
         "part_moyen": round(sum(parts[2:]), 4),
         "classes": [round(p, 4) for p in parts],
@@ -365,9 +374,14 @@ def exporter(meteo: Meteo | None = None) -> dict:
     ecrire_json(SITE_DATA / "especes.json", regles)
     if validation:
         ecrire_json(SITE_DATA / "validation.json", validation)
-    pages_departements.ecrire(SITE, departements, regles["especes"], resumes,
-                              [meteo.dates[k0 + k] for k in range(JOURS_FUTURS)], carte["genere_le"])
-    print(f"Écrit site/data/ et site/departements/ en {time.time() - t0:.0f} s")
+    jours = [meteo.dates[k0 + k] for k in range(JOURS_FUTURS)]
+    chemins = pages_departements.ecrire(SITE, departements, regles["especes"], resumes, jours, carte["genere_le"])
+    chemins += pages_accueil.ecrire(SITE, departements, regles["especes"], resumes, jours, carte["genere_le"],
+                                    validation)
+    chemins += pages_especes.ecrire(SITE, departements, regles, carte["legendes"], resumes, jours,
+                                    carte["genere_le"], validation)
+    pages.ecrire_plan(SITE, chemins)
+    print(f"Écrit site/data/ et {len(chemins)} pages en {time.time() - t0:.0f} s")
     return carte
 
 

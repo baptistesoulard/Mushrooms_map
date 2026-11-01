@@ -12,7 +12,7 @@ bai et lactaire délicieux ajoutés le même jour (bois acides du bocage, pinèd
 
 ```
 champi.france (habitat.yml, rarement) → release « habitat » (blocs PNG, échantillon) — jamais dans git
-champi.depot + champi.export_france (carte.yml, chaque matin) → site/data/ + site/departements/ → GitHub Pages
+champi.depot + champi.export_france (carte.yml, chaque matin) → site/data/ + pages du matin → GitHub Pages
 site/modele.js : le navigateur calcule l'indice des blocs affichés
 champi.validation (à la main, France et trois régions) → data/validation.json (versionné) → copié par l'export
 ```
@@ -62,10 +62,25 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   on n'insiste pas, le bouton dit comment réautoriser. Elle est suivie tant que la page est
   visible, ne change jamais un département choisi entre-temps et ne quitte pas l'appareil.
   Le département vient de la commune de la case (blocs d'habitat).
-- **Pages par département** (`pages_departements.py`) : réécrites chaque matin par l'export
-  dans `site/departements/` (hors git), lisibles sans JavaScript. Aucun coin : le département,
-  les altitudes, les communes, comme le panneau. Non indexées tant que `INDEXER` est faux (il
-  ouvre les pages et écrit `sitemap.xml`). La carte lit `?departement=&espece=&jour=` (une date).
+- **Pages du matin** (`pages.py` pour le socle : en-tête, pied, état national) : l'accueil et
+  « en ce moment » (`pages_accueil.py`), les fiches espèces (`pages_especes.py`), les
+  départements (`pages_departements.py`). Réécrites chaque matin par l'export, hors git
+  (`site/index.html`, `en-ce-moment.html`, `especes/`, `departements/`), lisibles sans
+  JavaScript, testées sur des résumés fabriqués (`tests/test_pages_accueil.py`, liens compris).
+  Aucun coin : départements, altitudes, communes, comme le panneau. Rien en dur : seuils et
+  saisons viennent des règles, les chiffres de fiabilité de `validation.json`. Non indexées tant
+  que `INDEXER` est faux (il ouvre les pages et écrit `sitemap.xml`).
+- **Classement national « surtout … »** : par surface de forêt aux bonnes conditions
+  (`pages.surface_bonne`), pas par indice moyen, qui met en tête Paris et la petite couronne
+  (quelques bois suffisent à la moyenne). « Où chercher en France » sur la carte garde l'indice
+  moyen, et le dit.
+- **La carte vit sous `/carte/` depuis le 2026-11-01**, avec `<base href="../">` : tout ce
+  qu'elle charge (scripts, données, habitat, `sw.js`) reste à la racine, où est l'accueil. Les
+  anciens liens de la racine (`?departement=…`, lien de groupe `#depot=…`, appli installée
+  avant, figée sur la racine sur iPhone) sont renvoyés à la carte par le script de tête de
+  l'accueil (`pages_accueil.RENVOI`). Le manifeste démarre sur `carte/` et garde l'identité
+  d'avant (`"id": "/Mushrooms_map/"`) pour que les applis installées se mettent à jour. La
+  carte lit `?departement=&espece=&jour=` (une date) et `?autour` (centrer sur la position).
 - **Alertes personnalisées** (`site/alertes.js` → `alertes.json` du dépôt privé du lien de groupe
   → `alertes.py`, étape de `carte.yml` avant le déploiement) : un département, des espèces, un
   seuil (« bon » ou « par endroits ») ; notification Web Push quand une espèce DEVIENT favorable
@@ -171,7 +186,7 @@ python -m champi.export_france          # demande site/habitat/ (asset de la rel
 python -m champi.france bloc 18_156     # un bloc, pour essayer (habitat/)
 python -m champi.validation meteo       # réseau ; la météo passée des cas, sans attendre le fond
 python -m champi.validation             # réseau (~1 h la 1re fois) ; demande site/habitat/ ; caches dans cache/validation/
-python -m http.server 8765 --directory site
+python -m http.server 8765 --directory site   # la carte : /carte/ ; les pages du matin demandent l'export
 ```
 
 ## Pièges du poste (Windows)

@@ -48,7 +48,7 @@ def test_page_departement():
     assert "<title>Champignons en Vendée (85) : les conditions de la semaine</title>" in page
     assert "Calculé le dimanche 1er novembre 2026 à 6 h 20" in page          # heure de Paris, heure d'hiver
     assert len(re.findall(r'<a class="niveau n\w"', page)) == 3 * 8
-    assert 'href="../?departement=85&amp;espece=cepe&amp;jour=2026-11-03"' in page
+    assert 'href="../carte/?departement=85&amp;espece=cepe&amp;jour=2026-11-03"' in page   # la carte, sous /carte/
     assert "Saint-&lt;Mesmin&gt;" in page and "<Mesmin>" not in page        # échappé
     assert "Aucun jour favorable cette semaine." in page                     # la girolle
     girolle = page.split("<h3>Girolle ")[1].split("</section>")[0]
