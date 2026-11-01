@@ -4,8 +4,11 @@
 // (habitat/blocs/*.png, data/meteo/*.bin, modele.js), à la résolution de calcul.
 import { installerAlertes } from "./alertes.js";
 import { installerCoins } from "./coins.js";
+import { installerFeuille } from "./feuille.js";
+import { installerGuide } from "./guide.js";
+import { niveau as niveauZone, partsZone } from "./ici.js";
 import { liensItineraire } from "./itineraire.js";
-import { datesSaison, evaluer, indices, preparer } from "./modele.js";
+import { datesSaison, evaluer, facteurSaison, indices, preparer } from "./modele.js";
 import { partager } from "./partage.js";
 
 const R = 6378137;
@@ -254,6 +257,16 @@ async function demarrer() {
     filtre: null,       // mode exploration : les critères, ou null pour l'indice
     publiques: false,   // l'indice des seules forêts publiques (régime forestier)
   };
+
+  // --- Feuille du bas (téléphone) --------------------------------------------------------
+  // Repliée, elle montre la poignée, les espèces et les jours ; une case ouverte, son indice.
+  let caseCourante = null;            // { ll, popup } : la case touchée, montrée
+  const feuille = installerFeuille($("panneau"), $("poignee"), {
+    bas: () => {
+      const ref = caseCourante ? ($("case").querySelector(".score") ?? $("case")) : $("choix-jour");
+      return ref.offsetTop + ref.offsetHeight + 12;
+    },
+  });
 
   // --- Carte ----------------------------------------------------------------------
   const ba = carte.apercu.bornes;
@@ -571,7 +584,10 @@ async function demarrer() {
     etat.departement = code;
     ecrire(CLE_DEPARTEMENT, code);
     const d = deps[code];
-    if (centrer && d.bornes) map.fitBounds([[d.bornes[0], d.bornes[1]], [d.bornes[2], d.bornes[3]]]);
+    if (centrer && d.bornes) {
+      map.fitBounds([[d.bornes[0], d.bornes[1]], [d.bornes[2], d.bornes[3]]]);
+      if (feuille.etroit()) feuille.poser("bas");
+    }
     resume = await resumes(code);
     if (etat.departement === code) panneau();
   }
@@ -583,9 +599,15 @@ async function demarrer() {
       const r = resume?.[e.code]?.[etat.jour];
       const input = el("input", { type: "radio", name: "espece", value: e.code });
       input.checked = e.code === etat.espece;
-      input.addEventListener("change", () => { etat.espece = e.code; ecrire(CLE_ESPECE, e.code); tout(); });
+      input.addEventListener("change", () => choisirEspece(e.code));
       zone.append(el("label", {}, input, e.nom, el("span", { class: "niv" }, r ? NIVEAU_COURT[r.niveau] : "")));
     }
+  }
+
+  function choisirEspece(code) {
+    etat.espece = code;
+    ecrire(CLE_ESPECE, code);
+    tout();
   }
 
   function choixJours() {
@@ -640,7 +662,7 @@ async function demarrer() {
         return el("td", {}, el("button", {
           type: "button", class: `niveau n${r ? r.niveau : "x"}${choisi ? " choisi" : ""}`,
           title: texte, "aria-label": texte,
-          onclick: () => { etat.espece = e.code; etat.jour = k; ecrire(CLE_ESPECE, e.code); tout(); },
+          onclick: () => { etat.jour = k; choisirEspece(e.code); },
         }, r?.niveau === 0 ? "–" : ""));
       })));
     $("semaine").replaceChildren(el("thead", {}, tete), el("tbody", {}, ...lignes));
@@ -708,9 +730,51 @@ async function demarrer() {
     }
   }
 
+  // Que chercher ici ? Les espèces classées pour la zone affichée (ici.js), au verdict des
+  // départements ; une zone plus petite qu'un pixel de 9,2 km prend le pixel qui la contient.
+  const vues = memoire(3, async (k) => {
+    const px = await pixels(`data/vue/${k}.png`);
+    const v = new Uint8Array(px.l * px.h);
+    for (let i = 0; i < v.length; i++) v[i] = px.d[i * 4];
+    return v;
+  });
+  let tourIci = 0;
+  async function queChercherIci() {
+    const V = carte.vue;
+    if (!V) return;
+    const moi = ++tourIci, k = etat.jour;
+    let v;
+    try { v = await vues(k); } catch (err) { console.error(err); return; }
+    if (moi !== tourIci) return;
+    const b = map.getBounds(), pas = g.pas * V.facteur;
+    const [xo, ys] = versMerc(b.getSouth(), b.getWest());
+    const [xe, yn] = versMerc(b.getNorth(), b.getEast());
+    const zone = { c0: Math.floor((xo - g.x0) / pas), c1: Math.floor((xe - g.x0) / pas),
+                   l0: Math.floor((g.y1 - yn) / pas), l1: Math.floor((g.y1 - ys) / pas) };
+    const { surface, parts } = partsZone(v, V, zone);
+    const lat = map.getCenter().lat, jour = jourDe(k);
+    const liste = V.especes.filter((code) => especes[code]).map((code) => ({ code, ...parts[code],
+      n: niveauZone(facteurSaison(especes[code], jour, lat, communs), parts[code].bon, parts[code].moyen, carte.niveaux) }))
+      .sort((a, b) => b.n - a.n || b.bon - a.bon || b.moyen - a.moyen);
+    const ol = $("ici");
+    ol.replaceChildren();
+    const petite = (zone.c1 - zone.c0 + 1) * (zone.l1 - zone.l0 + 1) <= 4;
+    $("ici-texte").textContent = surface ? `Dans les forêts de la zone affichée${petite ? " et autour (9 km)" : ""}, ` +
+      `${carte.jours[k].libelle}, au même verdict que les départements. Un clic choisit l'espèce.` : "";
+    if (!surface) { ol.append(el("li", { class: "muet" }, "Pas de forêt calculée dans la zone affichée.")); return; }
+    for (const x of liste) {
+      ol.append(el("li", {}, el("button", { type: "button", class: x.code === etat.espece ? "choisi" : "",
+        "aria-pressed": String(x.code === etat.espece), onclick: () => choisirEspece(x.code) },
+        el("span", { class: "nom" }, el("span", { class: `pastille n${x.n}` }), especes[x.code].nom),
+        el("span", { class: "cl" }, NIVEAU_COURT[x.n]))));
+    }
+  }
+  let attenteIci = null;
+  map.on("moveend", () => { clearTimeout(attenteIci); attenteIci = setTimeout(queChercherIci, 250); });
+
   function allerA(centre) {
     map.setView(centre, 13);
-    if (window.matchMedia("(max-width: 820px)").matches) $("carte").scrollIntoView({ behavior: "smooth" });
+    if (feuille.etroit()) feuille.poser("bas");
   }
 
   function legende() {
@@ -737,26 +801,66 @@ async function demarrer() {
     $("antipoison").textContent = `centre antipoison le plus proche (${ville}) : ${tel}`;
   }
   map.on("moveend", antipoison);
+  // Déplacer la carte replie la feuille : la carte d'abord.
+  map.on("dragstart", () => { if (feuille.etroit() && feuille.etat() !== "bas") feuille.poser("bas"); });
 
   // --- Fenêtre d'une case ---------------------------------------------------------
-  map.on("click", async (ev) => {
+  // Sur ordinateur, une fenêtre au-dessus de la case ; sur téléphone, la feuille du bas, à
+  // mi-hauteur, et un cercle sur la case. Changer d'espèce ou de jour la recalcule.
+  const calqueCase = L.layerGroup().addTo(map);
+  map.on("click", (ev) => {
     if (map.getZoom() < DETAIL) { map.setView(ev.latlng, DETAIL + 1); return; }
     const [x, y] = versMerc(ev.latlng.lat, ev.latlng.lng);
+    if (!blocsPresents.has(`${Math.floor(x / B.cote)}_${Math.floor(y / B.cote)}`)) return;
+    if (feuille.etroit()) {
+      caseCourante = { ll: ev.latlng, popup: null };
+      calqueCase.clearLayers();
+      L.circleMarker(ev.latlng, { radius: 10, color: "#1d1b17", weight: 3, fill: false, interactive: false }).addTo(calqueCase);
+      remplirCase("Chargement…");
+      feuille.poser("milieu");
+      $("panneau").scrollTop = 0;
+      // La case reste visible au-dessus de la feuille.
+      const yCase = map.latLngToContainerPoint(ev.latlng).y, libre = innerHeight - feuille.hauteur("milieu");
+      if (yCase > libre - 40) map.panBy([0, yCase - libre / 2]);
+    } else {
+      caseCourante = { ll: ev.latlng, popup: L.popup({ maxWidth: 340 }).setLatLng(ev.latlng).setContent("Chargement…").openOn(map) };
+    }
+    afficherCase();
+  });
+  map.on("popupclose", (ev) => { if (ev.popup === caseCourante?.popup) caseCourante = null; });
+
+  async function afficherCase() {
+    const c = caseCourante;
+    if (!c) return;
+    const montrer = (contenu) => { if (caseCourante === c) (c.popup ? c.popup.setContent(contenu) : remplirCase(contenu)); };
+    const [x, y] = versMerc(c.ll.lat, c.ll.lng);
     const bx = Math.floor(x / B.cote), by = Math.floor(y / B.cote);
     const nom = `${bx}_${by}`;
-    if (!blocsPresents.has(nom)) return;
-    const col = Math.floor((x - bx * B.cote) / B.pas), lig = Math.floor(((by + 1) * B.cote - y) / B.pas);
-    const i = lig * B.taille + col;
-    const popup = L.popup({ maxWidth: 330 }).setLatLng(ev.latlng).setContent("Chargement…").openOn(map);
+    const i = Math.floor(((by + 1) * B.cote - y) / B.pas) * B.taille + Math.floor((x - bx * B.cote) / B.pas);
     try {
       const [h, m, communes, zones] = await Promise.all([
         habitats(nom), meteos(nom), annexes("habitat/communes.json"), annexes("habitat/blocs.json")]);
-      popup.setContent(fenetre(h, m, i, communes, zones.blocs[nom], ev.latlng));
+      montrer(fenetre(h, m, i, communes, zones.blocs[nom], c.ll));
     } catch (err) {
       console.error(err);
-      popup.setContent("Les détails de cette case n'ont pas pu se charger.");
+      montrer("Les détails de cette case n'ont pas pu se charger.");
     }
-  });
+  }
+
+  function remplirCase(contenu) {
+    const zone = $("case");
+    zone.replaceChildren(el("button", { type: "button", class: "fermer", "aria-label": "Fermer la case",
+      onclick: fermerCase }, "×"), contenu);
+    zone.hidden = false;
+  }
+
+  function fermerCase() {
+    caseCourante = null;
+    calqueCase.clearLayers();
+    $("case").hidden = true;
+    $("case").replaceChildren();
+    feuille.poser("bas");
+  }
 
   // La fenêtre d'une case, en tuiles : l'indice sur 100 et sa classe, ce qui le retient, puis
   // chaque facteur, la propriété de la forêt et les actions (y aller, noter, Géoportail).
@@ -961,6 +1065,9 @@ async function demarrer() {
   function tout() {
     choixJours();
     panneau();
+    queChercherIci();
+    afficherCase();
+    if (feuille.etat() === "bas") feuille.poser("bas");      // les choix ont pu changer de hauteur
     rafraichirCalques();
     coins.rafraichir();
   }
@@ -976,7 +1083,15 @@ async function demarrer() {
     etat.espece = meilleure.code;
   }
   tout();
-  positionOuverture();
+  // Première visite : la présentation, puis la demande de position (elle attend la fermeture).
+  const guide = installerGuide($("guide"), { etroit: feuille.etroit });
+  $("revoir-guide").addEventListener("click", guide.ouvrir);
+  if (guide.premiereVisite()) {
+    $("guide").addEventListener("close", positionOuverture, { once: true });
+    guide.ouvrir();
+  } else {
+    positionOuverture();
+  }
   const genere = new Date(carte.genere_le);
   $("maj").textContent = `Calculée le ${genere.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Paris" })}.`
     + (carte.blocs_manquants ? ` Habitat en cours de construction : ${carte.blocs_manquants} carrés de 25 km encore vides.` : "");

@@ -42,15 +42,20 @@ def libelle_jour(jour: date, aujourdhui: date) -> str:
     return complet
 
 
+# Le verdict : parts de la forêt à l'indice « bon » (≥ 0,40) et « moyen » (≥ 0,25). Publiés dans
+# carte.json (« niveaux ») : « Que chercher ici ? » rend le même verdict pour la zone affichée.
+SEUILS_NIVEAU = {"bon": 0.15, "endroits": 0.05, "possible": 0.05}
+
+
 def niveau(faits: dict) -> int:
     if faits["saison"] <= 0:
         return 0
     bon = faits["part_bon"]
-    if bon >= 0.15:
+    if bon >= SEUILS_NIVEAU["bon"]:
         return 4
-    if bon >= 0.05:
+    if bon >= SEUILS_NIVEAU["endroits"]:
         return 3
-    if faits["part_moyen"] >= 0.05:
+    if faits["part_moyen"] >= SEUILS_NIVEAU["possible"]:
         return 2
     return 1
 

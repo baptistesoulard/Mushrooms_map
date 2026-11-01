@@ -10,6 +10,8 @@ l'habitat (release « habitat », copié dans `site/habitat/`) et de la météo 
   couvrent (entiers 16 bits en dixièmes ; en-tête [lignes, colonnes, i0, j0] ; ordre des
   champs dans `carte.json` → `meteo.champs`) ;
 - `apercu/<espèce>_<k>.png` : l'indice de toute la France par pixels de 1,15 km (vue large) ;
+- `vue/<k>.png` : « Que chercher ici ? », les parts de forêt aux bonnes conditions par pixel de
+  9,2 km et par espèce (`Vue`) ;
 - `resumes/<département>.json` : faits et phrases du panneau, par espèce et par jour ;
 - `carte.json` (jours, classement des départements, légendes), `especes.json`, `validation.json`.
 
@@ -52,6 +54,8 @@ HABITAT = RACINE / "site" / "habitat"
 APERCU = 16                          # cases de 50 m par pixel d'aperçu (1 152 m Mercator)
 HORS_FRANCE = 255
 PREMIER_GEL = -6                     # le gel compte sur les 7 jours finissant au jour affiché
+VUE = 8                              # pixels d'aperçu par pixel de « Que chercher ici ? » (9,2 km)
+KM2_PAR, PARTS_PAR = 3, 250          # un octet : la forêt en km² × 3, les parts × 250
 
 
 # --- Habitat ------------------------------------------------------------------------
@@ -202,6 +206,35 @@ class Apercu:
         return np.where(self.vide, HORS_FORET, code).astype(np.uint8).reshape(self.grille.ny, self.grille.nx)
 
 
+class Vue:
+    """« Que chercher ici ? » : par pixel de 9,2 km (VUE pixels d'aperçu), la forêt hors zones
+    protégées (km²) et, pour chaque espèce, sa part à l'indice « bon » (≥ 0,40) et « moyen »
+    (≥ 0,25) : les parts du verdict des départements (`redaction.niveau`), qui s'additionnent sur
+    la zone affichée. Une image par jour, `vue/<k>.png` : les couches empilées en hauteur (la
+    forêt, puis bon et moyen de chaque espèce), un octet par pixel."""
+
+    def __init__(self, apercu: Apercu, km2: np.ndarray):
+        g = apercu.grille
+        self.nx, self.ny = -(-g.nx // VUE), -(-g.ny // VUE)
+        lig, col = np.divmod(apercu.pixel, g.nx)
+        self.pixel = (lig // VUE) * self.nx + col // VUE
+        self.libre, self.km2 = apercu.libre, km2
+        self.surface = self._somme(self.libre)
+        self.couches = [np.clip(np.round(self.surface * KM2_PAR), 0, 255)]
+
+    def _somme(self, sel: np.ndarray) -> np.ndarray:
+        return np.bincount(self.pixel[sel], weights=self.km2[sel], minlength=self.nx * self.ny)
+
+    def ajouter(self, indice: np.ndarray) -> None:
+        for seuil in (M.CLASSES[2][0], M.CLASSES[1][0]):            # « bon », puis « moyen »
+            part = np.divide(self._somme(self.libre & (indice >= seuil)), self.surface,
+                             out=np.zeros(self.nx * self.ny), where=self.surface > 0)
+            self.couches.append(np.round(part * PARTS_PAR))
+
+    def image(self) -> np.ndarray:
+        return np.concatenate([c.reshape(self.ny, self.nx) for c in self.couches]).astype(np.uint8)
+
+
 # --- Faits du panneau, par département ------------------------------------------------
 
 def faits(esp: E.Espece, jour: date, sel: np.ndarray, ech: Echantillon, km2: np.ndarray,
@@ -305,6 +338,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
     resumes = {d["code"]: {} for d in departements}
     classement = {}
     meilleure = None
+    vues = [Vue(apercu, km2) for _ in range(JOURS_FUTURS)]
     for esp in E.ESPECES:
         habitat = M.facteur_habitat(esp, ech.essence, ech.ouverte, ech.roche, ech.altitude, ech.pente, ech.lat,
                                     ph=ech.ph)
@@ -318,6 +352,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
             ind = M.indice(habitat, saison, facteurs)
             image = apercu.image(ind)
             ecrire_png(SITE_DATA / "apercu" / f"{esp.code}_{k}.png", image)
+            vues[k].ajouter(ind)
             if k == 0:   # l'image de partage : la meilleure espèce de chaque pixel, aujourd'hui
                 meilleure = image if meilleure is None else np.maximum(meilleure, image)
             jour_classement = []
@@ -330,6 +365,8 @@ def exporter(meteo: Meteo | None = None) -> dict:
             jour_classement.sort(key=lambda t: -t[1])
             classement[esp.code].append([{"dep": d, "indice": i, "part_bon": p} for d, i, p in jour_classement[:12]])
         print(f"  {esp.nom} ({time.time() - t0:.0f} s)")
+    for k, v in enumerate(vues):
+        ecrire_png(SITE_DATA / "vue" / f"{k}.png", v.image())
 
     noms_dep = json.loads((DATA / "departements.json").read_text(encoding="utf-8"))
     for dep in departements:
@@ -363,6 +400,9 @@ def exporter(meteo: Meteo | None = None) -> dict:
                   for k in range(JOURS_FUTURS)],
         "especes": [{"code": e.code, "nom": e.nom, "latin": e.latin} for e in E.ESPECES],
         "apercu": {"grille": g_apercu.en_dict(), "bornes": b},
+        "vue": {"facteur": VUE, "nx": vues[0].nx, "ny": vues[0].ny, "especes": [e.code for e in E.ESPECES],
+                "km2_par": KM2_PAR, "parts_par": PARTS_PAR},
+        "niveaux": redaction.SEUILS_NIVEAU,
         "blocs": {"cote": COTE, "taille": BLOC, "pas": PAS_FIN, "altitude_decalage": index["altitude_decalage"],
                   "liste": noms_blocs},
         "meteo": {"lat0": float(meteo.lats[0]), "lon0": float(meteo.lons[0]),

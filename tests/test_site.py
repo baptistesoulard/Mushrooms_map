@@ -82,6 +82,7 @@ def test_carte_lit_les_fichiers_que_l_export_ecrit():
     for f in ("carte.json", "especes.json"):
         assert f in js and f in export
     assert "data/apercu/${cle}.png" in js and '"apercu" / f"{esp.code}_{k}.png"' in export
+    assert "data/vue/${k}.png" in js and '"vue" / f"{k}.png"' in export
     assert "data/meteo/${nom}.bin" in js and '"meteo"' in export and 'f"{nom}.bin"' in export
     assert "data/resumes/${dep}.json" in js and """"resumes" / f"{dep['code']}.json\"""" in export
     assert "habitat/blocs/${nom}_${l}.png" in js and '"blocs" / f"{nom}_{lettre}.png"' in france

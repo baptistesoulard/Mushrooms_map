@@ -5,7 +5,7 @@
 <!-- La carte vit sous /carte/ depuis le 2026-11-01 : tout ce qu'elle charge (scripts, données,
      habitat, appli hors ligne) reste à la racine, d'où cette base. -->
 <base href="../">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>La carte — Champignons en France</title>
 <meta name="description" content="Carte des forêts de France où les conditions sont favorables aux cèpes, bolets bais, girolles, trompettes, pieds-de-mouton, lactaires délicieux et morilles, aujourd'hui et pour les sept prochains jours, case par case de 50 m. Météo, essences, roche, altitude et exposition, à partir de données publiques.">
@@ -19,9 +19,15 @@
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="page-carte">
 <div class="appli">
-  <aside class="panneau">
+  <!-- Sur téléphone, ce panneau glisse du bas (feuille.js) : la poignée, puis la case touchée. -->
+  <aside class="panneau" id="panneau" aria-label="Panneau de la carte">
+    <button type="button" class="poignee" id="poignee" aria-controls="panneau" aria-expanded="false">
+      <span class="barre-poignee" aria-hidden="true"></span><span class="lecteur">Agrandir le panneau</span>
+    </button>
+    <section class="case-panneau" id="case" hidden aria-live="polite"></section>
+
     <div class="entete">
       <h1><a class="titre" href="./">Champignons en France</a></h1>
       <p>Les forêts où la météo, l'essence, la roche, l'altitude et l'exposition sont
@@ -33,19 +39,69 @@
 
     <div id="perime" class="alerte perime" hidden></div>
 
-    <fieldset>
+    <fieldset class="rang rang-espece">
       <legend>Espèce</legend>
       <div class="choix" id="choix-espece"></div>
     </fieldset>
 
-    <div class="fiche" id="fiche"></div>
-
-    <fieldset>
+    <fieldset class="rang rang-jour">
       <legend>Jour</legend>
       <div class="choix" id="choix-jour"></div>
     </fieldset>
     <label class="case publiques"><input type="checkbox" id="publiques"> Forêts publiques seulement
     <span class="muet" id="publiques-message" aria-live="polite"></span></label>
+
+    <div class="section ici">
+      <h3>Que chercher ici ?</h3>
+      <ol class="communes" id="ici"></ol>
+      <p class="muet" id="ici-texte"></p>
+    </div>
+
+    <label class="departement">
+      <span>Département</span>
+      <select id="choix-departement"></select>
+    </label>
+
+    <div class="verdict" aria-live="polite">
+      <div class="jour" id="verdict-jour"></div>
+      <h2 id="verdict-titre">Chargement…</h2>
+      <div id="verdict-texte"></div>
+    </div>
+
+    <div class="section">
+      <h3>La semaine, espèce par espèce</h3>
+      <div class="tableau-semaine"><table class="semaine" id="semaine"></table></div>
+      <div class="legende-semaine">
+        <span><span class="pastille n4"></span>bon</span>
+        <span><span class="pastille n3"></span>par endroits</span>
+        <span><span class="pastille n2"></span>possible</span>
+        <span><span class="pastille vide"></span>défavorable</span>
+        <span>– hors saison</span>
+      </div>
+      <p class="muet">Les conditions dans les forêts du département, comme le verdict ci-dessus.
+      Un clic affiche l'espèce et le jour sur la carte.</p>
+      <p id="lien-departement"></p>
+    </div>
+
+    <div class="section">
+      <h3>Par altitude</h3>
+      <div class="tranches" id="tranches"></div>
+      <p class="muet">Indice moyen des forêts de chaque tranche de 200 m.</p>
+    </div>
+
+    <div class="section">
+      <h3>Communes les mieux placées</h3>
+      <ul class="communes" id="communes"></ul>
+      <p class="muet">Moyenne sur les forêts de la commune. Un clic centre la carte.</p>
+    </div>
+
+    <div class="fiche" id="fiche"></div>
+
+    <div class="section">
+      <h3>Où chercher en France</h3>
+      <ol class="communes" id="classement"></ol>
+      <p class="muet">Indice moyen des forêts de chaque département. Un clic l'affiche.</p>
+    </div>
 
     <details class="section explorer" id="explorer">
       <summary><h3>Explorer les forêts</h3></summary>
@@ -105,50 +161,6 @@
     </details>
 
     <div class="section">
-      <h3>Où chercher en France</h3>
-      <ol class="communes" id="classement"></ol>
-      <p class="muet">Indice moyen des forêts de chaque département. Un clic l'affiche.</p>
-    </div>
-
-    <label class="departement">
-      <span>Département</span>
-      <select id="choix-departement"></select>
-    </label>
-
-    <div class="verdict" aria-live="polite">
-      <div class="jour" id="verdict-jour"></div>
-      <h2 id="verdict-titre">Chargement…</h2>
-      <div id="verdict-texte"></div>
-    </div>
-
-    <div class="section">
-      <h3>La semaine, espèce par espèce</h3>
-      <div class="tableau-semaine"><table class="semaine" id="semaine"></table></div>
-      <div class="legende-semaine">
-        <span><span class="pastille n4"></span>bon</span>
-        <span><span class="pastille n3"></span>par endroits</span>
-        <span><span class="pastille n2"></span>possible</span>
-        <span><span class="pastille vide"></span>défavorable</span>
-        <span>– hors saison</span>
-      </div>
-      <p class="muet">Les conditions dans les forêts du département, comme le verdict ci-dessus.
-      Un clic affiche l'espèce et le jour sur la carte.</p>
-      <p id="lien-departement"></p>
-    </div>
-
-    <div class="section">
-      <h3>Par altitude</h3>
-      <div class="tranches" id="tranches"></div>
-      <p class="muet">Indice moyen des forêts de chaque tranche de 200 m.</p>
-    </div>
-
-    <div class="section">
-      <h3>Communes les mieux placées</h3>
-      <ul class="communes" id="communes"></ul>
-      <p class="muet">Moyenne sur les forêts de la commune. Un clic centre la carte.</p>
-    </div>
-
-    <div class="section">
       <h3>Légende</h3>
       <div class="legende" id="legende"></div>
     </div>
@@ -170,11 +182,22 @@
       <a href="validation.html">Face aux observations</a>
       <a href="avant-de-partir.html">Avant de partir</a>
       <a href="a-propos.html">Sources et mentions</a>
+      <button type="button" class="lien" id="revoir-guide">Revoir la présentation</button>
     </nav>
     <p class="muet" id="maj"></p>
   </aside>
   <main id="carte" aria-label="Carte de l'indice de pousse"></main>
 </div>
+<dialog class="guide" id="guide" aria-labelledby="guide-titre">
+  <p class="muet" id="guide-etape"></p>
+  <h2 id="guide-titre"></h2>
+  <p id="guide-texte"></p>
+  <div class="legende-guide" aria-hidden="true"><span class="pastille n1"></span><span class="pastille n2"></span><span class="pastille n3"></span><span class="pastille n4"></span></div>
+  <div class="guide-actions">
+    <button type="button" class="lien" id="guide-passer">Passer</button>
+    <button type="button" class="bouton principal" id="guide-suivant">Suivant</button>
+  </div>
+</dialog>
 <script src="vendor/leaflet/leaflet.js"></script>
 <script type="module" src="carte.js"></script>
 </body>
