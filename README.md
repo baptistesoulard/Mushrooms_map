@@ -1,10 +1,10 @@
 # Champignons en France
 
-Carte des forêts de France métropolitaine où les conditions sont favorables à sept
-champignons (cèpe, bolet bai, girolle, trompette de la mort, pied-de-mouton, lactaire
-délicieux, morille), aujourd'hui et
-pour les sept jours suivants, case par case de 50 m. Recalculée chaque matin, à partir de
-données publiques uniquement.
+Carte des forêts de France métropolitaine où les conditions sont favorables aux champignons
+(cèpe, bolet bai, girolle, trompette de la mort, pied-de-mouton, lactaire délicieux, morille,
+chanterelle en tube, oronge, hygrophore de mars), aujourd'hui et pour les sept jours suivants,
+case par case de 50 m ; et, par département et par commune seulement, deux champignons des prés
+(coulemelle, rosé des prés). Recalculée chaque matin, à partir de données publiques uniquement.
 
 **Indice = habitat × météo**, entre 0 et 1 :
 
@@ -33,9 +33,14 @@ champi/alertes.py        (chaque jour) notifications des alertes personnalisées
 site/modele.js           le calcul de l'indice dans le navigateur, case par case
 site/sw.js               l'appli hors ligne : copie du site, des données consultées et de l'habitat
 site/partage.js          le bouton Partager : feuille de partage du téléphone, sinon lien copié
+site/itineraire.js       « Y aller » : Google Maps, Waze ou Plans, depuis une case ou un coin
+site/ici.js              « Que chercher ici ? » : les espèces de la zone affichée (grille de 9 km)
+site/feuille.js          sur téléphone, le panneau qui glisse du bas
+site/guide.js            la présentation de la première visite
 site/alertes.js          mes alertes : département, espèces, seuil ; abonnement de l'appareil par le lien de groupe
 site/coins.js            mes coins : trouvailles gardées dans le navigateur, partage par fichier, synchro par un dépôt GitHub privé
 champi/sol.py            couche « d » des blocs : pH du sol (SoilGrids) et zones urbanisées (Corine)
+champi/prairies.py       (rarement) les prés de France (Corine) : data/prairies.npz, pour les espèces des champs
 champi/especes.py        les règles, espèce par espèce : le seul fichier à toucher pour changer un seuil
 champi/modele.py         le même calcul en Python (export, validation), sans entrée-sortie
 champi/redaction.py      les phrases du panneau, à partir de faits

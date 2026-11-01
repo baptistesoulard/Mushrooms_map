@@ -81,3 +81,9 @@ def test_sol_qui_freine_sans_contredire_le_verdict():
     chaud = R.rediger(esp("cepe"), _faits(part_bon=0.06, limitant="sol_chaud"))
     assert "trop" not in chaud["phrases"][-1] and "chaud presque partout" in chaud["phrases"][-1]
     assert "trop chaud" in R.rediger(esp("cepe"), _faits(limitant="sol_chaud"))["phrases"][-1]
+
+
+def test_les_pres_ont_leurs_mots():
+    pre = {**esp("cepe"), "milieu": "pre"}
+    r = R.rediger(pre, _faits(limitant="pluie", pluie_moy=8))
+    assert "sur les prés" in r["phrases"][-1] and "forêts" not in " ".join(r["phrases"])

@@ -110,9 +110,10 @@ def image(titre: str, sous_titre: str, carte: Image.Image, legende_carte: str,
     x0, y0 = 40, 146
     img.paste(carte, (x0 + (CARTE[0] - carte.width) // 2, y0 + (CARTE[1] - carte.height) // 2))
     d.text((x0, HAUTEUR - 26), legende_carte, fill=TEXTE_3, font=police(17), anchor="ls")
-    # La semaine.
-    gauche, haut, case, pas = 640, 150, 38, 44
-    nom_l = 170
+    # La semaine : des lignes plus serrées quand les espèces sont nombreuses.
+    gauche, haut, nom_l = 640, 150, 170
+    pas = min(44, (HAUTEUR - 64 - (haut + 46)) // max(len(lignes), 1))
+    case = pas - 6
     for k, j in enumerate(jours):
         x = gauche + nom_l + k * pas
         d.text((x + case / 2, haut), f"{JOURS_COURTS[j.weekday()]}", fill=TEXTE if k == 0 else TEXTE_3,
@@ -121,7 +122,8 @@ def image(titre: str, sous_titre: str, carte: Image.Image, legende_carte: str,
                font=police(15, gras=k == 0), anchor="mt")
     y = haut + 46
     for nom, niveaux, textes in lignes:
-        d.text((gauche, y + case / 2), nom, fill=TEXTE_2, font=_ajuster(nom, nom_l - 8, 19), anchor="lm")
+        d.text((gauche, y + case / 2), nom, fill=TEXTE_2, font=_ajuster(nom, nom_l - 8, min(19, case // 2 + 2)),
+               anchor="lm")
         for k, n in enumerate(niveaux):
             x = gauche + nom_l + k * pas
             boite = (x, y, x + case, y + case)
@@ -132,7 +134,7 @@ def image(titre: str, sous_titre: str, carte: Image.Image, legende_carte: str,
             texte = "–" if n == 0 else (textes[k] if textes else "")
             if texte:
                 d.text((x + case / 2, y + case / 2), texte, fill="#ffffff" if (n or 0) >= 3 else TEXTE_2,
-                       font=police(16, gras=True), anchor="mm")
+                       font=police(min(16, case // 2), gras=True), anchor="mm")
         y += pas
     # Légende de la semaine.
     x, y = gauche, y + 12
@@ -142,6 +144,11 @@ def image(titre: str, sous_titre: str, carte: Image.Image, legende_carte: str,
         x += 24 + police(16).getlength(mot) + 22
     d.text((LARGEUR - 40, HAUTEUR - 26), NOM, fill=TEXTE_3, font=police(18, gras=True), anchor="rs")
     return img
+
+
+def en_saison(lignes: list) -> list:
+    """Les espèces en saison un jour de la semaine au moins ; toutes si aucune ne l'est."""
+    return [l for l in lignes if any(n for n in l[1] if n)] or lignes
 
 
 def ecrire(dossier: Path, departements: list[dict], rang: dict, especes: list[dict], resumes: dict,
@@ -161,7 +168,7 @@ def ecrire(dossier: Path, departements: list[dict], rang: dict, especes: list[di
         comptes = [str(len(j[4]) + len(j[3])) if j[4] or j[3] else "" for j in niv]
         lignes.append((x["nom"], meilleurs, comptes))
     image(NOM, sous_titre, france, "Aujourd'hui, toutes espèces : la meilleure de chaque forêt",
-          lignes, jours).save(dossier / "france.png", optimize=True)
+          en_saison(lignes), jours).save(dossier / "france.png", optimize=True)
     for dep in departements:
         dans = (pixel_dep == rang[dep["code"]]).reshape(cl.shape)
         if not dans.any():
@@ -170,5 +177,5 @@ def ecrire(dossier: Path, departements: list[dict], rang: dict, especes: list[di
         lignes = [(x["nom"], [(r.get(x["code"]) or [])[k]["niveau"] if k < len(r.get(x["code"]) or []) else None
                               for k in range(len(jours))], None) for x in especes]
         image(f"Champignons en {dep['nom']} ({dep['code']})", sous_titre, carte_departement(cl, dans),
-              "Aujourd'hui, toutes espèces : la meilleure de chaque forêt", lignes, jours
+              "Aujourd'hui, toutes espèces : la meilleure de chaque forêt", en_saison(lignes), jours
               ).save(dossier / f"{dep['code']}.png", optimize=True)

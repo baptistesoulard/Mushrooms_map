@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>La carte — Champignons en France</title>
-<meta name="description" content="Carte des forêts de France où les conditions sont favorables aux cèpes, bolets bais, girolles, trompettes, pieds-de-mouton, lactaires délicieux et morilles, aujourd'hui et pour les sept prochains jours, case par case de 50 m. Météo, essences, roche, altitude et exposition, à partir de données publiques.">
+<meta name="description" content="Carte des forêts de France où les conditions sont favorables aux champignons (cèpes, girolles, trompettes, morilles et d'autres), aujourd'hui et pour les sept prochains jours, case par case de 50 m. Météo, essences, roche, altitude et exposition, à partir de données publiques.">
 <meta property="og:title" content="Champignons en France">
 <meta property="og:description" content="Où les conditions sont favorables aux champignons, forêt par forêt, aujourd'hui et pour les sept prochains jours.">
 <meta property="og:type" content="website">
@@ -78,21 +78,21 @@
         <span><span class="pastille vide"></span>défavorable</span>
         <span>– hors saison</span>
       </div>
-      <p class="muet">Les conditions dans les forêts du département, comme le verdict ci-dessus.
-      Un clic affiche l'espèce et le jour sur la carte.</p>
+      <p class="muet">Les conditions dans les forêts du département (ses prés pour les espèces des
+      champs, en tirets), comme le verdict ci-dessus. Un clic affiche l'espèce et le jour sur la carte.</p>
       <p id="lien-departement"></p>
     </div>
 
     <div class="section">
       <h3>Par altitude</h3>
       <div class="tranches" id="tranches"></div>
-      <p class="muet">Indice moyen des forêts de chaque tranche de 200 m.</p>
+      <p class="muet">Indice moyen des forêts (des prés, pour une espèce des champs) de chaque tranche de 200 m.</p>
     </div>
 
     <div class="section">
       <h3>Communes les mieux placées</h3>
       <ul class="communes" id="communes"></ul>
-      <p class="muet">Moyenne sur les forêts de la commune. Un clic centre la carte.</p>
+      <p class="muet">Moyenne sur les forêts de la commune (ses prés, pour une espèce des champs). Un clic centre la carte.</p>
     </div>
 
     <div class="fiche" id="fiche"></div>
@@ -100,7 +100,7 @@
     <div class="section">
       <h3>Où chercher en France</h3>
       <ol class="communes" id="classement"></ol>
-      <p class="muet">Indice moyen des forêts de chaque département. Un clic l'affiche.</p>
+      <p class="muet">Indice moyen des forêts (des prés, pour une espèce des champs) de chaque département. Un clic l'affiche.</p>
     </div>
 
     <details class="section explorer" id="explorer">
@@ -187,6 +187,7 @@
     <p class="muet" id="maj"></p>
   </aside>
   <main id="carte" aria-label="Carte de l'indice de pousse"></main>
+  <p class="bandeau-pres" id="bandeau-pres" role="status" hidden></p>
 </div>
 <dialog class="guide" id="guide" aria-labelledby="guide-titre">
   <p class="muet" id="guide-etape"></p>

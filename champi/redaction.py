@@ -60,6 +60,11 @@ def niveau(faits: dict) -> int:
     return 1
 
 
+def lieux(esp: dict) -> str:
+    """« les forêts », ou « les prés » pour une espèce des champs."""
+    return "les prés" if esp.get("milieu") == "pre" else "les forêts"
+
+
 def rediger(esp: dict, faits: dict) -> dict:
     """`esp` : règles de l'espèce (dict) ; `faits` : sortie de `export.faits_du_jour`."""
     n = niveau(faits)
@@ -81,7 +86,7 @@ def rediger(esp: dict, faits: dict) -> dict:
     if lim == "pluie":
         phrases.append(
             f"Il a trop peu plu entre {j_max} et {j_min} jours avant : {nombre(faits['pluie_moy'])}{NBSP}mm "
-            f"en moyenne sur les forêts, quand il en faut environ {nombre(esp['pluie_mm'][1])}.")
+            f"en moyenne sur {lieux(esp)}, quand il en faut environ {nombre(esp['pluie_mm'][1])}.")
     elif lim == "sol_froid":
         seuil = esp["sol"][1]
         if faits.get("froid_au_dessus") is not None:
@@ -103,7 +108,7 @@ def rediger(esp: dict, faits: dict) -> dict:
         else:
             phrases.append(f"Le sol est trop chaud (plus de {nombre(seuil)}{NBSP}°C).")
     elif lim == "gel":
-        phrases.append("Des gelées ont touché les forêts ces derniers jours : la pousse s'arrête.")
+        phrases.append(f"Des gelées ont touché {lieux(esp)} ces derniers jours : la pousse s'arrête.")
     elif lim == "saison":
         phrases.append("Début de saison : les premières pousses restent rares." if faits["debut_saison"]
                        else "Fin de saison : les pousses se raréfient.")

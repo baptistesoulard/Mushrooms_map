@@ -65,7 +65,7 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
     lignes = [entete("../", (carte, f"La carte : {nom}"), ("./", "Tous les départements")),
               f"  <h1>Champignons en {e(nom)} cette semaine</h1>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}, pour aujourd\'hui et les sept jours '
-              "suivants, sur les forêts du département.</p>"]
+              "suivants, sur les forêts du département (sur ses prés, pour les espèces des champs).</p>"]
     lignes += [f"  <p>{e(p)}</p>" for p in synthese(especes, resumes, jours)]
     lignes.append(f'  <p class="actions"><a class="bouton principal" href="{carte}">Voir sur la carte</a>{PARTAGER}</p>')
 
@@ -79,7 +79,7 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
         for k, d in enumerate(jours):
             r = jours_x[k] if k < len(jours_x) else None
             n = r["niveau"] if r else None
-            texte = f"{x['nom']}, {date_longue(d)} : {r['verdict'].lower() if r else 'pas de forêt calculée'}"
+            texte = f"{x['nom']}, {date_longue(d)} : {r['verdict'].lower() if r else 'rien de calculé ici'}"
             lien = f"{carte}&amp;espece={x['code']}&amp;jour={d.isoformat()}"
             cases.append(f'<td><a class="niveau n{"x" if n is None else n}" href="{lien}" title="{e(texte)}" '
                          f'aria-label="{e(texte)}">{"–" if n == 0 else ""}</a></td>')
@@ -89,14 +89,16 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
                f"  <thead><tr><th></th>{colonnes}</tr></thead>",
                f"  <tbody>{''.join(corps)}</tbody>",
                "  </table></div>", LEGENDE.rstrip("\n"),
-               '  <p class="muet">Chaque case résume les forêts du département ce jour-là. Un clic '
-               "l'affiche sur la carte, forêt par forêt.</p>"]
+               '  <p class="muet">Chaque case résume les forêts du département ce jour-là, ou ses prés pour '
+               "les espèces des champs. Un clic l'affiche sur la carte, forêt par forêt ; les prés n'ont pas "
+               "de carte fine, ils sont presque tous privés.</p>"]
 
     for x in especes:
         jours_x = resumes.get(x["code"]) or []
         lignes.append(f'  <section class="carte-espece"><h3>{e(x["nom"])} <span class="latin">{e(x["latin"])}</span></h3>')
         if not jours_x:
-            lignes.append("  <p>Pas de forêt calculée dans ce département.</p></section>")
+            lignes.append(f"  <p>Pas de {'pré' if x.get('milieu') == 'pre' else 'forêt'} calculé"
+                          f"{'' if x.get('milieu') == 'pre' else 'e'} dans ce département.</p></section>")
             continue
         r0 = jours_x[0]
         lignes.append(f"  <p><strong>Aujourd'hui : {e(r0['verdict'])}.</strong> {e(' '.join(r0['phrases']))}</p>")

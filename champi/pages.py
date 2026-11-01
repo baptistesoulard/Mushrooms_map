@@ -46,6 +46,11 @@ def article(de: str) -> str:
     return de
 
 
+def noms_especes(especes: list[dict]) -> str:
+    """« cèpe, bolet bai, … et morille » : les espèces des règles, jamais une liste écrite à la main."""
+    return enumerer([x["nom"][:1].lower() + x["nom"][1:] for x in especes])
+
+
 def enumerer(mots: list[str]) -> str:
     return mots[0] if len(mots) == 1 else f"{', '.join(mots[:-1])} et {mots[-1]}"
 

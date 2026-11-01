@@ -1,7 +1,7 @@
 """Le calcul de l'indice, sans aucune entrée-sortie : des tableaux entrent, des tableaux sortent.
 
     indice = habitat × météo
-    habitat = essence × roche × altitude × pente (× forêt ouverte)
+    habitat = essence × roche × altitude (plafond, et plancher en montagne) × pente (× forêt ouverte)
     météo   = saison × pluie × température du sol × gel
 
 Un produit, pas une moyenne : chaque facteur peut à lui seul fermer la porte (pas de cèpe
@@ -68,6 +68,24 @@ def plafond_altitude(esp: E.Espece, lat):
     return esp.altitude[0] + monte, esp.altitude[1] + monte
 
 
+def plancher_altitude(esp: E.Espece, lat):
+    """Plancher (nulle en dessous de, pleine à partir de) d'une espèce de montagne à cette
+    latitude : il monte vers le sud comme le plafond."""
+    monte = E.HOPKINS_METRES * (E.LATITUDE_REF - np.asarray(lat, dtype=np.float32))
+    return esp.plancher[0] + monte, esp.plancher[1] + monte
+
+
+def facteur_altitude(esp: E.Espece, altitude, lat) -> np.ndarray:
+    """Le plafond, et le plancher pour une espèce de montagne."""
+    alt = np.asarray(altitude, dtype=np.float32)
+    plein, nul = plafond_altitude(esp, lat)
+    f = np.clip((nul - alt) / (nul - plein), 0, 1)
+    if esp.plancher[1] > 0:
+        bas, haut = plancher_altitude(esp, lat)
+        f = f * np.clip((alt - bas) / (haut - bas), 0, 1)
+    return f
+
+
 def facteur_ph(esp: E.Espece, ph) -> np.ndarray:
     """Affinité pour le pH du sol (donné × 10, comme dans les blocs) : trapèze relevé d'un plancher."""
     p = np.asarray(ph, dtype=np.float32) / 10
@@ -89,10 +107,19 @@ def facteur_habitat(esp: E.Espece, essence, ouverte, roche, altitude, pente, lat
     if ph is not None and esp.sol_ph:
         sol = np.where(np.asarray(ph) > 0, facteur_ph(esp, ph), sol)
     f = tab_ess[essence] * sol
-    plein, nul = plafond_altitude(esp, lat)
-    f = f * np.clip((nul - np.asarray(altitude, dtype=np.float32)) / (nul - plein), 0, 1)
+    f = f * facteur_altitude(esp, altitude, lat)
     f = f * facteur_pente(pente)
     return np.where(ouverte, f * E.FORET_OUVERTE, f).astype(np.float32)
+
+
+def facteur_habitat_pre(esp: E.Espece, milieu, altitude, lat) -> np.ndarray:
+    """Une espèce des champs (`esp.milieu == "pre"`) : l'affinité pour le milieu de Corine Land
+    Cover (`prairies.MILIEUX`), sous le plafond d'altitude. Ni essence, ni roche, ni pente : les
+    points des prés sont à 576 m les uns des autres, et jamais publiés un par un."""
+    tab = np.zeros(256, dtype=np.float32)
+    for k, v in esp.prairies.items():
+        tab[k] = v
+    return (tab[np.asarray(milieu)] * facteur_altitude(esp, altitude, lat)).astype(np.float32)
 
 
 def facteur_pente(pente) -> np.ndarray:

@@ -11,9 +11,10 @@ from datetime import date
 from pathlib import Path
 
 from .pages import (PARTAGER, date_courte, departements_de, e, entete, image_partage, instant_paris,
-                    meilleur_niveau, national, ordre_saison, pct, pied, tete)
+                    meilleur_niveau, national, noms_especes, ordre_saison, pct, pied, tete)
 from .pages_accueil import etat_espece
-from .redaction import NBSP, fiabilite, nombre
+from .prairies import NOMS_MILIEUX
+from .redaction import NBSP, fiabilite, lieux, nombre
 
 DOSSIER = "especes"
 
@@ -24,12 +25,14 @@ def fr(x: float) -> str:
 
 
 def pronom(x: dict) -> str:
-    return "elle" if x["de"].startswith("de la") else "il"
+    feminin = x.get("feminin")
+    return "elle" if (x["de"].startswith("de la") if feminin is None else feminin) else "il"
 
 
-def essences_entre(x: dict, noms: dict, mini: float, maxi: float) -> str:
-    """Les essences dont l'affinité est dans [mini, maxi[, les plus favorables d'abord."""
-    retenues = sorted(((v, int(k)) for k, v in x["essences"].items() if int(k) > 0 and mini <= v < maxi),
+def essences_entre(x: dict, noms: dict, mini: float, maxi: float, cle: str = "essences") -> str:
+    """Les essences (ou les milieux des prés) dont l'affinité est dans [mini, maxi[, les plus
+    favorables d'abord."""
+    retenues = sorted(((v, int(k)) for k, v in x[cle].items() if int(k) > 0 and mini <= v < maxi),
                       key=lambda t: (-t[0], t[1]))
     return ", ".join(noms[k].lower() for _, k in retenues)
 
@@ -51,7 +54,10 @@ def ce_que_la_carte_en_sait(x: dict, v: dict | None) -> list[str]:
         return ["  <p>Pas encore vérifiée face aux observations.</p>"]
     h, m = v["habitat"], v["meteo"]
     lignes = []
-    if "auc" in h:
+    if x.get("milieu") == "pre":
+        lignes.append("  <p><strong>Le bon endroit.</strong> Pas vérifié : la carte ne note pas les prés un "
+                      "par un, seulement les départements et les communes.</p>")
+    elif "auc" in h:
         bas, haut = h["ic_ecart"]
         verdict = ("Ses forêts font mieux que la seule présence de forêt." if bas > 0 else
                    "Ses forêts font moins bien que la seule présence de forêt." if haut < 0 else
@@ -75,6 +81,7 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
     (`pages.national`) ; `noms` : noms des départements ; `validation` : son bloc France."""
     code, nom = x["code"], x["nom"]
     il = pronom(x)
+    pre = x.get("milieu") == "pre"
     s0, s1, s2, s3 = x["saison"]
     jmin, jmax = x["pluie_jours"]
     p0, p1 = x["pluie_mm"]
@@ -85,12 +92,12 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
                 f"{nom} : les forêts, l'altitude, la saison et la météo qui lui conviennent, à quoi "
                 f"{il} ressemble et ses sosies, et les départements où les conditions sont bonnes "
                 "aujourd'hui.", "../", f"{DOSSIER}/{code}.html", image=image_partage("france", genere_le))
-    carte = f"../carte/?espece={code}"
+    carte = "../carte/" if pre else f"../carte/?espece={code}"
     lignes = [entete("../", (carte, "La carte"), ("./", "Toutes les espèces")),
               f'  <h1>{e(nom)} <span class="latin">{e(x["latin"])}</span></h1>',
               f'  <p class="chapeau">{e(x["habitat_texte"])}</p>',
               "  <h2>En ce moment</h2>",
-              f'  <p class="muet">Calculé le {instant_paris(genere_le)}, sur les forêts de chaque département.</p>']
+              f'  <p class="muet">Calculé le {instant_paris(genere_le)}, sur {lieux(x)} de chaque département.</p>']
     j0 = niv[0]
     if meilleur_niveau(j0) in (0, None):
         lignes.append(f"  <p>Hors saison partout aujourd'hui : la saison {e(x['de'])} court en gros du "
@@ -102,25 +109,44 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
         for n, quoi in ((4, "Bonnes conditions aujourd'hui"), (3, "Bonnes conditions par endroits")):
             if j0[n]:
                 lignes.append(f"  <p><strong>{quoi}</strong> ({departements_de(len(j0[n]))}, le plus de "
-                              "forêt favorable d'abord) : "
+                              f"{'prés favorables' if pre else 'forêt favorable'} d'abord) : "
                               + ", ".join(f'<a href="../departements/{c}.html">{e(noms.get(c, c))}</a>'
                                           for c in j0[n]) + ".</p>")
-    lignes += [f'  <p class="actions"><a class="bouton principal" href="{carte}">Voir la carte {e(x["de"])}</a>'
-               f'<a class="bouton" href="../en-ce-moment.html#{code}">La semaine en France</a>{PARTAGER}</p>',
+    # Une espèce des champs n'a pas de carte fine : la semaine en France d'abord.
+    semaine = f'<a class="bouton{" principal" if pre else ""}" href="../en-ce-moment.html#{code}">La semaine en France</a>'
+    voir = "" if pre else f'<a class="bouton principal" href="{carte}">Voir la carte {e(x["de"])}</a>'
+    lignes += [f'  <p class="actions">{voir}{semaine}{PARTAGER}</p>',
                "  <h2>Où le chercher</h2>",
                "  <ul>"]
-    favorables = essences_entre(x, legendes["essences"], 0.8, 2)
-    possibles = essences_entre(x, legendes["essences"], 0.4, 0.8)
+    if pre:
+        favorables = essences_entre(x, NOMS_MILIEUX, 0.8, 2, "prairies")
+        possibles = essences_entre(x, NOMS_MILIEUX, 0.4, 0.8, "prairies")
+        quoi = "Milieux"
+    else:
+        favorables = essences_entre(x, legendes["essences"], 0.8, 2)
+        possibles = essences_entre(x, legendes["essences"], 0.4, 0.8)
+        quoi = "Forêts"
     if favorables:
-        lignes.append(f"    <li>Forêts favorables : {e(favorables)}.</li>")
+        lignes.append(f"    <li>{quoi} favorables : {e(favorables)}.</li>")
     if possibles:
-        lignes.append(f"    <li>Forêts possibles : {e(possibles)}.</li>")
-    lignes += [f"    <li>{e(sol(x, legendes['roches']))}</li>",
-               f"    <li>Altitude : favorable jusqu'à {nombre(a1)}{NBSP}m, plus du tout au-dessus de "
-               f"{nombre(a2)}{NBSP}m à {lat}°{NBSP}N (la Haute-Savoie) ; ce plafond monte d'environ "
-               f"{nombre(communs['hopkins_metres'])}{NBSP}m par degré vers le sud. Pas de plancher : {il} "
-               "pousse jusqu'au niveau de la mer.</li>",
-               "  </ul>"]
+        lignes.append(f"    <li>{quoi} possibles : {e(possibles)}.</li>")
+    b0, b1 = x["plancher"]
+    if b1 > 0:      # une espèce de montagne
+        altitude = (f"    <li>Altitude : favorable de {nombre(b1)} à {nombre(a1)}{NBSP}m, plus du tout sous "
+                    f"{nombre(b0)}{NBSP}m ni au-dessus de {nombre(a2)}{NBSP}m, à {lat}°{NBSP}N (la Haute-Savoie) ; "
+                    f"plancher et plafond montent d'environ {nombre(communs['hopkins_metres'])}{NBSP}m par degré "
+                    "vers le sud.</li>")
+    else:
+        altitude = (f"    <li>Altitude : favorable jusqu'à {nombre(a1)}{NBSP}m, plus du tout au-dessus de "
+                    f"{nombre(a2)}{NBSP}m à {lat}°{NBSP}N (la Haute-Savoie) ; ce plafond monte d'environ "
+                    f"{nombre(communs['hopkins_metres'])}{NBSP}m par degré vers le sud. Pas de plancher : {il} "
+                    "pousse jusqu'au niveau de la mer.</li>")
+    if pre:
+        lignes += [altitude, "    <li>Pas de carte des prés, case par case : ils sont presque tous privés. Les "
+                   "conditions se lisent par département et par commune, d'après les prairies et pelouses "
+                   "de Corine Land Cover.</li>", "  </ul>"]
+    else:
+        lignes += [f"    <li>{e(sol(x, legendes['roches']))}</li>", altitude, "  </ul>"]
     if x.get("repere"):
         lignes.append(f"  <p><strong>Repère de terrain.</strong> {e(x['repere'])}</p>")
     lignes += ["  <h2>Quand</h2>",
@@ -155,9 +181,9 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
 def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, genere_le: str) -> str:
     """Les espèces, celles aux meilleures conditions aujourd'hui d'abord."""
     haut = tete("Les champignons de la carte : où et quand les chercher",
-                "Cèpe, bolet bai, girolle, trompette de la mort, pied-de-mouton, lactaire délicieux et "
-                "morille : leurs forêts, leur saison, leurs sosies, et où les conditions sont bonnes "
-                "aujourd'hui en France.", "../", f"{DOSSIER}/", image=image_partage("france", genere_le))
+                f"{noms_especes(especes)[:1].upper()}{noms_especes(especes)[1:]} : leurs milieux, leur "
+                "saison, leurs sosies, et où les conditions sont bonnes aujourd'hui en France.", "../",
+                f"{DOSSIER}/", image=image_partage("france", genere_le))
     lignes = [entete("../", ("../carte/", "La carte"), ("../en-ce-moment.html", "En ce moment")),
               "  <h1>Les espèces de la carte</h1>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}. Les espèces aux meilleures conditions '

@@ -42,6 +42,18 @@ export function plafondAltitude(esp, lat, c) {
   return [esp.altitude[0] + monte, esp.altitude[1] + monte];
 }
 
+// Le plafond, et le plancher d'une espèce de montagne (esp.plancher), qui monte vers le sud lui aussi.
+export function facteurAltitude(esp, altitude, lat, c) {
+  const [plein, nul] = plafondAltitude(esp, lat, c);
+  let f = Math.min(Math.max((nul - altitude) / (nul - plein), 0), 1);
+  if (esp.plancher[1] > 0) {
+    const monte = c.hopkins_metres * (c.latitude_ref - lat);
+    const bas = esp.plancher[0] + monte, haut = esp.plancher[1] + monte;
+    f *= Math.min(Math.max((altitude - bas) / (haut - bas), 0), 1);
+  }
+  return f;
+}
+
 export function facteurPente(pente, c) {
   const [debut, fin, plancher] = c.pente;
   const baisse = (pente - debut) / (fin - debut) * (1 - plancher);
@@ -58,8 +70,7 @@ export function facteurPh(esp, ph) {
 export function facteurHabitat(esp, essence, ouverte, roche, altitude, pente, lat, c, ph = 0) {
   const sol = esp.sol_ph && ph > 0 ? facteurPh(esp, ph) : (esp.roches[roche] ?? 0);
   let f = (esp.essences[essence] ?? 0) * sol;
-  const [plein, nul] = plafondAltitude(esp, lat, c);
-  f *= Math.min(Math.max((nul - altitude) / (nul - plein), 0), 1);
+  f *= facteurAltitude(esp, altitude, lat, c);
   f *= facteurPente(pente, c);
   return ouverte ? f * c.foret_ouverte : f;
 }
@@ -68,14 +79,15 @@ export function facteurHabitat(esp, essence, ouverte, roche, altitude, pente, la
 // Leur produit, dans cet ordre, est facteurHabitat : tests/test_modele_js.py le vérifie.
 export function partsHabitat(esp, essence, ouverte, roche, altitude, pente, lat, c, ph = 0) {
   const parLePh = Boolean(esp.sol_ph && ph > 0);
-  const [plein, nul] = plafondAltitude(esp, lat, c);
+  const [plein] = plafondAltitude(esp, lat, c);
   return {
     essence: esp.essences[essence] ?? 0,
     sol: parLePh ? facteurPh(esp, ph) : (esp.roches[roche] ?? 0),
-    altitude: Math.min(Math.max((nul - altitude) / (nul - plein), 0), 1),
+    altitude: facteurAltitude(esp, altitude, lat, c),
     pente: facteurPente(pente, c),
     ouverte: ouverte ? c.foret_ouverte : 1,
     parLePh, plafond: plein,
+    plancher: esp.plancher[1] > 0 ? esp.plancher[1] + c.hopkins_metres * (c.latitude_ref - lat) : null,
   };
 }
 

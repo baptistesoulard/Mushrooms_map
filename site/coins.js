@@ -256,6 +256,7 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
     div.append(ul, liensItineraire(groupe.lat, groupe.lon));
     indiceEn(groupe.lat, groupe.lon, t0.espece).then((r) => {
       if (!r) ligne.textContent = "Hors des forêts calculées : pas d'indice.";
+      else if (r.pre) ligne.textContent = "Espèce des prés : pas d'indice case par case.";
       else if (r.indice == null) ligne.textContent = r.protege ? "Zone protégée : pas d'indice." : "Hors forêt : pas d'indice.";
       else {
         const d = decrire(r.indice);

@@ -41,6 +41,7 @@ from . import pages_accueil
 from . import partage
 from . import pages_departements
 from . import pages_especes
+from . import prairies
 from . import redaction
 from .config import DATA, PAS_FIN, RACINE, SITE, SITE_DATA, VAPID_PUBLIQUE
 from .export import COUVERTURE_PLEINE, ECHELLE, HORS_FORET, JOURS_FUTURS, TRANCHE_M, ecrire_png
@@ -99,6 +100,28 @@ def charger_habitat() -> tuple[dict, list[dict], list[dict], Echantillon]:
     )
     departements = [{"code": d} for d in deps]
     return index, communes, departements, ech
+
+
+def charger_pres(communes: list[dict], departements: list[dict]) -> tuple[Echantillon, np.ndarray] | None:
+    """L'échantillon des prés (`prairies.py`) et le milieu de chaque point, pour les espèces des
+    champs ; None s'il manque, ou s'il a été construit sur une autre liste de communes que
+    l'habitat (les numéros de commune ne voudraient plus rien dire)."""
+    if not prairies.FICHIER.exists():
+        print("  pas de data/prairies.npz : les espèces des prés sont sautées")
+        return None
+    z = prairies.charger()
+    if z["communes"] != prairies.empreinte_communes(communes):
+        print("  data/prairies.npz vient d'une autre liste de communes : relancer python -m champi.prairies ; "
+              "les espèces des prés sont sautées")
+        return None
+    rang = {d["code"]: k for k, d in enumerate(departements)}
+    dep_de_commune = np.array([0] + [rang[c["dep"]] for c in communes], dtype=np.int16)
+    n = len(z["lat"])
+    zero = np.zeros(n, dtype=np.uint8)
+    pres = Echantillon(lat=z["lat"], lon=z["lon"], altitude=z["altitude"], ensoleillement=np.zeros(n, np.float32),
+                       pente=zero, essence=zero, ouverte=zero.astype(bool), roche=zero, protege=zero.astype(bool),
+                       commune=z["commune"], departement=dep_de_commune[z["commune"]], ph=zero)
+    return pres, z["milieu"]
 
 
 # --- Champs météo du jour -----------------------------------------------------------
@@ -339,27 +362,45 @@ def exporter(meteo: Meteo | None = None) -> dict:
     classement = {}
     meilleure = None
     vues = [Vue(apercu, km2) for _ in range(JOURS_FUTURS)]
-    for esp in E.ESPECES:
-        habitat = M.facteur_habitat(esp, ech.essence, ech.ouverte, ech.roche, ech.altitude, ech.pente, ech.lat,
-                                    ph=ech.ph)
+    # Les prés (espèces des champs) : leur propre échantillon, jamais publié point par point.
+    lus = charger_pres(communes, departements)
+    if lus:
+        pres, milieux = lus
+        calcul_pres = CalculChamps(champs, meteo.lats, meteo.lons, pres.lat, pres.lon, pres.altitude,
+                                   pres.ensoleillement)
+        km2_pres = (prairies.PAS * np.cos(np.radians(pres.lat))) ** 2 / 1e6
+        par_dep_pres = [pres.departement == k for k in range(len(departements))]
+        print(f"  prés : {len(pres.lat) / 1e6:.2f} M points ({time.time() - t0:.0f} s)")
+    especes = [e for e in E.ESPECES if e.milieu == "foret" or lus]
+    regles["especes"] = [x for x in regles["especes"] if x["code"] in {e.code for e in especes}]
+    for esp in especes:
+        foret = esp.milieu == "foret"
+        if foret:
+            e_, calc, surf, selections = ech, calcul, km2, par_dep
+            habitat = M.facteur_habitat(esp, ech.essence, ech.ouverte, ech.roche, ech.altitude, ech.pente, ech.lat,
+                                        ph=ech.ph)
+        else:
+            e_, calc, surf, selections = pres, calcul_pres, km2_pres, par_dep_pres
+            habitat = M.facteur_habitat_pre(esp, milieux, pres.altitude, pres.lat)
         regle = next(e for e in regles["especes"] if e["code"] == esp.code)
         classement[esp.code] = []
         for k in range(JOURS_FUTURS):
             jour = meteo.dates[k0 + k]
-            saison = M.facteur_saison(esp, jour, ech.lat)
-            pluie, tsol, gel = calcul.entrees(esp, k)
+            saison = M.facteur_saison(esp, jour, e_.lat)
+            pluie, tsol, gel = calc.entrees(esp, k)
             facteurs = M.facteurs_meteo(esp, pluie, tsol, gel)
             ind = M.indice(habitat, saison, facteurs)
-            image = apercu.image(ind)
-            ecrire_png(SITE_DATA / "apercu" / f"{esp.code}_{k}.png", image)
-            vues[k].ajouter(ind)
-            if k == 0:   # l'image de partage : la meilleure espèce de chaque pixel, aujourd'hui
-                meilleure = image if meilleure is None else np.maximum(meilleure, image)
+            if foret:
+                image = apercu.image(ind)
+                ecrire_png(SITE_DATA / "apercu" / f"{esp.code}_{k}.png", image)
+                vues[k].ajouter(ind)
+                if k == 0:   # l'image de partage : la meilleure espèce de chaque pixel, aujourd'hui
+                    meilleure = image if meilleure is None else np.maximum(meilleure, image)
             jour_classement = []
-            for dep, sel in zip(departements, par_dep):
+            for dep, sel in zip(departements, selections):
                 if not sel.any():
                     continue
-                f = faits(esp, jour, sel, ech, km2, habitat, ind, facteurs, pluie, tsol, noms_communes)
+                f = faits(esp, jour, sel, e_, surf, habitat, ind, facteurs, pluie, tsol, noms_communes)
                 resumes[dep["code"]].setdefault(esp.code, []).append({**f, **redaction.rediger(regle, f)})
                 jour_classement.append((dep["code"], f["indice_moyen"], f["part_bon"]))
             jour_classement.sort(key=lambda t: -t[1])
@@ -398,9 +439,9 @@ def exporter(meteo: Meteo | None = None) -> dict:
         "jours": [{"date": meteo.dates[k0 + k].isoformat(),
                    "libelle": redaction.libelle_jour(meteo.dates[k0 + k], aujourdhui)}
                   for k in range(JOURS_FUTURS)],
-        "especes": [{"code": e.code, "nom": e.nom, "latin": e.latin} for e in E.ESPECES],
+        "especes": [{"code": e.code, "nom": e.nom, "latin": e.latin, "milieu": e.milieu} for e in especes],
         "apercu": {"grille": g_apercu.en_dict(), "bornes": b},
-        "vue": {"facteur": VUE, "nx": vues[0].nx, "ny": vues[0].ny, "especes": [e.code for e in E.ESPECES],
+        "vue": {"facteur": VUE, "nx": vues[0].nx, "ny": vues[0].ny, "especes": [e.code for e in E.DE_FORET],
                 "km2_par": KM2_PAR, "parts_par": PARTS_PAR},
         "niveaux": redaction.SEUILS_NIVEAU,
         "blocs": {"cote": COTE, "taille": BLOC, "pas": PAS_FIN, "altitude_decalage": index["altitude_decalage"],

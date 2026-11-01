@@ -5,10 +5,12 @@ validation vivent dans `data/validation.json`, les décisions datées dans les c
 
 ## Le projet
 
-Site personnel : carte des forêts de France métropolitaine favorables à sept champignons
+Site personnel : carte des forêts de France métropolitaine favorables aux champignons
 (`especes.ESPECES`), aujourd'hui et à J+7. **Indice = habitat × météo** (`champi/modele.py`),
 par cases de 50 m. Né en Haute-Savoie (2026-10-30), étendu à la France le 2026-10-31 ; bolet
-bai et lactaire délicieux ajoutés le même jour (bois acides du bocage, pinèdes du littoral).
+bai et lactaire délicieux ajoutés le même jour (bois acides du bocage, pinèdes du littoral) ;
+chanterelle en tube, oronge et hygrophore de mars le 2026-11-01, avec deux espèces des champs
+(coulemelle, rosé des prés) calculées par département et par commune seulement.
 
 ```
 champi.france (habitat.yml, rarement) → release « habitat » (blocs PNG, échantillon) — jamais dans git
@@ -88,6 +90,24 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   l'accueil (`pages_accueil.RENVOI`). Le manifeste démarre sur `carte/` et garde l'identité
   d'avant (`"id": "/Mushrooms_map/"`) pour que les applis installées se mettent à jour. La
   carte lit `?departement=&espece=&jour=` (une date) et `?autour` (centrer sur la position).
+- **Espèces des prés** (`Espece.milieu == "pre"` : coulemelle, rosé des prés) : jamais de carte
+  case par case, les prés sont presque tous privés (décision du 2026-11-01). Calculées chaque
+  matin sur l'échantillon des prés (`prairies.py` → `data/prairies.npz`, versionné : un point
+  tous les 576 m dans les prairies, pelouses et mosaïques agricoles de Corine Land Cover, avec
+  altitude et commune), publiées dans les résumés par département et par commune comme les
+  autres (pages, semaine, alertes, images). Affinités par milieu (`prairies.MILIEUX`), pas
+  d'essence, de roche ni de pente. Sur la carte : pas de calque, un bandeau le dit. Vérifiées
+  sur le seul moment (pas d'habitat à 50 m à tester). Le fichier porte l'empreinte des communes
+  de l'habitat : un habitat refait avec une autre liste oblige à relancer `python -m champi.prairies`
+  (sinon l'export saute ces espèces et le dit).
+- **La carte, lot B (2026-11-01)** : la fenêtre d'une case en tuiles, l'indice sur 100 avec sa
+  jauge aux seuils des classes et « ce qui limite » (`modele.partsHabitat`, dont le produit refait
+  l'habitat : test) ; « Y aller » (`itineraire.js`, Google Maps, Waze, Plans : rien ne part avant le
+  toucher) ; « Forêts publiques seulement ». « Que chercher ici ? » classe les espèces pour la zone
+  affichée au même verdict que les départements (`export_france.Vue` → `data/vue/<jour>.png`, grille
+  de 9,2 km, `ici.js` : test Python/JS). Sur téléphone, la carte plein écran et le panneau en feuille
+  qui glisse du bas (`feuille.js`), une case touchée s'y ouvre. Présentation de première visite
+  (`guide.js`, `champi-guide`).
 - **Alertes personnalisées** (`site/alertes.js` → `alertes.json` du dépôt privé du lien de groupe
   → `alertes.py`, étape de `carte.yml` avant le déploiement) : un département, des espèces, un
   seuil (« bon » ou « par endroits ») ; notification Web Push quand une espèce DEVIENT favorable
@@ -156,7 +176,9 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   utilise).
 - **Latitude** : saisons et plafonds d'altitude sont écrits à 46° N (la Haute-Savoie) et
   décalés ailleurs par la loi de Hopkins (`modele.dates_saison`, `modele.plafond_altitude`) :
-  jamais de dates ou d'altitudes régionales en dur. Pas de plancher d'altitude.
+  jamais de dates ou d'altitudes régionales en dur. Un plancher d'altitude (`Espece.plancher`,
+  décalé de même) pour les seules espèces de montagne : l'hygrophore de mars. Les autres
+  poussent jusqu'au niveau de la mer.
 - **GBIF** : paginer par périodes de moins de 8 000 observations, coupées en deux tant
   qu'il le faut (`validation._pages`) : au-delà d'environ 10 000, une page met plusieurs
   minutes à venir. Seules les incertitudes
@@ -193,6 +215,7 @@ python -m champi.export_france          # demande site/habitat/ (asset de la rel
 python -m champi.france bloc 18_156     # un bloc, pour essayer (habitat/)
 python -m champi.validation meteo       # réseau ; la météo passée des cas, sans attendre le fond
 python -m champi.validation             # réseau (~1 h la 1re fois) ; demande site/habitat/ ; caches dans cache/validation/
+python -m champi.prairies               # réseau, ~10 min : data/prairies.npz (les prés), à refaire avec l'habitat
 python -m http.server 8765 --directory site   # la carte : /carte/ ; les pages du matin demandent l'export
 ```
 

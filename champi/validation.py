@@ -74,6 +74,11 @@ GROUPES = {
     "lactaire": ["Lactarius deliciosus", "Lactarius sanguifluus", "Lactarius semisanguifluus",
                  "Lactarius vinosus", "Lactarius quieticolor"],
     "morille": ["Morchella"],
+    "chanterelle_tube": ["Craterellus tubaeformis"],
+    "oronge": ["Amanita caesarea"],
+    "hygrophore_mars": ["Hygrophorus marzuolus"],
+    "coulemelle": ["Macrolepiota procera"],
+    "rose_pres": ["Agaricus campestris"],
 }
 # Les règles du Midi (pin d'Alep, chênes verts, pin maritime) sont les moins sûres : elles
 # sont vérifiées à part, chaque région face à son propre fond. La Haute-Savoie reste comme
@@ -236,7 +241,7 @@ def lieux(df: pd.DataFrame, blocs: Blocs) -> pd.DataFrame:
     cols = {k: np.full(n, np.nan) for k in ("foret_zone", "france_zone", "altitude", "ensoleillement")}
     # Pour chaque espèce, l'habitat avec la roche, avec le pH du sol là où il est connu, et celui
     # que la carte publie (selon son `sol_ph`) : comparés sur les mêmes cas.
-    cols.update({f"{e.code}{v}": np.full(n, np.nan) for e in E.ESPECES for v in ("", "_roche", "_ph")})
+    cols.update({f"{e.code}{v}": np.full(n, np.nan) for e in E.DE_FORET for v in ("", "_roche", "_ph")})
     cols["foret_case"] = np.zeros(n, dtype=bool)
     cols["dep"] = np.full(n, "", dtype=object)
     uniques = [nom for nom in np.unique(noms) if nom in blocs.presents]
@@ -255,7 +260,7 @@ def lieux(df: pd.DataFrame, blocs: Blocs) -> pd.DataFrame:
         cols["dep"][sel] = blocs.dep_commune[b["commune"][l, c]]
         couverture = np.minimum(1.0, n_f / CASES_ZONE / COUVERTURE_PLEINE)
         lat = Bloc.depuis_nom(nom).grille().latitudes()[:, None]
-        for e in E.ESPECES:
+        for e in E.DE_FORET:
             for variante, esp_v, ph in (("_roche", e, None), ("_ph", replace(e, sol_ph=True), b["ph"])):
                 h = np.where(foret, M.facteur_habitat(esp_v, b["essence"], b["ouverte"], b["roche"],
                                                       b["altitude"], b["pente"], lat, ph=ph), 0)
@@ -523,8 +528,10 @@ def indices_meteo(esp: E.Espece, serie: dict, altitude: float, ensoleillement: f
 
 def cas_meteo(esp: E.Espece, d: pd.DataFrame) -> pd.DataFrame:
     """Un cas = une espèce, un jour, une maille de 0,1° (une sortie, pas dix spécimens), sur
-    une case boisée, en saison, et assez ancien pour que la réanalyse le couvre."""
-    d = d[d["foret_case"]]
+    une case boisée (n'importe où pour une espèce des prés), en saison, et assez ancien pour que
+    la réanalyse le couvre."""
+    if esp.milieu == "foret":
+        d = d[d["foret_case"]]
     d = d.assign(lat1=d["lat"].round(1), lon1=d["lon"].round(1))
     d = d.drop_duplicates(subset=["date", "lat1", "lon1"])
     d = d[d["date"] <= pd.Timestamp(date.today() - timedelta(days=14))]
@@ -542,7 +549,10 @@ def test_meteo(esp: E.Espece, d: pd.DataFrame, series: dict, rng) -> dict:
         s = series.get((float(o["lat1"]), float(o["lon1"]), jour.year))
         if s is None:
             continue
-        ind = indices_meteo(esp, s, float(o["altitude"]), float(o["ensoleillement"]), float(o["lat"]))
+        if esp.milieu == "foret":
+            ind = indices_meteo(esp, s, float(o["altitude"]), float(o["ensoleillement"]), float(o["lat"]))
+        else:
+            ind = indices_meteo(esp, s, float(s["altitude"]), 0.0, float(o["lat"]))
         if jour not in ind:
             continue
         s_cas, w_cas = ind[jour]
@@ -609,7 +619,8 @@ def valider() -> dict:
             resultats[code]["especes"][esp.code] = {
                 "nom": esp.nom,
                 "observations": int(len(d)),
-                "habitat": test_habitat(esp, d[d["incertitude"] <= INCERTITUDE_HABITAT_M], fond_r, rng),
+                "habitat": (test_habitat(esp, d[d["incertitude"] <= INCERTITUDE_HABITAT_M], fond_r, rng)
+                            if esp.milieu == "foret" else {"n": int(len(d)), "sans_carte": True}),
                 "meteo": test_meteo(esp, dans_region(cas_m[esp.code], deps), series, rng),
             }
             print(f"  {nom} — {esp.nom} : {resultats[code]['especes'][esp.code]}", flush=True)

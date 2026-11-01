@@ -135,16 +135,42 @@ def test_classes_croissantes():
     assert M.classe(0.0) == 0 and M.classe(1.0) == len(M.CLASSES) - 1
 
 
+def test_plancher_d_une_espece_de_montagne():
+    """L'hygrophore de mars : rien sous son plancher, plein au-dessus ; il monte vers le sud."""
+    h = E.PAR_CODE["hygrophore_mars"]
+    f = M.facteur_altitude(h, np.array([100.0, 450.0, 800.0]), 46.0)
+    assert f.tolist() == pytest.approx([0.0, 0.5, 1.0])
+    assert float(M.facteur_altitude(h, 800.0, 43.0)) < 1.0          # 3° plus au sud : plancher plus haut
+    assert float(M.facteur_altitude(E.PAR_CODE["cepe"], 0.0, 46.0)) == 1.0      # pas de plancher
+
+
+def test_habitat_des_pres():
+    """Une espèce des champs : l'affinité de son milieu sous le plafond, rien hors des prés."""
+    rose = E.PAR_CODE["rose_pres"]
+    h = M.facteur_habitat_pre(rose, np.array([0, 1, 2, 5, 1]), np.array([100.0, 100.0, 100.0, 100.0, 1900.0]), 46.0)
+    assert h.tolist() == pytest.approx([0.0, 1.0, 0.5, 0.0, 0.0])
+
+
 # --- Règles des espèces ---------------------------------------------------------------
 
 @pytest.mark.parametrize("esp", E.ESPECES, ids=lambda e: e.code)
 def test_regles_coherentes(esp):
     from champi.habitat import ESSENCES, ROCHES
-    assert set(esp.essences) == set(ESSENCES), "une affinité par essence, ni plus ni moins"
-    assert set(esp.roches) == set(ROCHES)
-    assert all(0 <= v <= 1 for v in [*esp.essences.values(), *esp.roches.values()])
-    assert esp.essences[0] == 0, "hors forêt : pas d'indice"
+    from champi.prairies import NOMS_MILIEUX
+    assert esp.milieu in ("foret", "pre")
+    if esp.milieu == "foret":
+        assert set(esp.essences) == set(ESSENCES), "une affinité par essence, ni plus ni moins"
+        assert set(esp.roches) == set(ROCHES)
+        assert all(0 <= v <= 1 for v in [*esp.essences.values(), *esp.roches.values()])
+        assert esp.essences[0] == 0, "hors forêt : pas d'indice"
+        assert not esp.prairies
+    else:   # une espèce des champs : les milieux des prés, ni essence ni roche
+        assert set(esp.prairies) == set(NOMS_MILIEUX), "une affinité par milieu, ni plus ni moins"
+        assert all(0 <= v <= 1 for v in esp.prairies.values())
+        assert not esp.essences and not esp.roches and not esp.sol_ph
+        assert esp.avertissement, "un pré a un propriétaire : la fiche le dit"
     assert list(esp.altitude) == sorted(esp.altitude)
+    assert list(esp.plancher) == sorted(esp.plancher) and esp.plancher[1] < esp.altitude[0]
     assert list(esp.sol) == sorted(esp.sol)
     assert esp.pluie_mm[0] < esp.pluie_mm[1]
     assert 0 <= esp.pluie_jours[0] < esp.pluie_jours[1] <= 29, "le job ne garde que 30 jours passés"

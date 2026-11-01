@@ -69,7 +69,7 @@ def test_ce_matin_les_mieux_placees_d_abord():
     assert lignes[0].endswith(". Fin de saison.")
     assert lignes[1].startswith('<a href="especes/girolle.html">Girolle</a> : bonnes conditions par endroits')
     assert "pousse possible dans 1 département, sans plus" in lignes[2]
-    assert lignes[-1].startswith("Hors saison partout : le bolet bai, ") and lignes[-1].endswith("la morille.")
+    assert lignes[-1].startswith("Hors saison partout : le bolet bai, ") and "la morille" in lignes[-1]
 
 
 def test_phase_de_saison():
@@ -137,6 +137,24 @@ def test_fiches_especes():
                                      GENERE_LE)
     assert "Roche favorable : calcaire" in page and "Hors saison partout aujourd'hui" in page
     assert "Forêts favorables : hêtre." in page
+
+
+def test_fiche_d_une_espece_des_pres():
+    """Pas de carte fine : ni bouton vers la carte, ni essences ; ses milieux, le propriétaire."""
+    r = resumes({"85": {"rose_pres": [4] * 8}})
+    nat = pages.national(ESPECES, DEPS, r, 8)
+    rose = next(x for x in ESPECES if x["code"] == "rose_pres")
+    page = pages_especes.page_espece(rose, REGLES["communs"], LEGENDES, nat["rose_pres"], JOURS, NOMS, None, GENERE_LE)
+    assert "../carte/?espece=rose_pres" not in page and "Forêts favorables" not in page
+    assert "Milieux favorables : prairies." in page and "Pas de carte des prés" in page
+    assert "le plus de prés favorables d'abord" in page and "demandez son accord" in page
+    assert '<a class="bouton principal" href="../en-ce-moment.html#rose_pres">' in page
+    oronge = next(x for x in ESPECES if x["code"] == "oronge")
+    assert pages_especes.pronom(oronge) == "elle"
+    hygrophore = next(x for x in ESPECES if x["code"] == "hygrophore_mars")
+    page = pages_especes.page_espece(hygrophore, REGLES["communs"], LEGENDES, nat["hygrophore_mars"], JOURS, NOMS,
+                                     None, GENERE_LE)
+    assert "plus du tout sous 300" in page and "Pas de plancher" not in page
 
 
 def test_pages_generees_completes_et_liens_valides(tmp_path):

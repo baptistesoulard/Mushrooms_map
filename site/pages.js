@@ -55,7 +55,8 @@ async function methode() {
       ...(e.sol_ph ? [["pH du sol", `plein de ${fr.format(e.ph[1])} à ${fr.format(e.ph[2])}, au plus bas ` +
         `${fr.format(e.ph_plancher)} sous ${fr.format(e.ph[0])} et au-dessus de ${fr.format(e.ph[3])} ; ` +
         "remplace la roche là où SoilGrids le connaît"]] : []),
-      ["Altitude", `pleine jusqu'à ${fr.format(a1)} m, nulle au-dessus de ${fr.format(a2)} m (à ${fr.format(regles.communs.latitude_ref)}° N), pas de plancher`],
+      ["Altitude", `pleine jusqu'à ${fr.format(a1)} m, nulle au-dessus de ${fr.format(a2)} m (à ${fr.format(regles.communs.latitude_ref)}° N), ` +
+        (e.plancher[1] > 0 ? `nulle sous ${fr.format(e.plancher[0])} m, pleine dès ${fr.format(e.plancher[1])} m (espèce de montagne)` : "pas de plancher")],
       ["Pluie", `cumul entre ${jmax} et ${jmin} jours avant : pleine pousse au-delà de ${fr.format(p1)} mm, rien sous ${fr.format(p0)} mm`],
       ["Sol", `moyenne des 7 jours précédents : optimum de ${fr.format(t1)} à ${fr.format(t2)} °C, rien sous ${fr.format(t0)} °C ni au-dessus de ${fr.format(t3)} °C`],
       ["Gel", `chaque jour de gel de la semaine multiplie l'indice par ${fr.format(e.gel)}`],
@@ -141,6 +142,8 @@ function espece(e, minCas, ou) {
       ligne("Habitat, pH du sol au lieu de la roche", h.n, `${pct(h.auc_ph)} (roche : ${pct(h.auc_roche)})`,
         `pH : ${ecart(h.ic_ecart_ph, "mieux que la roche", "moins bien que la roche")}`);
     }
+  } else if (h.sans_carte) {
+    ligne("Habitat", h.n, "—", "pas vérifié : une espèce des prés, sans carte fine");
   } else {
     ligne("Habitat", h.n, "—", `trop peu de cas (moins de ${minCas})`);
   }

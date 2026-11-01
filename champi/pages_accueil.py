@@ -15,7 +15,7 @@ from pathlib import Path
 
 from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, cle_departement, date_courte,
                     date_longue, departements_de, e, entete, enumerer, image_partage, instant_paris,
-                    meilleur_niveau, national, ordre_saison, pct, pied, tete)
+                    meilleur_niveau, national, noms_especes, ordre_saison, pct, pied, tete)
 from .redaction import NBSP, nombre
 
 # Avant tout affichage : la carte reçoit ses anciens liens, et l'appli installée quand la carte
@@ -167,7 +167,8 @@ def preuve(especes: list[dict], validation: dict | None, racine: str = "") -> li
               '  <thead><tr><th>Espèce</th><th>Le bon endroit</th><th>Le bon moment</th></tr></thead><tbody>']
     for x in testees:
         h, m = v[x["code"]]["habitat"], v[x["code"]]["meteo"]
-        endroit = f"{pct(h['auc'])} (forêt seule : {pct(h['auc_foret'])})" if "auc" in h else "trop peu de cas"
+        endroit = (f"{pct(h['auc'])} (forêt seule : {pct(h['auc_foret'])})" if "auc" in h
+                   else "pas de carte des prés" if h.get("sans_carte") else "trop peu de cas")
         quand = (f"{pct(m['auc_saison'])} (calendrier seul : {pct(m['auc_calendrier'])})"
                  if "auc_saison" in m else "trop peu de cas")
         lignes.append(f'  <tr><th scope="row"><a href="{racine}especes/{x["code"]}.html">{e(x["nom"])}</a></th>'
@@ -216,9 +217,9 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
                  validation: dict | None, genere_le: str) -> str:
     noms = {d["code"]: d["nom"] for d in departements}
     haut = tete(f"{NOM} : où chercher cette semaine",
-                "Les forêts de France où les conditions sont favorables aux cèpes, girolles, trompettes, "
-                "pieds-de-mouton, lactaires délicieux et morilles, aujourd'hui et pour les sept prochains "
-                "jours, case par case de 50 m, d'après la pluie, la température du sol et la saison.",
+                f"Où les conditions sont favorables aux champignons ({noms_especes(especes)}), aujourd'hui "
+                "et pour les sept prochains jours, forêt par forêt, d'après la pluie, la température du sol "
+                "et la saison.",
                 "", "", image=image_partage("france", genere_le), plus=APPLI + RENVOI)
     lignes = [entete("", ("carte/", "La carte"), ("en-ce-moment.html", "En ce moment"),
                      ("especes/", "Les espèces"), ("departements/", "Par département")),
@@ -273,8 +274,9 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
         n = meilleur_niveau(j0)
         etat = ("hors saison" if n in (0, None) else "défavorable partout" if n == 1 else
                 f"{NIVEAUX_COURTS[n]} dans {departements_de(len(j0[n]))}")
+        milieu = '<span class="milieu">des prés</span>' if x.get("milieu") == "pre" else ""
         lignes.append(f'    <li><a href="especes/{x["code"]}.html"><strong>{e(x["nom"])}</strong> '
-                      f'<span class="latin">{e(x["latin"])}</span><span class="cl">{e(etat)}</span></a></li>')
+                      f'<span class="latin">{e(x["latin"])}</span>{milieu}<span class="cl">{e(etat)}</span></a></li>')
     lignes += ["  </ul>",
                "  <h2>Par département</h2>",
                '  <ul class="liste-departements">']
@@ -292,9 +294,8 @@ def page_en_ce_moment(departements: list[dict], especes: list[dict], nat: dict, 
                       jours: list[date], genere_le: str) -> str:
     noms = {d["code"]: d["nom"] for d in departements}
     haut = tete("Champignons en ce moment en France : les conditions de la semaine",
-                "Où les conditions sont bonnes pour les cèpes, girolles, trompettes, pieds-de-mouton, "
-                "lactaires délicieux et morilles en ce moment, département par département, pour "
-                "aujourd'hui et les sept jours suivants.", "", "en-ce-moment.html",
+                f"Où les conditions sont bonnes en ce moment, département par département, pour "
+                f"aujourd'hui et les sept jours suivants : {noms_especes(especes)}.", "", "en-ce-moment.html",
                 image=image_partage("france", genere_le))
     lignes = [entete("", ("carte/", "La carte"), ("especes/", "Les espèces"), ("departements/", "Par département")),
               "  <h1>Les champignons en ce moment</h1>",

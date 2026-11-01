@@ -132,7 +132,7 @@ p { margin: 0 0 .7em; }
   .rang .choix::-webkit-scrollbar { display: none; }
   .rang .choix label { flex: none; }
   /* L'attribution des fonds reste visible au-dessus de la feuille repliée. */
-  .page-carte .leaflet-bottom { bottom: 132px; }
+  .page-carte .leaflet-bottom { bottom: var(--feuille-bas, 132px); }
 }
 
 .entete p { color: var(--texte-2); font-size: .9rem; }
@@ -162,6 +162,14 @@ legend { font-weight: 600; font-size: .85rem; color: var(--texte-2); padding: 0;
 }
 .choix label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .choix .niv { font-size: .75rem; color: var(--texte-3); font-weight: 400; }
+.choix label.pre { border-style: dashed; }
+/* Une espèce des prés : pas de carte fine, le bandeau le dit par-dessus la carte. */
+.bandeau-pres {
+  position: fixed; z-index: 900; top: 12px; left: calc(380px + 60px); right: 120px; margin: 0;
+  padding: 8px 12px; border-radius: var(--rayon); background: var(--surface); color: var(--texte);
+  box-shadow: 0 1px 6px rgb(0 0 0 / .25); font-size: .88rem;
+}
+@media (max-width: 820px) { .bandeau-pres { left: 56px; right: 12px; top: 64px; } }
 
 label.case.publiques { margin-top: 10px; }
 .departement { display: grid; gap: 4px; margin-top: 16px; font-size: .85rem; font-weight: 600; color: var(--texte-2); }
@@ -308,6 +316,7 @@ label.case { display: flex; gap: 6px; align-items: center; font-size: .85rem; co
   color: var(--texte-3); font: inherit; cursor: pointer;
 }
 .semaine .niveau.choisi { outline: 2px solid var(--texte); outline-offset: 1px; }
+.semaine tbody th.pre { text-decoration: underline dashed var(--texte-3); text-underline-offset: 3px; }
 .semaine .niveau:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .semaine .n2, .pastille.n2 { background: var(--classe-2); }
 .semaine .n3, .pastille.n3 { background: var(--classe-3); }
@@ -474,6 +483,8 @@ a.bouton.principal:hover { filter: brightness(1.08); }
 .especes a:hover { border-color: var(--accent); }
 .especes .latin { font-style: italic; color: var(--texte-3); font-size: .85rem; }
 .especes .cl { color: var(--texte-2); font-size: .85rem; }
+.especes .milieu { justify-self: start; font-size: .75rem; color: var(--texte-2); border: 1px dashed var(--trait);
+  border-radius: 999px; padding: 0 8px; }
 .liste-departements { list-style: none; padding: 0; columns: 3 12em; column-gap: 18px; font-size: .9rem; }
 .liste-departements li { margin: 0 0 .25em; break-inside: avoid; }
 details.question { border-bottom: 1px solid var(--trait); padding: 8px 0; }

@@ -21,6 +21,8 @@ export function installerFeuille(panneau, poignee, { bas }) {
     panneau.dataset.etat = etat;
     if (!etroit.matches) { panneau.style.removeProperty("height"); return; }
     panneau.style.height = `${hauteurs[etat]()}px`;
+    // L'attribution des fonds de carte se tient juste au-dessus de la feuille repliée.
+    document.documentElement.style.setProperty("--feuille-bas", `${hauteurs.bas()}px`);
     poignee.setAttribute("aria-expanded", String(etat !== "bas"));
     poignee.querySelector(".lecteur").textContent = etat === "haut" ? "Réduire le panneau" : "Agrandir le panneau";
     if (etat === "bas") panneau.scrollTop = 0;

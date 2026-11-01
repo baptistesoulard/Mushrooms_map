@@ -81,7 +81,7 @@ def test_navigateur_egal_export(tmp_path, debut, lat0, sol_ph):
     lats, lons, champs, c, jours = _fixture(rng, debut, lat0)
     calcul = CalculChamps(champs, lats, lons, c["lat"], c["lon"], c["altitude"], c["ensoleillement"])
     # Toutes les espèces avec ou sans le pH du sol, quel que soit leur réglage publié.
-    especes = [replace(e, sol_ph=sol_ph) for e in E.ESPECES]
+    especes = [replace(e, sol_ph=sol_ph) for e in E.DE_FORET]      # les espèces des prés n'ont pas de carte
     attendu = {}
     for esp in especes:
         hab = M.facteur_habitat(esp, c["essence"], c["ouverte"], c["roche"], c["altitude"], c["pente"], c["lat"],
@@ -93,6 +93,7 @@ def test_navigateur_egal_export(tmp_path, debut, lat0, sol_ph):
             attendu[esp.code].append(ind)
 
     regles = E.en_json()
+    regles["especes"] = [e for e in regles["especes"] if e["milieu"] == "foret"]
     for e in regles["especes"]:
         e["sol_ph"] = sol_ph
     entree = {

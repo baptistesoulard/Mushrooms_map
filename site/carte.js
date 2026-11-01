@@ -109,6 +109,9 @@ async function demarrer() {
     fetch("data/especes.json").then((r) => r.json()),
   ]);
   const especes = Object.fromEntries(regles.especes.map((e) => [e.code, e]));
+  // Une espèce des prés n'a pas de carte fine (les prés sont presque tous privés) : pas de
+  // calque, un bandeau sur la carte le dit, et le panneau garde départements et communes.
+  const desPres = (code) => especes[code]?.milieu === "pre";
   const communs = regles.communs;
   const deps = Object.fromEntries(carte.departements.map((d) => [d.code, d]));
   const B = carte.blocs;
@@ -367,6 +370,7 @@ async function demarrer() {
       tuile.width = tuile.height = 256;
       const { xs, ys } = axes(coords);
       const filtre = etat.filtre;
+      if (!filtre && desPres(etat.espece)) { setTimeout(() => fini(null, tuile)); return tuile; }
       const codesDe = filtre
         ? (nom) => codesFiltre(`${nom}#${JSON.stringify(filtre)}`)
         : (nom) => codesBlocs(`${nom}|${etat.espece}|${etat.jour}|${etat.publiques ? 1 : 0}`);
@@ -412,6 +416,7 @@ async function demarrer() {
   // Indice d'un coin noté par l'utilisateur, pour le jour affiché : moyenne des cases boisées
   // à moins de 75 m (3 × 3 cases), tirée des mêmes codes que la carte.
   async function indiceEn(lat, lon, code) {
+    if (desPres(code)) return { pre: true };
     const [x, y] = versMerc(lat, lon);
     const bx = Math.floor(x / B.cote), by = Math.floor(y / B.cote);
     const nom = `${bx}_${by}`;
@@ -556,6 +561,15 @@ async function demarrer() {
   }
 
   async function rafraichirCalques() {
+    $("bandeau-pres").hidden = !desPres(etat.espece);
+    if (desPres(etat.espece)) {
+      $("bandeau-pres").textContent = `${especes[etat.espece].nom} : pas de carte des prés, presque tous privés. ` +
+        "Les conditions par département et par commune sont dans le panneau.";
+      apercu = null;
+      calqueApercu.redraw();
+      calqueDetail.redraw();
+      return;
+    }
     const demande = `${etat.espece}_${etat.jour}`;
     const a = await apercus(demande);
     if (demande !== `${etat.espece}_${etat.jour}`) return;   // l'utilisateur a déjà changé d'avis
@@ -600,7 +614,9 @@ async function demarrer() {
       const input = el("input", { type: "radio", name: "espece", value: e.code });
       input.checked = e.code === etat.espece;
       input.addEventListener("change", () => choisirEspece(e.code));
-      zone.append(el("label", {}, input, e.nom, el("span", { class: "niv" }, r ? NIVEAU_COURT[r.niveau] : "")));
+      const pre = desPres(e.code);
+      zone.append(el("label", pre ? { class: "pre", title: "Espèce des prés : par département et par commune, sans carte fine" } : {},
+        input, e.nom, el("span", { class: "niv" }, r ? NIVEAU_COURT[r.niveau] : "")));
     }
   }
 
@@ -654,7 +670,8 @@ async function demarrer() {
       return el("th", { scope: "col", title: j.libelle, class: k === etat.jour ? "actuel" : "" },
         d.toLocaleDateString("fr-FR", { weekday: "short" }), el("br"), String(d.getDate()));
     }));
-    const lignes = carte.especes.map((e) => el("tr", {}, el("th", { scope: "row" }, e.nom),
+    const lignes = carte.especes.map((e) => el("tr", {}, el("th", desPres(e.code)
+      ? { scope: "row", class: "pre", title: "Espèce des prés : ses prés, sans carte fine" } : { scope: "row" }, e.nom),
       ...carte.jours.map((j, k) => {
         const r = resume?.[e.code]?.[k];
         const texte = `${e.nom}, ${j.libelle} : ${r ? r.verdict.toLowerCase() : "pas de forêt calculée"}`;
@@ -694,7 +711,8 @@ async function demarrer() {
     $("verdict-jour").textContent = `${e.nom}, ${carte.jours[etat.jour].libelle} — ${d?.nom ?? ""}`;
     const r = resume?.[etat.espece]?.[etat.jour];
     if (!r) {
-      $("verdict-titre").textContent = "Pas de forêt calculée dans ce département.";
+      $("verdict-titre").textContent = desPres(etat.espece) ? "Pas de pré calculé dans ce département."
+        : "Pas de forêt calculée dans ce département.";
       $("verdict-texte").replaceChildren();
       $("tranches").replaceChildren();
       $("communes").replaceChildren();
@@ -880,6 +898,11 @@ async function demarrer() {
         "Le site n'y calcule pas d'indice."), el("p", {}, el("a", { href: "avant-de-partir.html#zones-protegees" }, "Les règles")));
       return div;
     }
+    if (desPres(etat.espece)) {
+      div.append(el("p", {}, `${e.nom} : une espèce des prés, sans indice case par case (les prés sont presque ` +
+        "tous privés). Le panneau donne les conditions du département et de ses communes."), boutonCoin(ll));
+      return div;
+    }
     const f = h.foret.indexOf(i);
     if (f < 0) {
       div.append(el("p", {}, h.urbain[i] && h.essence[i]
@@ -914,8 +937,12 @@ async function demarrer() {
     tuile("Sol", p.parLePh ? `pH ${fr1.format(cas.ph / 10)}` : leg.roches[cas.roche],
       p.parLePh ? `${affinite(p.sol)} ; pH estimé, roche ${leg.roches[cas.roche].toLowerCase()}`
         : `${affinite(p.sol)}${cas.ph > 0 ? ` ; pH estimé ${fr1.format(cas.ph / 10)}` : ""}`, p.sol);
-    tuile("Altitude", `${fr.format(cas.altitude)} m`, p.altitude >= 1 ? `pleine jusqu'à ${fr.format(p.plafond)} m ici`
-      : p.altitude > 0 ? "près de son plafond" : "au-dessus de son plafond", p.altitude);
+    const basse = p.plancher !== null && cas.altitude < p.plancher;      // une espèce de montagne
+    tuile("Altitude", `${fr.format(cas.altitude)} m`, p.altitude >= 1
+      ? (p.plancher !== null ? `pleine de ${fr.format(p.plancher)} à ${fr.format(p.plafond)} m ici`
+        : `pleine jusqu'à ${fr.format(p.plafond)} m ici`)
+      : basse ? (p.altitude > 0 ? "un peu basse pour l'espèce" : "trop basse pour l'espèce")
+        : p.altitude > 0 ? "près de son plafond" : "au-dessus de son plafond", p.altitude);
     tuile("Exposition", leg.orientations[k.orientation[f]], `pente ${fr.format(cas.pente)}°`, p.pente);
     tuile("Pluie", `${fr.format(r.pluie)} mm`, `entre ${jmax} et ${jmin} jours avant ; pleine pousse dès ${fr.format(p1)} mm`,
       r.facteurs.pluie);
@@ -979,8 +1006,10 @@ async function demarrer() {
       [p.ouverte, "une forêt ouverte, au couvert clairsemé"],
       [p.sol, p.parLePh ? `le sol, pH ${ph} : ${cas.ph / 10 < e.ph[1] ? "trop acide" : "pas assez acide"}`
         : `la roche (${leg.roches[cas.roche].toLowerCase()})`],
-      [p.altitude, p.altitude > 0 ? `l'altitude, près de son plafond (${fr.format(p.plafond)} m ici)`
-        : "l'altitude, au-dessus de son plafond"],
+      [p.altitude, p.plancher !== null && cas.altitude < p.plancher
+        ? `l'altitude, trop basse (pleine dès ${fr.format(p.plancher)} m ici)`
+        : p.altitude > 0 ? `l'altitude, près de son plafond (${fr.format(p.plafond)} m ici)`
+          : "l'altitude, au-dessus de son plafond"],
       [p.pente, `la pente (${fr.format(cas.pente)}°)`],
       [r.saison, phaseSaison(e, r.saison, jour, cas.lat).toLowerCase()],
       [r.facteurs.pluie, `la pluie : ${fr.format(r.pluie)} mm entre ${jmax} et ${jmin} jours avant, ` +
@@ -1039,11 +1068,16 @@ async function demarrer() {
     map.on("zoomend", message);
     $("explorer-espece").addEventListener("click", () => {
       const e = especes[etat.espece];
+      if (desPres(e.code)) {
+        $("explorer-message").textContent = "L'exploration ne porte que sur les forêts : choisissez une espèce de forêt.";
+        return;
+      }
       const lat = deps[etat.departement]?.centre?.[0] ?? communs.latitude_ref;
       for (const x of $("explorer-essences").querySelectorAll("input")) x.checked = (e.essences[x.value] ?? 0) >= 0.8;
       for (const x of $("explorer-roches").querySelectorAll("input")) x.checked = (e.roches[x.value] ?? 0) >= 0.8;
-      $("explorer-alt-min").value = 0;
-      $("explorer-alt-max").value = Math.round(e.altitude[0] + communs.hopkins_metres * (communs.latitude_ref - lat));
+      const monte = communs.hopkins_metres * (communs.latitude_ref - lat);
+      $("explorer-alt-min").value = e.plancher[1] > 0 ? Math.max(0, Math.round(e.plancher[1] + monte)) : 0;
+      $("explorer-alt-max").value = Math.round(e.altitude[0] + monte);
       $("explorer-actif").checked = true;
       appliquer();
     });
@@ -1078,7 +1112,7 @@ async function demarrer() {
   antipoison();
   resume = await resumes(etat.departement);
   if (!lire(CLE_ESPECE) && !especes[demande.get("espece")]) {   // première visite : la mieux placée
-    const meilleure = carte.especes.slice().sort((a, b) =>
+    const meilleure = carte.especes.filter((e) => !desPres(e.code)).sort((a, b) =>
       (resume[b.code]?.[jourDepart]?.niveau ?? 0) - (resume[a.code]?.[jourDepart]?.niveau ?? 0))[0];
     etat.espece = meilleure.code;
   }
