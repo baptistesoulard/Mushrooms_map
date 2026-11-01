@@ -898,6 +898,31 @@ function jourCourt(iso, aujourdhui) {
   return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
 }
 
+// Installer l'appli : le bouton du navigateur quand il en propose un (Chrome, Android), la marche
+// à suivre sur iPhone, rien une fois installée.
+function proposerInstallation() {
+  const zone = $("installer");
+  if (matchMedia("(display-mode: standalone)").matches || navigator.standalone) return;
+  const pourquoi = " : sur l'écran d'accueil, en plein écran, utilisable sans réseau en forêt.";
+  window.addEventListener("beforeinstallprompt", (ev) => {
+    ev.preventDefault();
+    zone.replaceChildren(el("button", { type: "button", class: "lien", onclick: async () => {
+      await ev.prompt();
+      zone.hidden = true;
+    } }, "Installer l'application"), pourquoi);
+    zone.hidden = false;
+  });
+  if (/iPhone|iPad/.test(navigator.userAgent)) {
+    zone.textContent = "Sur iPhone : bouton Partager, puis « Sur l'écran d'accueil »" + pourquoi +
+      " Safari n'y efface plus vos coins.";
+    zone.hidden = false;
+  }
+}
+
+// L'appli hors ligne (sw.js) : la carte s'ouvre ensuite sans réseau, avec les dernières données.
+navigator.serviceWorker?.register("sw.js").catch((err) => console.error(err));
+proposerInstallation();
+
 demarrer().catch((err) => {
   console.error(err);
   $("verdict-titre").textContent = "La carte n'a pas pu se charger.";

@@ -70,6 +70,10 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   `NTFY_TOPIC`, départements en variable `ALERTES`. Ne sonne que ce qui PASSE à « bon » dans les
   4 jours, par différence avec la publication en ligne (pas d'état gardé). `continue-on-error` :
   une alerte manquée n'empêche jamais la carte de paraître.
+- **Appli installable et hors ligne** (`manifest.webmanifest`, `sw.js`) : le site et les données
+  du jour en « réseau d'abord » (copie au-delà de 5 s), l'habitat en « copie d'abord ». Changer
+  le format des blocs (`france.FORMAT`) oblige à incrémenter `sw.VERSION`, sinon les anciennes
+  copies restent. Ni fonds IGN, ni GitHub, ni coins dans ces caches.
 - **Zones protégées : hachurées, sans indice** (réserves, arrêtés de biotope, cœurs de parcs
   nationaux). Leur règlement varie ; le site ne dit jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur

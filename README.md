@@ -29,6 +29,7 @@ champi/export_france.py  (chaque jour) champs météo par bloc, aperçu national
 champi/pages_departements.py  (chaque jour) une page par département, la semaine de chaque espèce
 champi/alertes.py        (chaque jour) notification ntfy quand une espèce passe à « bon » (départements suivis)
 site/modele.js           le calcul de l'indice dans le navigateur, case par case
+site/sw.js               l'appli hors ligne : copie du site, des données consultées et de l'habitat
 site/coins.js            mes coins : trouvailles gardées dans le navigateur, partage par fichier, synchro par un dépôt GitHub privé
 champi/especes.py        les règles, espèce par espèce : le seul fichier à toucher pour changer un seuil
 champi/modele.py         le même calcul en Python (export, validation), sans entrée-sortie
