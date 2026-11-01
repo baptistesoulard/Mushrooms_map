@@ -61,6 +61,7 @@ class Echantillon:
     protege: np.ndarray
     commune: np.ndarray
     departement: np.ndarray       # rang dans la liste des départements
+    ph: np.ndarray                # pH du sol × 10 (0 = inconnu, ou release d'avant la couche « d »)
 
 
 def charger_habitat() -> tuple[dict, list[dict], list[dict], Echantillon]:
@@ -69,13 +70,18 @@ def charger_habitat() -> tuple[dict, list[dict], list[dict], Echantillon]:
     deps = sorted({c["dep"] for c in communes})
     rang = {d: k for k, d in enumerate(deps)}
     dep_de_commune = np.array([0] + [rang[c["dep"]] for c in communes], dtype=np.int16)
-    e = np.load(HABITAT / "echantillon.npz")
+    e = dict(np.load(HABITAT / "echantillon.npz"))
+    # Bois en zone urbanisée (couche « d », champi.sol) : pas de la forêt pour la carte.
+    if "urbain" in e:
+        garde = ~e.pop("urbain")
+        e = {k: v[garde] for k, v in e.items()}
     ech = Echantillon(
         lat=e["lat"].astype(np.float64), lon=e["lon"].astype(np.float64),
         altitude=e["altitude"].astype(np.float32),
         ensoleillement=e["ensoleillement"].astype(np.float32) / 100, pente=e["pente"],
         essence=e["essence"], ouverte=e["ouverte"], roche=e["roche"], protege=e["protege"],
         commune=e["commune"], departement=dep_de_commune[e["commune"]],
+        ph=e["ph"] if "ph" in e else np.zeros(len(e["lat"]), dtype=np.uint8),
     )
     departements = [{"code": d} for d in deps]
     return index, communes, departements, ech
@@ -287,7 +293,8 @@ def exporter(meteo: Meteo | None = None) -> dict:
     resumes = {d["code"]: {} for d in departements}
     classement = {}
     for esp in E.ESPECES:
-        habitat = M.facteur_habitat(esp, ech.essence, ech.ouverte, ech.roche, ech.altitude, ech.pente, ech.lat)
+        habitat = M.facteur_habitat(esp, ech.essence, ech.ouverte, ech.roche, ech.altitude, ech.pente, ech.lat,
+                                    ph=ech.ph)
         regle = next(e for e in regles["especes"] if e["code"] == esp.code)
         classement[esp.code] = []
         for k in range(JOURS_FUTURS):

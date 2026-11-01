@@ -3,6 +3,7 @@ l'export (champi.export_france.CalculChamps + champi.modele), case par case."""
 import json
 import shutil
 import subprocess
+from dataclasses import replace
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -57,30 +58,39 @@ def _fixture(rng, debut: date, lat0: float):
         "ensoleillement": (rng.integers(-100, 101, n) / 100).astype(np.float32),
         "pente": rng.integers(0, 60, n).astype(np.uint8), "essence": rng.integers(0, 15, n).astype(np.uint8),
         "ouverte": rng.random(n) < 0.2, "roche": rng.integers(0, 4, n).astype(np.uint8),
+        # pH × 10 du sol, 0 (inconnu) une fois sur cinq : la roche reprend alors la main.
+        "ph": np.where(rng.random(n) < 0.2, 0, rng.integers(35, 85, n)).astype(np.uint8),
     }
     jours = [debut + timedelta(days=k) for k in range(JOURS_FUTURS)]
     return lats, lons, champs, cases, jours
 
 
+@pytest.mark.parametrize("sol_ph", [False, True], ids=["roche", "ph"])
 @pytest.mark.parametrize("debut, lat0", [(date(2026, 10, 25), 44.0), (date(2026, 3, 28), 46.0),
                                          (date(2026, 12, 30), 41.6)],
                          ids=["automne", "printemps", "nouvel-an-en-corse"])
-def test_navigateur_egal_export(tmp_path, debut, lat0):
+def test_navigateur_egal_export(tmp_path, debut, lat0, sol_ph):
     """Le dernier cas passe le 1er janvier : la saison du pied-de-mouton déborde en Corse."""
     rng = np.random.default_rng(debut.toordinal())
     lats, lons, champs, c, jours = _fixture(rng, debut, lat0)
     calcul = CalculChamps(champs, lats, lons, c["lat"], c["lon"], c["altitude"], c["ensoleillement"])
+    # Toutes les espèces avec ou sans le pH du sol, quel que soit leur réglage publié.
+    especes = [replace(e, sol_ph=sol_ph) for e in E.ESPECES]
     attendu = {}
-    for esp in E.ESPECES:
-        hab = M.facteur_habitat(esp, c["essence"], c["ouverte"], c["roche"], c["altitude"], c["pente"], c["lat"])
+    for esp in especes:
+        hab = M.facteur_habitat(esp, c["essence"], c["ouverte"], c["roche"], c["altitude"], c["pente"], c["lat"],
+                                ph=c["ph"])
         attendu[esp.code] = []
         for k, jour in enumerate(jours):
             pluie, tsol, gel = calcul.entrees(esp, k)
             ind = M.indice(hab, M.facteur_saison(esp, jour, c["lat"]), M.facteurs_meteo(esp, pluie, tsol, gel))
             attendu[esp.code].append(ind)
 
+    regles = E.en_json()
+    for e in regles["especes"]:
+        e["sol_ph"] = sol_ph
     entree = {
-        "regles": E.en_json(), "lats": lats.tolist(), "lons": lons.tolist(),
+        "regles": regles, "lats": lats.tolist(), "lons": lons.tolist(),
         "champs": {n: v.ravel().tolist() for n, v in champs.items()},
         "jours": [{"annee": j.year, "num": (j - date(1970, 1, 1)).days, "k": k} for k, j in enumerate(jours)],
         "cases": [{k: (bool(v[i]) if v.dtype == bool else float(v[i])) for k, v in c.items()} for i in range(len(c["lat"]))],

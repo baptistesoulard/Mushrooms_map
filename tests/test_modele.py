@@ -105,6 +105,30 @@ def test_pas_de_plancher_et_plafond_plus_haut_au_sud():
     assert haut[0] == pytest.approx(1.0) and 0 < haut[1] < 1 and haut[2] == 0
 
 
+def test_ph_remplace_la_roche_la_ou_il_est_connu():
+    """Bolet bai : plein en sol acide, à son plancher en sol calcaire ; pH inconnu → la roche."""
+    bai = E.PAR_CODE["bolet_bai"]
+    ph = np.array([45, 80, 0])                                  # pH × 10 ; 0 = inconnu
+    assert M.facteur_ph(bai, ph[:2]).tolist() == pytest.approx([1.0, bai.ph_plancher])
+    un = np.ones(3)
+    h = M.facteur_habitat(bai, np.array([8, 8, 8]), np.zeros(3, bool), np.array([1, 1, 1]), un * 500, un * 10, 46.0, ph=ph)
+    assert h.tolist() == pytest.approx([1.0, bai.ph_plancher, bai.roches[1]])
+    sans = M.facteur_habitat(bai, np.array([8]), np.zeros(1, bool), np.array([1]), un[:1] * 500, un[:1] * 10, 46.0)
+    assert sans[0] == pytest.approx(bai.roches[1])              # sans pH : la roche, comme avant
+    trompette = E.PAR_CODE["trompette"]                         # pas `sol_ph` : le pH est ignoré
+    assert not trompette.sol_ph
+    t = M.facteur_habitat(trompette, np.array([2]), np.zeros(1, bool), np.array([2]), un[:1] * 500, un[:1] * 10,
+                          46.0, ph=np.array([80]))
+    assert t[0] == pytest.approx(trompette.roches[2])
+
+
+@pytest.mark.parametrize("esp", E.ESPECES, ids=lambda e: e.code)
+def test_regle_du_ph(esp):
+    """Le pH remplace la roche pour les espèces des sols acides, et elles seules (especes.PH_ACIDE_MAX)."""
+    assert esp.sol_ph == (esp.ph[2] <= E.PH_ACIDE_MAX), \
+        f"{esp.nom} : optimum de pH jusqu'à {esp.ph[2]}, donc sol_ph={esp.ph[2] <= E.PH_ACIDE_MAX}"
+
+
 def test_classes_croissantes():
     seuils = [s for s, _ in M.CLASSES]
     assert seuils == sorted(seuils)

@@ -3,7 +3,7 @@
 // Vue rapprochée : le navigateur calcule lui-même l'indice des cases de 50 m, bloc par bloc
 // (habitat/blocs/*.png, data/meteo/*.bin, modele.js), à la résolution de calcul.
 import { installerCoins } from "./coins.js";
-import { evaluer, indices, preparer } from "./modele.js";
+import { evaluer, facteurPh, indices, preparer } from "./modele.js";
 
 const R = 6378137;
 const MONDE = 2 * Math.PI * R;
@@ -142,25 +142,31 @@ async function demarrer() {
   });
   const annexes = memoire(2, (nom) => fetch(nom).then((r) => r.json()));   // communes, zones protégées
 
-  // Habitat d'un bloc : les cases boisées, à plat, plus ce qu'il faut pour dessiner.
+  // Habitat d'un bloc : les cases boisées, à plat, plus ce qu'il faut pour dessiner. La couche
+  // « d » (champi.sol) : bits 0-6 = pH du sol × 10, bit 7 = zone urbanisée, dont les bois ne
+  // comptent pas comme forêt. Une release ancienne peut ne pas l'avoir : rien n'est alors exclu.
   const habitats = memoire(40, async (nom) => {
-    const [a, b, c] = await Promise.all(["a", "b", "c"].map((l) => pixels(`habitat/blocs/${nom}_${l}.png`)));
+    const [a, b, c, d] = await Promise.all([...["a", "b", "c"].map((l) => pixels(`habitat/blocs/${nom}_${l}.png`)),
+      pixels(`habitat/blocs/${nom}_d.png`).catch(() => null)]);
     const [bx, by] = nom.split("_").map(Number);
     const n = B.taille * B.taille;
     const essence = new Uint8Array(n), protege = new Uint8Array(n), commune = new Uint16Array(n);
+    const urbain = new Uint8Array(n);
     const foret = [];
     for (let i = 0; i < n; i++) {
       const q = i * 4;
       essence[i] = a.d[q + 2] & 15;
       protege[i] = c.d[q + 2];
       commune[i] = (c.d[q] << 8) | c.d[q + 1];
-      if (essence[i] > 0) foret.push(i);
+      urbain[i] = d ? d.d[q] >> 7 : 0;
+      if (essence[i] > 0 && !urbain[i]) foret.push(i);
     }
     const nf = foret.length;
     const cases = {
       lat: new Float64Array(nf), lon: new Float64Array(nf), altitude: new Float64Array(nf),
       ensoleillement: new Float64Array(nf), pente: new Float64Array(nf), essence: new Uint8Array(nf),
       ouverte: new Uint8Array(nf), public: new Uint8Array(nf), roche: new Uint8Array(nf), orientation: new Uint8Array(nf),
+      ph: new Uint8Array(nf),
     };
     const y1 = (by + 1) * B.cote, x0 = bx * B.cote;
     foret.forEach((i, f) => {
@@ -175,8 +181,9 @@ async function demarrer() {
       cases.ensoleillement[f] = (b.d[q + 1] - 100) / 100;
       cases.roche[f] = b.d[q + 2] & 3;
       cases.orientation[f] = b.d[q + 2] >> 2;
+      cases.ph[f] = d ? d.d[q] & 127 : 0;
     });
-    return { nom, essence, protege, commune, foret: Int32Array.from(foret), cases, prep: null };
+    return { nom, essence, protege, commune, urbain, foret: Int32Array.from(foret), cases, prep: null };
   });
 
   const meteos = memoire(40, async (nom) => {
@@ -398,7 +405,7 @@ async function demarrer() {
       for (let c = Math.max(0, col - 1); c <= Math.min(B.taille - 1, col + 1); c++) {
         const i = l * B.taille + c;
         if (h.protege[i]) protege = true;
-        else if (h.essence[i] > 0) { s += codes[i] / carte.echelle; n++; }
+        else if (h.essence[i] > 0 && !h.urbain[i]) { s += codes[i] / carte.echelle; n++; }
       }
     }
     return { indice: n ? s / n : null, protege, commune: communes[h.commune[lig * B.taille + col] - 1]?.nom };
@@ -754,12 +761,14 @@ async function demarrer() {
     }
     const f = h.foret.indexOf(i);
     if (f < 0) {
-      div.append(el("p", {}, "Hors forêt : pas d'indice."), boutonCoin(ll));
+      div.append(el("p", {}, h.urbain[i] && h.essence[i]
+        ? "Bois en zone urbanisée (parc, quartier, zone d'activités) : pas d'indice."
+        : "Hors forêt : pas d'indice."), boutonCoin(ll));
       return div;
     }
     const k = h.cases;
     const cas = { essence: k.essence[f], ouverte: k.ouverte[f], roche: k.roche[f], altitude: k.altitude[f],
-                  pente: k.pente[f], ensoleillement: k.ensoleillement[f], lat: k.lat[f], lon: k.lon[f] };
+                  pente: k.pente[f], ensoleillement: k.ensoleillement[f], lat: k.lat[f], lon: k.lon[f], ph: k.ph[f] };
     const r = evaluer(e, cas, meteo, jourDe(etat.jour), communs);
     const kc = classeDe(r.indice, carte.classes);
     const pastille = kc > 0 ? el("span", { class: "pastille", style: `background:rgb(${pal.classes[kc].join(",")})` })
@@ -774,8 +783,11 @@ async function demarrer() {
     const dl = el("dl");
     const ligne = (t, d, cls) => { dl.append(el("dt", {}, t), el("dd", cls ? { class: cls } : {}, d)); };
     ligne("Forêt", `${leg.essences[cas.essence]}${cas.ouverte ? " (ouverte)" : ""}`);
-    ligne("Affinité", `${mot(e.essences[cas.essence] ?? 0)} pour cette forêt, ${mot(e.roches[cas.roche] ?? 0)} pour la roche`);
+    const parLePh = e.sol_ph && cas.ph > 0;
+    ligne("Affinité", `${mot(e.essences[cas.essence] ?? 0)} pour cette forêt, ` +
+      (parLePh ? `${mot(facteurPh(e, cas.ph))} pour le sol` : `${mot(e.roches[cas.roche] ?? 0)} pour la roche`));
     ligne("Roche", leg.roches[cas.roche]);
+    if (cas.ph > 0) ligne("Sol", `pH ${fr1.format(cas.ph / 10)} (estimé, SoilGrids)`);
     ligne("Altitude", `${fr.format(cas.altitude)} m`);
     ligne("Exposition", leg.orientations[k.orientation[f]]);
     ligne("Statut", k.public[f] ? "forêt publique (régime forestier)" : "forêt probablement privée");

@@ -68,14 +68,27 @@ def plafond_altitude(esp: E.Espece, lat):
     return esp.altitude[0] + monte, esp.altitude[1] + monte
 
 
-def facteur_habitat(esp: E.Espece, essence, ouverte, roche, altitude, pente, lat) -> np.ndarray:
+def facteur_ph(esp: E.Espece, ph) -> np.ndarray:
+    """Affinité pour le pH du sol (donné × 10, comme dans les blocs) : trapèze relevé d'un plancher."""
+    p = np.asarray(ph, dtype=np.float32) / 10
+    a, b, c, d = esp.ph
+    t = np.clip(np.minimum((p - a) / max(b - a, 1e-6), (d - p) / max(d - c, 1e-6)), 0, 1)
+    return (esp.ph_plancher + (1 - esp.ph_plancher) * t).astype(np.float32)
+
+
+def facteur_habitat(esp: E.Espece, essence, ouverte, roche, altitude, pente, lat, ph=None) -> np.ndarray:
+    """`ph` (× 10, 0 = inconnu) : pour une espèce `sol_ph`, il remplace l'affinité pour la
+    roche là où il est connu ; pour les autres, il est ignoré."""
     tab_ess = np.zeros(256, dtype=np.float32)
     for k, v in esp.essences.items():
         tab_ess[k] = v
     tab_roche = np.zeros(256, dtype=np.float32)
     for k, v in esp.roches.items():
         tab_roche[k] = v
-    f = tab_ess[essence] * tab_roche[roche]
+    sol = tab_roche[roche]
+    if ph is not None and esp.sol_ph:
+        sol = np.where(np.asarray(ph) > 0, facteur_ph(esp, ph), sol)
+    f = tab_ess[essence] * sol
     plein, nul = plafond_altitude(esp, lat)
     f = f * np.clip((nul - np.asarray(altitude, dtype=np.float32)) / (nul - plein), 0, 1)
     f = f * facteur_pente(pente)

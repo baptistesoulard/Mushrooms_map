@@ -34,6 +34,7 @@ import json
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 
@@ -44,6 +45,7 @@ import requests
 from PIL import Image
 
 from . import especes as E
+from . import sol
 from . import modele as M
 from .config import CACHE, DATA, PAS_FIN, USER_AGENT
 from .depot import decalage_paris
@@ -198,11 +200,16 @@ class Blocs:
                               dtype=np.int32) for lettre in "abc")
         commune = (c[..., 0] << 8) | c[..., 1]
         essence = a[..., 2] & 15
+        # Couche « d » (champi.sol), si la release l'a : pH du sol × 10, et les zones urbanisées,
+        # dont les bois ne comptent pas comme forêt.
+        f_d = self.dossier / "blocs" / f"{nom}_d.png"
+        d = np.asarray(Image.open(f_d).convert("L"), dtype=np.int32) if f_d.exists() else np.zeros_like(essence)
+        ph, urbain = d & sol.PH, (d & sol.URBAIN) > 0
         return {
             "altitude": ((a[..., 0] << 8) | a[..., 1]) - ALTITUDE_DECALAGE,
             "essence": essence, "ouverte": (a[..., 2] >> 4) & 1,
             "pente": b[..., 0], "ensoleillement": (b[..., 1] - 100) / 100, "roche": b[..., 2] & 3,
-            "commune": commune, "foret": (essence > 0) & (commune > 0),
+            "commune": commune, "foret": (essence > 0) & (commune > 0) & ~urbain, "ph": ph,
         }
 
 
@@ -227,7 +234,9 @@ def lieux(df: pd.DataFrame, blocs: Blocs) -> pd.DataFrame:
     noms = np.array([f"{a}_{b}" for a, b in zip(bx, by)])
     n = len(df)
     cols = {k: np.full(n, np.nan) for k in ("foret_zone", "france_zone", "altitude", "ensoleillement")}
-    cols.update({e.code: np.full(n, np.nan) for e in E.ESPECES})
+    # Pour chaque espèce, l'habitat avec la roche, avec le pH du sol là où il est connu, et celui
+    # que la carte publie (selon son `sol_ph`) : comparés sur les mêmes cas.
+    cols.update({f"{e.code}{v}": np.full(n, np.nan) for e in E.ESPECES for v in ("", "_roche", "_ph")})
     cols["foret_case"] = np.zeros(n, dtype=bool)
     cols["dep"] = np.full(n, "", dtype=object)
     uniques = [nom for nom in np.unique(noms) if nom in blocs.presents]
@@ -247,10 +256,12 @@ def lieux(df: pd.DataFrame, blocs: Blocs) -> pd.DataFrame:
         couverture = np.minimum(1.0, n_f / CASES_ZONE / COUVERTURE_PLEINE)
         lat = Bloc.depuis_nom(nom).grille().latitudes()[:, None]
         for e in E.ESPECES:
-            h = np.where(foret, M.facteur_habitat(e, b["essence"], b["ouverte"], b["roche"],
-                                                  b["altitude"], b["pente"], lat), 0)
-            moy = np.divide(_somme_zone(h, l, c), n_f, out=np.zeros(len(sel)), where=n_f > 0)
-            cols[e.code][sel] = moy * couverture
+            for variante, esp_v, ph in (("_roche", e, None), ("_ph", replace(e, sol_ph=True), b["ph"])):
+                h = np.where(foret, M.facteur_habitat(esp_v, b["essence"], b["ouverte"], b["roche"],
+                                                      b["altitude"], b["pente"], lat, ph=ph), 0)
+                moy = np.divide(_somme_zone(h, l, c), n_f, out=np.zeros(len(sel)), where=n_f > 0)
+                cols[e.code + variante][sel] = moy * couverture
+            cols[e.code][sel] = cols[e.code + ("_ph" if e.sol_ph else "_roche")][sel]
         if k % 100 == 0:
             print(f"    habitat : {k}/{len(uniques)} blocs ({time.time() - t0:.0f} s)", flush=True)
     garde = ~np.isnan(cols["foret_zone"]) & (cols["france_zone"] >= 0.5)
@@ -295,11 +306,17 @@ def test_habitat(esp: E.Espece, cas: pd.DataFrame, fond: pd.DataFrame, rng) -> d
     ic_naif = intervalle(lambda i: auc(f_cas[i], f_tem), len(cas), rng)
     # Écart apparié : mêmes cas tirés pour le modèle et pour la référence.
     ic_ecart = intervalle(lambda i: auc(m_cas[i], m_tem) - auc(f_cas[i], f_tem), len(cas), rng)
+    # Le pH du sol à la place de la roche : même écart apparié, sur les mêmes cas.
+    r_cas, r_tem = cas[f"{esp.code}_roche"].to_numpy(), fond[f"{esp.code}_roche"].to_numpy()
+    p_cas, p_tem = cas[f"{esp.code}_ph"].to_numpy(), fond[f"{esp.code}_ph"].to_numpy()
+    ic_ecart_ph = intervalle(lambda i: auc(p_cas[i], p_tem) - auc(r_cas[i], r_tem), len(cas), rng)
     return {
         "n": int(len(cas)), "n_fond": int(len(fond)),
         "auc": round(a_mod, 3), "ic": [round(v, 3) for v in ic_mod],
         "auc_foret": round(a_naif, 3), "ic_foret": [round(v, 3) for v in ic_naif],
         "ic_ecart": [round(v, 3) for v in ic_ecart],
+        "auc_roche": round(auc(r_cas, r_tem), 3), "auc_ph": round(auc(p_cas, p_tem), 3),
+        "ic_ecart_ph": [round(v, 3) for v in ic_ecart_ph],
         "part_bonnes_zones": round(float((m_cas >= 0.4).mean()), 3),
         "part_bonnes_zones_fond": round(float((m_tem >= 0.4).mean()), 3),
         "part_hors_foret": round(float((f_cas < 0.16).mean()), 3),

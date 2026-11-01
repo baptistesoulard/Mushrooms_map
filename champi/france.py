@@ -20,6 +20,8 @@ l'export quotidien (échantillon) :
     a : R, G = altitude + 1000 (16 bits) ; B = essence | ouverte << 4 | public << 5
     b : R = pente (°) ; G = ensoleillement × 100 + 100 ; B = roche | orientation << 2
     c : R, G = commune (index national, 16 bits) ; B = zone protégée (index du bloc)
+    d : niveaux de gris, bits 0-6 = pH du sol × 10 (0 = inconnu), bit 7 = zone urbanisée (`sol.py`) ;
+        ajoutée après coup aux blocs déjà publiés (`python -m champi.sol blocs`) : pas de FORMAT
 
 Hors forêt, `a` et `b` valent zéro (rien à calculer, et l'image se comprime bien).
 """
@@ -34,6 +36,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from . import sol
 from .config import CACHE, PAS_FIN, RACINE
 from .grille import Grille
 from .habitat import forets, forets_publiques, relief, roches, zones_protegees
@@ -189,6 +192,8 @@ def construire_bloc(nom: str, index_communes: dict[str, int]) -> dict | None:
     c = np.stack([commune >> 8, commune & 255, protege], -1)
     for lettre, rgb in (("a", a), ("b", b), ("c", c)):
         _ecrire(SORTIE / "blocs" / f"{nom}_{lettre}.png", rgb)
+    d = sol.couche_d(g)
+    sol.ecrire_couche(SORTIE / "blocs" / f"{nom}_d.png", d)
 
     # Échantillon pour l'export quotidien : une case sur 4 × 4, au centre de chaque carré.
     m = np.zeros_like(foret)
@@ -203,6 +208,7 @@ def construire_bloc(nom: str, index_communes: dict[str, int]) -> dict | None:
         pente=pente8[lig, col], ensoleillement=(ens8[lig, col].astype(np.int16) - 100).astype(np.int8),
         essence=essence[lig, col], ouverte=ouverte[lig, col], roche=roche[lig, col],
         protege=protege[lig, col] > 0, public=public[lig, col], commune=commune[lig, col],
+        ph=d[lig, col] & sol.PH, urbain=(d[lig, col] & sol.URBAIN) > 0,
     )
     meta = {"nom": nom, "n_foret": int(foret.sum()), "protections": protections}
     (SORTIE / "meta").mkdir(parents=True, exist_ok=True)

@@ -47,6 +47,12 @@ class Espece:
     repere: str = ""
     avertissement: str = ""
     limites: list[str] = field(default_factory=list)
+    # pH du sol (0-5 cm, SoilGrids) : trapèze (nul sous [0], plein de [1] à [2], nul au-dessus
+    # de [3]) relevé à `ph_plancher` : hors de ses préférences, une espèce se raréfie sans
+    # disparaître. Avec `sol_ph`, il remplace l'affinité pour la roche là où il est connu.
+    ph: tuple[float, float, float, float] = (0.0, 0.0, 14.0, 14.0)
+    ph_plancher: float = 1.0
+    sol_ph: bool = False
 
 
 # --- Paramètres communs à toutes les espèces ---------------------------------------
@@ -58,6 +64,15 @@ SECHERESSE_SUD = 0.25   # part de la pluie « perdue » sur un versant plein sud
 GEL_SEUIL = -1.0        # °C, température minimale de l'air qui compte comme un jour de gel
 FORET_OUVERTE = 0.8     # facteur pour une forêt ouverte (couvert clairsemé)
 PENTE_DEBUT, PENTE_FIN, PENTE_PLANCHER = 30.0, 45.0, 0.2   # sols minces, terrain dangereux
+# pH du sol (SoilGrids) à la place de la roche : pour les espèces des sols acides seulement
+# (`sol_ph`). SoilGrids distingue bien les sols acides mais tasse les calcaires vers 6 : une règle
+# calcicole n'y atteint pas son seuil, l'espèce garde la roche. Mesuré le 2026-11-01 (validation,
+# « pH du sol au lieu de la roche ») : gain pour le cèpe, le bolet bai et la girolle, perte pour
+# la trompette, rien de net pour les autres.
+# RÈGLE pour toute espèce, nouvelle comprise : `sol_ph` si son optimum de pH s'arrête à
+# PH_ACIDE_MAX ou en dessous (ph[2]), la roche sinon. Elle redonne les sept décisions mesurées et
+# vaut pour SoilGrids seulement (tests/test_modele.py la vérifie fiche par fiche).
+PH_ACIDE_MAX = 6.5
 
 # Les saisons et les plafonds d'altitude ont été écrits pour la Haute-Savoie (46° N). Ailleurs,
 # la loi bioclimatique de Hopkins (1918) : un degré de latitude vaut environ 4 jours de
@@ -76,6 +91,7 @@ ESPECES: list[Espece] = [
         altitude=(1600, 2000),
         pluie_jours=(6, 20), pluie_mm=(15, 45),
         sol=(8, 12, 18, 23), gel=0.5,
+        ph=(3.5, 4.0, 6.5, 7.8), ph_plancher=0.5, sol_ph=True,
         habitat_texte="Pessières et sapinières, hêtraies, chênaies et châtaigneraies ; sols "
                       "plutôt acides et bien drainés. Sur calcaire, il reste présent sous les "
                       "épicéas, dont les aiguilles acidifient l'humus.",
@@ -104,6 +120,7 @@ ESPECES: list[Espece] = [
         altitude=(1600, 2000),
         pluie_jours=(7, 25), pluie_mm=(15, 40),
         sol=(6, 10, 17, 22), gel=0.6,
+        ph=(3.0, 3.5, 5.5, 7.0), ph_plancher=0.2, sol_ph=True,
         habitat_texte="Bois acides de résineux comme de feuillus : épicéas, pins, châtaigniers, "
                       "chênes, hêtres ; souvent dans la mousse, au pied des souches. Il fuit le "
                       "calcaire.",
@@ -129,6 +146,7 @@ ESPECES: list[Espece] = [
         altitude=(1500, 1900),
         pluie_jours=(7, 25), pluie_mm=(10, 35),
         sol=(9, 13, 20, 25), gel=0.5,
+        ph=(3.5, 4.0, 6.0, 7.5), ph_plancher=0.3, sol_ph=True,
         habitat_texte="Hêtraies, chênaies, pessières et sapinières moussues, sur sols acides. "
                       "Elle revient aux mêmes endroits d'une année à l'autre.",
         meteo_texte="Moins exigeante que le cèpe : une pluie modérée suffit, et elle tient "
@@ -151,6 +169,7 @@ ESPECES: list[Espece] = [
         altitude=(1200, 1600),
         pluie_jours=(7, 25), pluie_mm=(20, 50),
         sol=(6, 9, 16, 21), gel=0.5,
+        ph=(4.5, 6.0, 8.0, 8.5), ph_plancher=0.4,
         habitat_texte="Hêtraies surtout, parfois chênaies, sur sols calcaires à neutres, "
                       "frais et argileux ; en troupes dans la litière des versants ombragés.",
         meteo_texte="Il lui faut beaucoup d'eau : elle sort tard, après les grosses pluies "
@@ -175,6 +194,7 @@ ESPECES: list[Espece] = [
         altitude=(1500, 1900),
         pluie_jours=(7, 25), pluie_mm=(15, 40),
         sol=(3, 6, 14, 20), gel=0.75,
+        ph=(3.5, 4.5, 8.0, 8.5), ph_plancher=0.8,
         habitat_texte="Presque toutes les forêts, feuillus comme conifères, sur sols calcaires "
                       "comme acides ; souvent en cercles ou en lignes.",
         meteo_texte="L'espèce de l'arrière-saison : elle résiste aux premières gelées et "
@@ -197,6 +217,7 @@ ESPECES: list[Espece] = [
         altitude=(1600, 2000),
         pluie_jours=(7, 25), pluie_mm=(15, 40),
         sol=(6, 10, 17, 22), gel=0.5,
+        ph=(5.0, 6.5, 8.5, 9.0), ph_plancher=0.4,
         habitat_texte="Sous les pins seulement (sylvestre, maritime, noir, d'Alep), souvent dans "
                       "l'herbe des jeunes pinèdes, des lisières et des dunes boisées ; de "
                       "préférence sur calcaire ou sable coquillier, plus rare sur sol acide.",
@@ -229,6 +250,7 @@ ESPECES: list[Espece] = [
         altitude=(1300, 1800),
         pluie_jours=(3, 21), pluie_mm=(10, 30),
         sol=(5, 8, 13, 17), gel=0.6,
+        ph=(5.0, 6.5, 8.5, 9.0), ph_plancher=0.3,
         habitat_texte="Bords de rivières, frênaies, peupleraies et vergers en plaine ; "
                       "en montagne, clairières, coupes et lisières de résineux, souvent sur "
                       "calcaire. Elle suit les perturbations (coupes, chantiers, brûlis).",

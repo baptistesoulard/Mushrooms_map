@@ -50,6 +50,9 @@ async function methode() {
       ["Forêts favorables", par(0.8, 2)],
       ["Forêts possibles", par(0.4, 0.8)],
       ["Roche (affinité)", roches],
+      ...(e.sol_ph ? [["pH du sol", `plein de ${fr.format(e.ph[1])} à ${fr.format(e.ph[2])}, au plus bas ` +
+        `${fr.format(e.ph_plancher)} sous ${fr.format(e.ph[0])} et au-dessus de ${fr.format(e.ph[3])} ; ` +
+        "remplace la roche là où SoilGrids le connaît"]] : []),
       ["Altitude", `pleine jusqu'à ${fr.format(a1)} m, nulle au-dessus de ${fr.format(a2)} m (à ${fr.format(regles.communs.latitude_ref)}° N), pas de plancher`],
       ["Pluie", `cumul entre ${jmax} et ${jmin} jours avant : pleine pousse au-delà de ${fr.format(p1)} mm, rien sous ${fr.format(p0)} mm`],
       ["Sol", `moyenne des 7 jours précédents : optimum de ${fr.format(t1)} à ${fr.format(t2)} °C, rien sous ${fr.format(t0)} °C ni au-dessus de ${fr.format(t3)} °C`],
@@ -132,6 +135,10 @@ function espece(e, minCas, ou) {
     ligne("Habitat", h.n, auc(h.auc, h.ic), lecture(h.auc, h.ic));
     ligne("Forêt seule (référence)", h.n, auc(h.auc_foret, h.ic_foret),
       `habitat : ${ecart(h.ic_ecart, "mieux que la forêt seule", "moins bien que la forêt seule")}`);
+    if (h.auc_ph !== undefined) {
+      ligne("Habitat, pH du sol au lieu de la roche", h.n, `${pct(h.auc_ph)} (roche : ${pct(h.auc_roche)})`,
+        `pH : ${ecart(h.ic_ecart_ph, "mieux que la roche", "moins bien que la roche")}`);
+    }
   } else {
     ligne("Habitat", h.n, "—", `trop peu de cas (moins de ${minCas})`);
   }

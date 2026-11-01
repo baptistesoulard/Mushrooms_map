@@ -31,6 +31,7 @@ champi/alertes.py        (chaque jour) notification ntfy quand une espèce passe
 site/modele.js           le calcul de l'indice dans le navigateur, case par case
 site/sw.js               l'appli hors ligne : copie du site, des données consultées et de l'habitat
 site/coins.js            mes coins : trouvailles gardées dans le navigateur, partage par fichier, synchro par un dépôt GitHub privé
+champi/sol.py            couche « d » des blocs : pH du sol (SoilGrids) et zones urbanisées (Corine)
 champi/especes.py        les règles, espèce par espèce : le seul fichier à toucher pour changer un seuil
 champi/modele.py         le même calcul en Python (export, validation), sans entrée-sortie
 champi/redaction.py      les phrases du panneau, à partir de faits

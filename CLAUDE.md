@@ -88,6 +88,15 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 
 ## Calcul
 
+- **Couche « d » des blocs** (`sol.py`, ajoutée après coup par `sol.yml`, d'emblée par
+  `france.construire_bloc`) : bits 0-6 = pH du sol × 10 (SoilGrids, copie versionnée
+  `data/ph_sol.npz`), bit 7 = zone urbanisée (Corine Land Cover 2018, classes 1xx). Ses bois ne
+  sont pas de la forêt : ni indice, ni exploration, ni échantillon, ni validation. Une release
+  sans couche « d » reste lisible (rien d'exclu, pH inconnu).
+- **Le pH remplace la roche pour les espèces `sol_ph` seulement** (cèpe, bolet bai, girolle) :
+  SoilGrids tasse les sols calcaires vers 6, une règle calcicole n'y trouve pas son seuil
+  (mesuré : la trompette y perdait). La validation publie toujours les deux variantes.
+
 - **Tout est en Web Mercator** (`grille.py`) : les images se posent sur Leaflet sans
   reprojection. Pas de PROJ/pyproj : bloqué ou mal configuré sur ce poste Windows (DLL
   bloquée, `proj.db` de PostGIS). Les services renvoient du 3857 ou du WGS84.
