@@ -20,6 +20,33 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="page-carte">
+<!-- barre -->
+<header class="barre">
+  <a class="marque" href="./"><img src="favicon.svg" alt="" width="22" height="22">Champignons en France</a>
+  <nav class="barre-liens" aria-label="Rubriques">
+    <a href="carte/" aria-current="page">La carte</a>
+    <a href="en-ce-moment.html">En ce moment</a>
+    <a href="especes/">Les espèces</a>
+    <a href="departements/">Départements</a>
+    <a href="avant-de-partir.html">Avant de partir</a>
+    <a href="methode.html">Méthode</a>
+  </nav>
+  <details class="barre-menu">
+    <summary>Menu</summary>
+    <nav aria-label="Rubriques">
+      <a href="./">Accueil</a>
+      <a href="carte/" aria-current="page">La carte</a>
+      <a href="en-ce-moment.html">En ce moment</a>
+      <a href="especes/">Les espèces</a>
+      <a href="departements/">Départements</a>
+      <a href="avant-de-partir.html">Avant de partir</a>
+      <a href="methode.html">Méthode</a>
+      <a href="validation.html">Face aux observations</a>
+      <a href="a-propos.html">À propos</a>
+    </nav>
+  </details>
+</header>
+<!-- /barre -->
 <div class="appli">
   <!-- Sur téléphone, ce panneau glisse du bas (feuille.js) : la poignée, puis la case touchée. -->
   <aside class="panneau" id="panneau" aria-label="Panneau de la carte">
@@ -28,142 +55,153 @@
     </button>
     <section class="case-panneau" id="case" hidden aria-live="polite"></section>
 
-    <div class="entete">
-      <h1><a class="titre" href="./">Champignons en France</a></h1>
-      <p>Les forêts où la météo, l'essence, la roche, l'altitude et l'exposition sont
-      réunies pour une pousse, aujourd'hui et pour les sept prochains jours. C'est un
-      indice de conditions favorables, pas la promesse d'un panier : la carte dit où
-      chercher, jamais quoi ramasser.</p>
-      <p class="muet installer" id="installer" hidden></p>
-    </div>
+    <h1 class="lecteur">La carte des champignons</h1>
 
     <div id="perime" class="alerte perime" hidden></div>
 
-    <fieldset class="rang rang-espece">
-      <legend>Espèce</legend>
-      <div class="choix" id="choix-espece"></div>
-    </fieldset>
-
+    <!-- Les choix : l'espèce (la liste illustrée s'ouvre au toucher), puis le jour. -->
+    <button type="button" class="choix-espece-bouton" id="choix-espece-bouton" aria-haspopup="dialog"
+      aria-controls="dialogue-especes">
+      <img class="icone" id="choix-espece-icone" src="img/especes/cepe.svg" alt="" width="40" height="40">
+      <span class="choix-espece-texte"><span class="muet">Espèce</span><strong id="choix-espece-nom">…</strong></span>
+      <span class="niv" id="choix-espece-niv"></span>
+      <span class="chevron" aria-hidden="true">▾</span>
+    </button>
     <fieldset class="rang rang-jour">
       <legend>Jour</legend>
       <div class="choix" id="choix-jour"></div>
     </fieldset>
-    <label class="case publiques"><input type="checkbox" id="publiques"> Forêts publiques seulement
-    <span class="muet" id="publiques-message" aria-live="polite"></span></label>
 
-    <div class="section ici">
-      <h3>Que chercher ici ?</h3>
-      <ol class="communes" id="ici"></ol>
-      <p class="muet" id="ici-texte"></p>
+    <div class="onglets" role="tablist" aria-label="Le panneau">
+      <button type="button" role="tab" id="tab-ici" aria-controls="onglet-ici" aria-selected="true">Ici</button>
+      <button type="button" role="tab" id="tab-departement" aria-controls="onglet-departement" aria-selected="false" tabindex="-1">Département</button>
+      <button type="button" role="tab" id="tab-espece" aria-controls="onglet-espece" aria-selected="false" tabindex="-1">L'espèce</button>
+      <button type="button" role="tab" id="tab-outils" aria-controls="onglet-outils" aria-selected="false" tabindex="-1">Mes outils</button>
     </div>
 
-    <label class="departement">
-      <span>Département</span>
-      <select id="choix-departement"></select>
-    </label>
-
-    <div class="verdict" aria-live="polite">
-      <div class="jour" id="verdict-jour"></div>
-      <h2 id="verdict-titre">Chargement…</h2>
-      <div id="verdict-texte"></div>
-    </div>
-
-    <div class="section">
-      <h3>La semaine, espèce par espèce</h3>
-      <div class="tableau-semaine"><table class="semaine" id="semaine"></table></div>
-      <div class="legende-semaine">
-        <span><span class="pastille n4"></span>bon</span>
-        <span><span class="pastille n3"></span>par endroits</span>
-        <span><span class="pastille n2"></span>possible</span>
-        <span><span class="pastille vide"></span>défavorable</span>
-        <span>– hors saison</span>
+    <section class="onglet" role="tabpanel" id="onglet-ici" aria-labelledby="tab-ici">
+      <div class="section ici">
+        <h3>Que chercher ici ?</h3>
+        <ol class="communes" id="ici"></ol>
+        <p class="muet" id="ici-texte"></p>
       </div>
-      <p class="muet">Les conditions dans les forêts du département (ses prés pour les espèces des
-      champs, en tirets), comme le verdict ci-dessus. Un clic affiche l'espèce et le jour sur la carte.</p>
-      <p id="lien-departement"></p>
-    </div>
-
-    <div class="section">
-      <h3>Par altitude</h3>
-      <div class="tranches" id="tranches"></div>
-      <p class="muet">Indice moyen des forêts (des prés, pour une espèce des champs) de chaque tranche de 200 m.</p>
-    </div>
-
-    <div class="section">
-      <h3>Communes les mieux placées</h3>
-      <ul class="communes" id="communes"></ul>
-      <p class="muet">Moyenne sur les forêts de la commune (ses prés, pour une espèce des champs). Un clic centre la carte.</p>
-    </div>
-
-    <div class="fiche" id="fiche"></div>
-
-    <div class="section">
-      <h3>Où chercher en France</h3>
-      <ol class="communes" id="classement"></ol>
-      <p class="muet">Indice moyen des forêts (des prés, pour une espèce des champs) de chaque département. Un clic l'affiche.</p>
-    </div>
-
-    <details class="section explorer" id="explorer">
-      <summary><h3>Explorer les forêts</h3></summary>
-      <p class="muet">Sans météo ni saison : les forêts qui répondent à vos critères, case par
-      case. Les zones protégées restent hachurées.</p>
-      <label class="case"><input type="checkbox" id="explorer-actif"> Afficher ces forêts
-      <span class="pastille exploration"></span> au lieu de l'indice</label>
-      <button type="button" class="lien" id="explorer-espece">Partir des préférences de l'espèce choisie</button>
-      <fieldset><legend>Essences</legend><div class="cases" id="explorer-essences"></div></fieldset>
-      <fieldset><legend>Roche</legend><div class="cases" id="explorer-roches"></div></fieldset>
-      <fieldset><legend>Altitude</legend>
-        <label class="altitudes">de <input type="number" id="explorer-alt-min" value="0" min="0" max="5000" step="100">
-        à <input type="number" id="explorer-alt-max" value="5000" min="0" max="5000" step="100"> m</label>
-      </fieldset>
-      <fieldset><legend>Exposition</legend><div class="cases" id="explorer-orientations"></div></fieldset>
-      <label class="case"><input type="checkbox" id="explorer-public"> Forêts publiques seulement</label>
-      <p class="muet" id="explorer-message" aria-live="polite"></p>
-    </details>
-
-    <div class="section coins">
-      <h3>Mes coins</h3>
-      <p class="muet" id="coins-resume"></p>
-      <ul class="communes" id="coins-liste"></ul>
-      <div class="coins-actions">
-        <button type="button" id="coin-ici">Noter une trouvaille à ma position</button>
-        <button type="button" id="coins-partager">Partager mes coins</button>
-        <button type="button" id="coins-sauver">Sauvegarder</button>
-        <label class="bouton">Importer un fichier<input type="file" id="coins-importer" accept=".json,application/json" hidden></label>
+      <label class="case publiques"><input type="checkbox" id="publiques"> Forêts publiques seulement
+      <span class="muet" id="publiques-message" aria-live="polite"></span></label>
+      <div class="section">
+        <h3>Légende</h3>
+        <div class="legende" id="legende"></div>
       </div>
-      <label class="case"><input type="checkbox" id="coins-voir" checked> Afficher les coins sur la carte</label>
-      <ul class="muet" id="coins-sources"></ul>
-      <p class="muet" id="coins-message" aria-live="polite"></p>
-      <p class="muet" id="coins-synchro" aria-live="polite" hidden></p>
-      <p class="muet">Un appui long (ou un clic droit) sur la carte note une trouvaille à cet
-      endroit. Vos coins restent dans ce navigateur. Le partage crée un fichier de vos seuls
-      coins, à envoyer à qui vous voulez ; la sauvegarde les garde tous. Pour les retrouver sur
-      tous vos appareils ou les partager avec un groupe, voir
-      <a href="a-propos.html#synchro">la synchronisation</a>.</p>
-    </div>
+    </section>
 
-    <details class="section alertes" id="alertes">
-      <summary><h3>Mes alertes</h3></summary>
-      <p class="muet">Une notification sur cet appareil quand une espèce devient favorable dans
-      votre département au cours des 7 prochains jours, puis un rappel la veille.</p>
-      <ul class="communes" id="alertes-liste"></ul>
-      <p class="muet" id="alertes-etat" aria-live="polite"></p>
-      <form id="alertes-form" hidden>
-        <label class="departement"><span>Département</span><select id="alertes-dep"></select></label>
-        <fieldset><legend>Espèces</legend><div class="cases" id="alertes-especes"></div></fieldset>
-        <fieldset><legend>Prévenir pour</legend>
-          <label class="case"><input type="radio" name="seuil" value="bon" checked> de bonnes conditions</label>
-          <label class="case"><input type="radio" name="seuil" value="endroits"> de bonnes conditions par endroits (plus souvent)</label>
+    <section class="onglet" role="tabpanel" id="onglet-departement" aria-labelledby="tab-departement" hidden>
+      <label class="departement">
+        <span>Département</span>
+        <select id="choix-departement"></select>
+      </label>
+
+      <div class="verdict" aria-live="polite">
+        <div class="jour" id="verdict-jour"></div>
+        <h2 id="verdict-titre">Chargement…</h2>
+        <div id="verdict-texte"></div>
+      </div>
+
+      <div class="section">
+        <h3>La semaine, espèce par espèce</h3>
+        <div class="tableau-semaine"><table class="semaine" id="semaine"></table></div>
+        <div class="legende-semaine">
+          <span><span class="pastille n4"></span>bon</span>
+          <span><span class="pastille n3"></span>par endroits</span>
+          <span><span class="pastille n2"></span>possible</span>
+          <span><span class="pastille vide"></span>défavorable</span>
+          <span>– hors saison</span>
+        </div>
+        <p class="muet">Les conditions dans les forêts du département (ses prés pour les espèces des
+        champs, soulignées en tirets), comme le verdict ci-dessus. Un clic affiche l'espèce et le jour
+        sur la carte.</p>
+        <p id="lien-departement"></p>
+      </div>
+
+      <div class="section">
+        <h3>Par altitude</h3>
+        <div class="tranches" id="tranches"></div>
+        <p class="muet">Indice moyen des forêts (des prés, pour une espèce des champs) de chaque tranche de 200 m.</p>
+      </div>
+
+      <div class="section">
+        <h3>Communes les mieux placées</h3>
+        <ul class="communes" id="communes"></ul>
+        <p class="muet">Moyenne sur les forêts de la commune (ses prés, pour une espèce des champs). Un clic centre la carte.</p>
+      </div>
+
+      <div class="section">
+        <h3>Où chercher en France</h3>
+        <ol class="communes" id="classement"></ol>
+        <p class="muet">Indice moyen des forêts (des prés, pour une espèce des champs) de chaque département. Un clic l'affiche.</p>
+      </div>
+    </section>
+
+    <section class="onglet" role="tabpanel" id="onglet-espece" aria-labelledby="tab-espece" hidden>
+      <div class="fiche" id="fiche"></div>
+    </section>
+
+    <section class="onglet" role="tabpanel" id="onglet-outils" aria-labelledby="tab-outils" hidden>
+      <div class="section coins">
+        <h3>Mes coins</h3>
+        <p class="muet" id="coins-resume"></p>
+        <ul class="communes" id="coins-liste"></ul>
+        <div class="coins-actions">
+          <button type="button" id="coin-ici">Noter une trouvaille à ma position</button>
+          <button type="button" id="coins-partager">Partager mes coins</button>
+          <button type="button" id="coins-sauver">Sauvegarder</button>
+          <label class="bouton">Importer un fichier<input type="file" id="coins-importer" accept=".json,application/json" hidden></label>
+        </div>
+        <label class="case"><input type="checkbox" id="coins-voir" checked> Afficher les coins sur la carte</label>
+        <ul class="muet" id="coins-sources"></ul>
+        <p class="muet" id="coins-message" aria-live="polite"></p>
+        <p class="muet" id="coins-synchro" aria-live="polite" hidden></p>
+        <p class="muet">Un appui long (ou un clic droit) sur la carte note une trouvaille à cet
+        endroit. Vos coins restent dans ce navigateur. Le partage crée un fichier de vos seuls
+        coins, à envoyer à qui vous voulez ; la sauvegarde les garde tous. Pour les retrouver sur
+        tous vos appareils ou les partager avec un groupe, voir
+        <a href="a-propos.html#synchro">la synchronisation</a>.</p>
+      </div>
+
+      <details class="section alertes" id="alertes">
+        <summary><h3>Mes alertes</h3></summary>
+        <p class="muet">Une notification sur cet appareil quand une espèce devient favorable dans
+        votre département au cours des 7 prochains jours, puis un rappel la veille.</p>
+        <ul class="communes" id="alertes-liste"></ul>
+        <p class="muet" id="alertes-etat" aria-live="polite"></p>
+        <form id="alertes-form" hidden>
+          <label class="departement"><span>Département</span><select id="alertes-dep"></select></label>
+          <fieldset><legend>Espèces</legend><div class="cases" id="alertes-especes"></div></fieldset>
+          <fieldset><legend>Prévenir pour</legend>
+            <label class="case"><input type="radio" name="seuil" value="bon" checked> de bonnes conditions</label>
+            <label class="case"><input type="radio" name="seuil" value="endroits"> de bonnes conditions par endroits (plus souvent)</label>
+          </fieldset>
+          <button type="submit">Ajouter cette alerte</button>
+        </form>
+        <button type="button" class="lien" id="alertes-arreter" hidden>Ne plus être prévenu sur cet appareil</button>
+      </details>
+
+      <details class="section explorer" id="explorer">
+        <summary><h3>Explorer les forêts</h3></summary>
+        <p class="muet">Sans météo ni saison : les forêts qui répondent à vos critères, case par
+        case. Les zones protégées restent hachurées.</p>
+        <label class="case"><input type="checkbox" id="explorer-actif"> Afficher ces forêts
+        <span class="pastille exploration"></span> au lieu de l'indice</label>
+        <button type="button" class="lien" id="explorer-espece">Partir des préférences de l'espèce choisie</button>
+        <fieldset><legend>Essences</legend><div class="cases" id="explorer-essences"></div></fieldset>
+        <fieldset><legend>Roche</legend><div class="cases" id="explorer-roches"></div></fieldset>
+        <fieldset><legend>Altitude</legend>
+          <label class="altitudes">de <input type="number" id="explorer-alt-min" value="0" min="0" max="5000" step="100">
+          à <input type="number" id="explorer-alt-max" value="5000" min="0" max="5000" step="100"> m</label>
         </fieldset>
-        <button type="submit">Ajouter cette alerte</button>
-      </form>
-      <button type="button" class="lien" id="alertes-arreter" hidden>Ne plus être prévenu sur cet appareil</button>
-    </details>
-
-    <div class="section">
-      <h3>Légende</h3>
-      <div class="legende" id="legende"></div>
-    </div>
+        <fieldset><legend>Exposition</legend><div class="cases" id="explorer-orientations"></div></fieldset>
+        <label class="case"><input type="checkbox" id="explorer-public"> Forêts publiques seulement</label>
+        <p class="muet" id="explorer-message" aria-live="polite"></p>
+      </details>
+    </section>
 
     <div class="alerte">
       <p><strong>Ne mangez jamais un champignon sans identification certaine.</strong>
@@ -173,22 +211,22 @@
       portez une couleur vive. <a href="avant-de-partir.html">Avant de partir</a>.</p>
     </div>
 
-    <nav class="pied">
-      <a href="./">Accueil</a>
-      <a href="en-ce-moment.html">En ce moment</a>
-      <a href="especes/">Les espèces</a>
-      <a href="departements/">Par département</a>
-      <a href="methode.html">Méthode</a>
-      <a href="validation.html">Face aux observations</a>
-      <a href="avant-de-partir.html">Avant de partir</a>
-      <a href="a-propos.html">Sources et mentions</a>
-      <button type="button" class="lien" id="revoir-guide">Revoir la présentation</button>
-    </nav>
+    <p class="pied-carte"><button type="button" class="lien" id="revoir-guide">Revoir la présentation</button>
+    · <a href="a-propos.html">Sources et mentions</a></p>
+    <p class="muet installer" id="installer" hidden></p>
     <p class="muet" id="maj"></p>
   </aside>
   <main id="carte" aria-label="Carte de l'indice de pousse"></main>
   <p class="bandeau-pres" id="bandeau-pres" role="status" hidden></p>
 </div>
+<dialog class="dialogue-especes" id="dialogue-especes" aria-labelledby="dialogue-especes-titre">
+  <header>
+    <h2 id="dialogue-especes-titre">Choisir un champignon</h2>
+    <p id="dialogue-especes-sous-titre"></p>
+    <button type="button" class="fermer" id="dialogue-especes-fermer" aria-label="Fermer la liste">×</button>
+  </header>
+  <div class="liste-especes" id="liste-especes"></div>
+</dialog>
 <dialog class="guide" id="guide" aria-labelledby="guide-titre">
   <p class="muet" id="guide-etape"></p>
   <h2 id="guide-titre"></h2>

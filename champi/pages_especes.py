@@ -10,8 +10,10 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from .pages import (PARTAGER, date_courte, departements_de, e, entete, image_partage, instant_paris,
-                    meilleur_niveau, national, noms_especes, ordre_saison, pct, pied, tete)
+from .pages import (MOIS_COURTS, NIVEAUX_COURTS, PARTAGER, calendrier_mois, credit_photo, date_courte,
+                    departements_de, e, icone, image_partage, instant_paris, meilleur_niveau, mois_saison,
+                    national, noms_especes, ordre_saison, pct, pied, tete)
+from .photos import charger as charger_photos
 from .pages_accueil import etat_espece
 from .prairies import NOMS_MILIEUX
 from .redaction import NBSP, fiabilite, lieux, nombre
@@ -75,8 +77,19 @@ def ce_que_la_carte_en_sait(x: dict, v: dict | None) -> list[str]:
     return lignes
 
 
+def figure_photo(x: dict, photo: dict | None, racine: str = "../", classe: str = "photo",
+                 paresseuse: bool = True) -> str:
+    """La photo de l'espèce et son crédit ; son dessin quand elle n'en a pas. Les photos du haut de
+    page se chargent tout de suite, les autres à l'approche."""
+    if not photo:
+        return f'<figure class="{classe} dessin">{icone(racine, x["code"], 120)}</figure>'
+    return (f'<figure class="{classe}"><img src="{racine}img/especes/{x["code"]}.jpg" alt="{e(x["nom"])}" '
+            f'width="{photo["largeur"]}" height="{photo["hauteur"]}"{' loading="lazy"' if paresseuse else ""}>'
+            f"<figcaption>{credit_photo(photo)}</figcaption></figure>")
+
+
 def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: list[date], noms: dict,
-                validation: dict | None, genere_le: str) -> str:
+                validation: dict | None, genere_le: str, photo: dict | None = None) -> str:
     """`x` : règles de l'espèce (`especes.en_json`) ; `niv` : son état national, jour par jour
     (`pages.national`) ; `noms` : noms des départements ; `validation` : son bloc France."""
     code, nom = x["code"], x["nom"]
@@ -93,9 +106,12 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
                 f"{il} ressemble et ses sosies, et les départements où les conditions sont bonnes "
                 "aujourd'hui.", "../", f"{DOSSIER}/{code}.html", image=image_partage("france", genere_le))
     carte = "../carte/" if pre else f"../carte/?espece={code}"
-    lignes = [entete("../", (carte, "La carte"), ("./", "Toutes les espèces")),
+    lignes = [f'  <p class="fil"><a href="./">Les espèces</a> › {e(nom)}</p>',
               f'  <h1>{e(nom)} <span class="latin">{e(x["latin"])}</span></h1>',
+              f'  <div class="tete-espece">{figure_photo(x, photo, paresseuse=False)}<div>',
               f'  <p class="chapeau">{e(x["habitat_texte"])}</p>',
+              f'  <p class="saison-mois"><strong>Saison</strong> {calendrier_mois(x["saison"], jours[0].month)}</p>',
+              '  <p class="muet">Une photo aide à chercher, jamais à identifier.</p></div></div>',
               "  <h2>En ce moment</h2>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}, sur {lieux(x)} de chaque département.</p>']
     j0 = niv[0]
@@ -178,28 +194,86 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
     return haut + "\n".join(lignes) + "\n" + pied("../")
 
 
-def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, genere_le: str) -> str:
-    """Les espèces, celles aux meilleures conditions aujourd'hui d'abord."""
-    haut = tete("Les champignons de la carte : où et quand les chercher",
+def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, genere_le: str,
+               photos: dict | None = None) -> str:
+    """Toutes les espèces d'un coup d'œil : celle du moment, une fiche illustrée par espèce avec
+    ses mois de saison, le calendrier complet, les crédits des photos."""
+    photos = photos or {}
+    foret = [x for x in especes if x.get("milieu", "foret") == "foret"]
+    pres = [x for x in especes if x.get("milieu") == "pre"]
+    haut = tete("Les champignons de la carte : saisons, milieux, où les chercher",
                 f"{noms_especes(especes)[:1].upper()}{noms_especes(especes)[1:]} : leurs milieux, leur "
-                "saison, leurs sosies, et où les conditions sont bonnes aujourd'hui en France.", "../",
-                f"{DOSSIER}/", image=image_partage("france", genere_le))
-    lignes = [entete("../", ("../carte/", "La carte"), ("../en-ce-moment.html", "En ce moment")),
-              "  <h1>Les espèces de la carte</h1>",
-              f'  <p class="muet">Calculé le {instant_paris(genere_le)}. Les espèces aux meilleures conditions '
-              "aujourd'hui viennent d'abord.</p>"]
-    for x in ordre_saison(especes, nat):
-        n = meilleur_niveau(nat[x["code"]][0])
-        if n in (0, None):
-            etat = f"Hors saison partout aujourd'hui (saison du {date_courte(x['saison'][0])} au " \
-                   f"{date_courte(x['saison'][3])} en gros)."
-        else:
-            t = etat_espece(nat[x["code"]], jours, noms, "../")
-            etat = f"{t[:1].upper()}{t[1:]}."
-        lignes += [f'  <section class="carte-espece"><h2><a href="{x["code"]}.html">{e(x["nom"])}</a> '
-                   f'<span class="latin">{e(x["latin"])}</span></h2>',
-                   f"  <p>{etat}</p>",
-                   f'  <p class="muet">{e(x["habitat_texte"])}</p></section>']
+                "saison mois par mois, leurs sosies, et où les conditions sont bonnes aujourd'hui en France.",
+                "../", f"{DOSSIER}/", image=image_partage("france", genere_le))
+    mois = jours[0].month
+    ordre = ordre_saison(especes, nat)
+    lignes = ["  <h1>Les champignons de la carte</h1>",
+              f'  <p class="chapeau">{len(foret)} espèces de forêt, sur la carte case par case, et {len(pres)} '
+              "des prés, commune par commune : leur saison mois par mois, leurs milieux, à quoi elles "
+              "ressemblent, et où les conditions sont bonnes aujourd'hui.</p>"]
+
+    # L'espèce du moment : la mieux placée aujourd'hui en France.
+    vedette = ordre[0]
+    n = meilleur_niveau(nat[vedette["code"]][0])
+    if n not in (0, None):
+        t = etat_espece(nat[vedette["code"]], jours, noms, "../")
+        lignes += ['  <section class="vedette">',
+                   f"  {figure_photo(vedette, photos.get(vedette['code']), classe='photo vedette-photo', paresseuse=False)}",
+                   '  <div class="vedette-texte">',
+                   f'  <p class="sur-titre">En ce moment · {MOIS_COURTS[mois - 1].rstrip(".")} {jours[0].year}</p>',
+                   f'  <h2><a href="{vedette["code"]}.html">{e(vedette["nom"])}</a> '
+                   f'<span class="latin">{e(vedette["latin"])}</span></h2>',
+                   f"  <p>{t[:1].upper()}{t[1:]}.</p>",
+                   f'  <p class="muet">{e(vedette["habitat_texte"])}</p>',
+                   f'  <p class="actions"><a class="bouton principal" href="{vedette["code"]}.html">La fiche</a>'
+                   f'<a class="bouton" href="../en-ce-moment.html#{vedette["code"]}">La semaine en France</a></p>',
+                   "  </div></section>"]
+
+    def fiche(x):
+        j0 = nat[x["code"]][0]
+        n = meilleur_niveau(j0)
+        etat = ("hors saison" if n in (0, None) else "défavorable partout" if n == 1 else
+                f"{NIVEAUX_COURTS[n]} dans {departements_de(len(j0[n]))}")
+        milieu = "Prés" if x.get("milieu") == "pre" else "Forêt"
+        return (f'    <li><a href="{x["code"]}.html">'
+                f'{figure_photo(x, photos.get(x["code"]), classe="photo vignette-espece")}'
+                f'<span class="badges"><span class="badge">{milieu}</span>'
+                f'<span class="badge n{n or 0}">{e(etat)}</span></span>'
+                f'<strong>{e(x["nom"])}</strong><span class="latin">{e(x["latin"])}</span>'
+                f'{calendrier_mois(x["saison"], mois)}</a></li>')
+
+    lignes += ["  <h2>Toutes les espèces</h2>",
+               '  <p class="muet">Les mieux placées aujourd\'hui d\'abord. Sous chaque nom, ses mois : '
+               '<span class="mois legende-mois"><span class="plein">J</span></span> pleine saison, '
+               '<span class="mois legende-mois"><span class="possible">J</span></span> possible, le mois en cours '
+               "entouré (à 46° N, la Haute-Savoie : plus au sud, le printemps avance et l'automne recule "
+               "d'environ quatre jours par degré).</p>",
+               '  <ul class="fiches-especes">'] + [fiche(x) for x in ordre] + ["  </ul>"]
+
+    # Le calendrier : toutes les espèces, mois par mois.
+    tete_mois = "".join(f'<th scope="col"{" class=\"actuel\"" if k + 1 == mois else ""}>{m}</th>'
+                        for k, m in enumerate(MOIS_COURTS))
+    rangs = []
+    for x in sorted(especes, key=lambda x: (x.get("milieu") == "pre", x["saison"][1])):
+        cases = "".join(f'<td class="{c}{" actuel" if k + 1 == mois else ""}"></td>'
+                        for k, c in enumerate(mois_saison(x["saison"])))
+        rangs.append(f'<tr><th scope="row"><a href="{x["code"]}.html">{icone("../", x["code"], 24)}'
+                     f'{e(x["nom"])}</a></th>{cases}</tr>')
+    lignes += ["  <h2>Le calendrier des saisons</h2>",
+               '  <p class="muet">Dans l\'ordre où les saisons commencent ; les espèces des prés à la fin. '
+               "La carte suit chaque jour la pluie et la température du sol : une saison dit quand chercher, "
+               "pas si ça pousse.</p>",
+               '  <div class="tableau"><table class="calendrier">',
+               f"  <thead><tr><th></th>{tete_mois}</tr></thead>",
+               f"  <tbody>{''.join(rangs)}</tbody>",
+               "  </table></div>",
+               '  <div class="legende-semaine"><span><span class="pastille cal-plein"></span>pleine saison</span>'
+               '<span><span class="pastille cal-possible"></span>possible</span></div>']
+    if photos:
+        lignes += ["  <h2>Crédits des photos</h2>", '  <ul class="credits">']
+        lignes += [f"    <li>{e(x['nom'])} : {credit_photo(photos[x['code']])[len('Photo : '):]}</li>"
+                   for x in especes if x["code"] in photos]
+        lignes += ["  </ul>"]
     return haut + "\n".join(lignes) + "\n" + pied("../")
 
 
@@ -210,11 +284,12 @@ def ecrire(site: Path, departements: list[dict], regles: dict, legendes: dict, r
     nat = national(especes, departements, resumes, len(jours))
     noms = {d["code"]: d["nom"] for d in departements}
     par_espece = (validation or {}).get("regions", {}).get("france", {}).get("especes", {})
+    photos = charger_photos()
     dossier = site / DOSSIER
     dossier.mkdir(parents=True, exist_ok=True)
     for x in especes:
         (dossier / f"{x['code']}.html").write_text(
             page_espece(x, regles["communs"], legendes, nat[x["code"]], jours, noms, par_espece.get(x["code"]),
-                        genere_le), encoding="utf-8")
-    (dossier / "index.html").write_text(page_index(especes, nat, jours, noms, genere_le), encoding="utf-8")
+                        genere_le, photos.get(x["code"])), encoding="utf-8")
+    (dossier / "index.html").write_text(page_index(especes, nat, jours, noms, genere_le, photos), encoding="utf-8")
     return [f"{DOSSIER}/"] + [f"{DOSSIER}/{x['code']}.html" for x in especes]

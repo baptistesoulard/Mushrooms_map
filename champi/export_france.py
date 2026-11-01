@@ -12,6 +12,10 @@ l'habitat (release « habitat », copié dans `site/habitat/`) et de la météo 
 - `apercu/<espèce>_<k>.png` : l'indice de toute la France par pixels de 1,15 km (vue large) ;
 - `vue/<k>.png` : « Que chercher ici ? », les parts de forêt aux bonnes conditions par pixel de
   9,2 km et par espèce (`Vue`) ;
+- pour une espèce des prés, ni case ni point : l'indice moyen des prés de chaque COMMUNE,
+  `communes/<espèce>_<k>.png` (une valeur par numéro de commune, 256 par ligne, 255 sans prés
+  assez étendus) que le navigateur peint avec la couche « c » des blocs, et le même indice en
+  aperçu (`apercu/<espèce>_<k>.png`, chaque pixel prend celui de sa commune) ;
 - `resumes/<département>.json` : faits et phrases du panneau, par espèce et par jour ;
 - `carte.json` (jours, classement des départements, légendes), `especes.json`, `validation.json`.
 
@@ -32,6 +36,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 
 import numpy as np
+from PIL import Image
 
 from . import depot
 from . import especes as E
@@ -56,6 +61,8 @@ APERCU = 16                          # cases de 50 m par pixel d'aperçu (1 152 
 HORS_FRANCE = 255
 PREMIER_GEL = -6                     # le gel compte sur les 7 jours finissant au jour affiché
 VUE = 8                              # pixels d'aperçu par pixel de « Que chercher ici ? » (9,2 km)
+PRES_COMMUNE_KM2 = 0.25              # en dessous (une ou deux parcelles de Corine), pas d'indice de commune
+LARGEUR_TABLE = 256                  # valeurs par ligne de la table des communes
 KM2_PAR, PARTS_PAR = 3, 250          # un octet : la forêt en km² × 3, les parts × 250
 
 
@@ -203,6 +210,42 @@ def grille_apercu(noms_blocs) -> Grille:
     par_bloc = BLOC // APERCU
     return Grille(min(bx) * COTE, (max(by) + 1) * COTE, PAS_FIN * APERCU,
                   (max(bx) - min(bx) + 1) * par_bloc, (max(by) - min(by) + 1) * par_bloc)
+
+
+def communes_apercu(grille: Grille, noms_blocs) -> np.ndarray:
+    """La commune (numéro national, 0 = aucune) du centre de chaque pixel de l'aperçu, lue dans la
+    couche « c » des blocs : pour peindre les espèces des prés commune par commune en vue large."""
+    sortie = np.zeros((grille.ny, grille.nx), dtype=np.uint16)
+    par_bloc, demi = BLOC // APERCU, APERCU // 2
+    for nom in noms_blocs:
+        b = Bloc.depuis_nom(nom)
+        c = np.asarray(Image.open(HABITAT / "blocs" / f"{nom}_c.png").convert("RGB"), dtype=np.uint16)
+        commune = ((c[..., 0] << 8) | c[..., 1])[demi::APERCU, demi::APERCU]
+        lig = round((grille.y1 - (b.by + 1) * COTE) / grille.pas)
+        col = round((b.bx * COTE - grille.x0) / grille.pas)
+        sortie[lig:lig + par_bloc, col:col + par_bloc] = commune
+    return sortie
+
+
+def indices_communes(commune: np.ndarray, km2: np.ndarray, indice: np.ndarray, n_communes: int) -> np.ndarray:
+    """L'indice moyen des prés de chaque commune, en code d'aperçu (0 à ECHELLE ; HORS_FORET là où
+    ses prés font moins de PRES_COMMUNE_KM2)."""
+    n = np.bincount(commune, weights=km2, minlength=n_communes + 1)
+    s = np.bincount(commune, weights=indice * km2, minlength=n_communes + 1)
+    moy = np.divide(s, n, out=np.zeros(len(n)), where=n > 0)
+    codes = np.clip(np.round(moy * ECHELLE), 0, ECHELLE).astype(np.uint8)
+    codes[n < PRES_COMMUNE_KM2] = HORS_FORET
+    codes[0] = HORS_FORET
+    return codes
+
+
+def table_communes(codes: np.ndarray) -> np.ndarray:
+    """Les codes des communes en image de LARGEUR_TABLE colonnes (le navigateur lit le numéro i en
+    ligne i // LARGEUR_TABLE, colonne i % LARGEUR_TABLE)."""
+    lignes = -(-len(codes) // LARGEUR_TABLE)
+    t = np.full(lignes * LARGEUR_TABLE, HORS_FORET, dtype=np.uint8)
+    t[:len(codes)] = codes
+    return t.reshape(lignes, LARGEUR_TABLE)
 
 
 class Apercu:
@@ -372,6 +415,9 @@ def exporter(meteo: Meteo | None = None) -> dict:
         par_dep_pres = [pres.departement == k for k in range(len(departements))]
         print(f"  prés : {len(pres.lat) / 1e6:.2f} M points ({time.time() - t0:.0f} s)")
     especes = [e for e in E.ESPECES if e.milieu == "foret" or lus]
+    if lus:
+        communes_px = communes_apercu(g_apercu, noms_blocs)
+        print(f"  communes de l'aperçu ({time.time() - t0:.0f} s)")
     regles["especes"] = [x for x in regles["especes"] if x["code"] in {e.code for e in especes}]
     for esp in especes:
         foret = esp.milieu == "foret"
@@ -396,6 +442,10 @@ def exporter(meteo: Meteo | None = None) -> dict:
                 vues[k].ajouter(ind)
                 if k == 0:   # l'image de partage : la meilleure espèce de chaque pixel, aujourd'hui
                     meilleure = image if meilleure is None else np.maximum(meilleure, image)
+            else:            # les prés, commune par commune : jamais point par point
+                codes = indices_communes(pres.commune, km2_pres, ind, len(communes))
+                ecrire_png(SITE_DATA / "communes" / f"{esp.code}_{k}.png", table_communes(codes))
+                ecrire_png(SITE_DATA / "apercu" / f"{esp.code}_{k}.png", codes[communes_px])
             jour_classement = []
             for dep, sel in zip(departements, selections):
                 if not sel.any():
@@ -441,6 +491,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
                   for k in range(JOURS_FUTURS)],
         "especes": [{"code": e.code, "nom": e.nom, "latin": e.latin, "milieu": e.milieu} for e in especes],
         "apercu": {"grille": g_apercu.en_dict(), "bornes": b},
+        "communes_table": LARGEUR_TABLE,
         "vue": {"facteur": VUE, "nx": vues[0].nx, "ny": vues[0].ny, "especes": [e.code for e in E.DE_FORET],
                 "km2_par": KM2_PAR, "parts_par": PARTS_PAR},
         "niveaux": redaction.SEUILS_NIVEAU,

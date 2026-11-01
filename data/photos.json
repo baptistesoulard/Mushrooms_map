@@ -1,0 +1,110 @@
+{
+ "cepe": {
+  "fichier": "Boletus_edulis_0.jpg",
+  "auteur": "Matthieu Brochon",
+  "licence": "CC BY 4.0",
+  "lien_licence": "https://creativecommons.org/licenses/by/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Boletus_edulis_0.jpg",
+  "largeur": 500,
+  "hauteur": 508
+ },
+ "bolet_bai": {
+  "fichier": "Boletus_badius_JPG1_cropped.jpg",
+  "auteur": "Jean-Pol GRANDMONT",
+  "licence": "CC BY-SA 3.0",
+  "lien_licence": "https://creativecommons.org/licenses/by-sa/3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Boletus_badius_JPG1_cropped.jpg",
+  "largeur": 500,
+  "hauteur": 498
+ },
+ "girolle": {
+  "fichier": "2007-07-14_Cantharellus_cibarius_cropped.jpg",
+  "auteur": "Andreas Kunze",
+  "licence": "CC BY-SA 4.0",
+  "lien_licence": "https://creativecommons.org/licenses/by-sa/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:2007-07-14_Cantharellus_cibarius_cropped.jpg",
+  "largeur": 500,
+  "hauteur": 355
+ },
+ "trompette": {
+  "fichier": "Craterellus_cornucopioides_3.jpg",
+  "auteur": "Franck Hidvégi",
+  "licence": "CC BY-SA 4.0",
+  "lien_licence": "https://creativecommons.org/licenses/by-sa/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Craterellus_cornucopioides_3.jpg",
+  "largeur": 500,
+  "hauteur": 375
+ },
+ "pied_de_mouton": {
+  "fichier": "Hedgehog_fungi2_cropped.jpg",
+  "auteur": "Hedgehog_fungi2.jpg: D J Kelly derivative work: Ak ccm (talk)",
+  "licence": "Public domain",
+  "lien_licence": "",
+  "source": "https://commons.wikimedia.org/wiki/File:Hedgehog_fungi2_cropped.jpg",
+  "largeur": 500,
+  "hauteur": 363
+ },
+ "lactaire": {
+  "fichier": "LACTARIUS_DELICIOSUS_(L._Fr.)_S.F._Gray._(5830470879).jpg",
+  "auteur": "GLJIVARSKO DRUSTVO NIS from Serbia",
+  "licence": "CC BY 2.0",
+  "lien_licence": "https://creativecommons.org/licenses/by/2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:LACTARIUS_DELICIOSUS_(L._Fr.)_S.F._Gray._(5830470879).jpg",
+  "largeur": 500,
+  "hauteur": 375
+ },
+ "morille": {
+  "fichier": "2011-04-30_Morchella_esculenta.jpg",
+  "auteur": "Andreas Kunze",
+  "licence": "CC BY-SA 3.0",
+  "lien_licence": "https://creativecommons.org/licenses/by-sa/3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:2011-04-30_Morchella_esculenta.jpg",
+  "largeur": 500,
+  "hauteur": 389
+ },
+ "chanterelle_tube": {
+  "fichier": "Craterellus_tubaeformis_20201103_6628.jpg",
+  "auteur": "Joona Saraste",
+  "licence": "CC BY-SA 4.0",
+  "lien_licence": "https://creativecommons.org/licenses/by-sa/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Craterellus_tubaeformis_20201103_6628.jpg",
+  "largeur": 500,
+  "hauteur": 388
+ },
+ "oronge": {
+  "fichier": "Amanita_caesarea_01.jpg",
+  "auteur": "bssmnt52",
+  "licence": "CC BY 4.0",
+  "lien_licence": "https://creativecommons.org/licenses/by/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Amanita_caesarea_01.jpg",
+  "largeur": 500,
+  "hauteur": 538
+ },
+ "hygrophore_mars": {
+  "fichier": "HYGROPHORUS_MARZUOLUS_(F._Fr.)Bresadola_(5731126499).jpg",
+  "auteur": "GLJIVARSKO DRUSTVO NIS from Serbia",
+  "licence": "CC BY 2.0",
+  "lien_licence": "https://creativecommons.org/licenses/by/2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:HYGROPHORUS_MARZUOLUS_(F._Fr.)Bresadola_(5731126499).jpg",
+  "largeur": 500,
+  "hauteur": 375
+ },
+ "coulemelle": {
+  "fichier": "Macrolepiota-procera_(1)_cropped.jpg",
+  "auteur": "Chrumps",
+  "licence": "CC BY-SA 4.0",
+  "lien_licence": "https://creativecommons.org/licenses/by-sa/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Macrolepiota-procera_(1)_cropped.jpg",
+  "largeur": 500,
+  "hauteur": 506
+ },
+ "rose_pres": {
+  "fichier": "2012-10-03_Agaricus_campestris.jpg",
+  "auteur": "Andreas Kunze",
+  "licence": "CC BY-SA 3.0",
+  "lien_licence": "https://creativecommons.org/licenses/by-sa/3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:2012-10-03_Agaricus_campestris.jpg",
+  "largeur": 500,
+  "hauteur": 360
+ }
+}

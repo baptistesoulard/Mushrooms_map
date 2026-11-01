@@ -12,7 +12,7 @@ from datetime import date
 from pathlib import Path
 
 from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, PARTAGER, article, cle_departement, date_longue, e,
-                    entete, enumerer, image_partage, instant_paris, pied, tete)
+                    enumerer, image_partage, instant_paris, pied, tete)
 
 DOSSIER = "departements"                  # sous site/, à côté de la carte
 
@@ -62,7 +62,7 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
                 f"Où en sont les champignons en {nom} cette semaine ? {noms}… : les conditions jour "
                 "par jour, d'après la météo, les forêts et la saison.", "../", f"{DOSSIER}/{code}.html",
                 image=image_partage(code, genere_le))
-    lignes = [entete("../", (carte, f"La carte : {nom}"), ("./", "Tous les départements")),
+    lignes = [f'  <p class="fil"><a href="./">Départements</a> › {e(nom)}</p>',
               f"  <h1>Champignons en {e(nom)} cette semaine</h1>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}, pour aujourd\'hui et les sept jours '
               "suivants, sur les forêts du département (sur ses prés, pour les espèces des champs).</p>"]
@@ -123,8 +123,7 @@ def page_index(departements: list[dict], especes: list[dict], resumes: dict, gen
                 "Les conditions de pousse des champignons dans chaque département de France "
                 "métropolitaine, espèce par espèce, pour aujourd'hui et les sept jours suivants.",
                 "../", f"{DOSSIER}/", image=image_partage("france", genere_le))
-    lignes = [entete("../", ("../carte/", "La carte")),
-              "  <h1>Champignons par département</h1>",
+    lignes = ["  <h1>Champignons par département</h1>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}. Pour chaque département, les '
               "espèces aux meilleures conditions aujourd'hui ; sa page donne la semaine.</p>",
               '  <ul class="communes departements">']

@@ -14,7 +14,7 @@ from datetime import date
 from pathlib import Path
 
 from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, cle_departement, date_courte,
-                    date_longue, departements_de, e, entete, enumerer, image_partage, instant_paris,
+                    date_longue, departements_de, e, enumerer, icone, image_partage, instant_paris,
                     meilleur_niveau, national, noms_especes, ordre_saison, pct, pied, tete)
 from .redaction import NBSP, nombre
 
@@ -225,9 +225,7 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
                 "et pour les sept prochains jours, forêt par forêt, d'après la pluie, la température du sol "
                 "et la saison.",
                 "", "", image=image_partage("france", genere_le), plus=APPLI + RENVOI)
-    lignes = [entete("", ("carte/", "La carte"), ("en-ce-moment.html", "En ce moment"),
-                     ("especes/", "Les espèces"), ("departements/", "Par département")),
-              '  <div class="accueil">',
+    lignes = ['  <div class="accueil">',
               "  <h1>Où chercher les champignons cette semaine</h1>",
               '  <p class="chapeau">Les forêts de France case par case, selon la pluie des dernières '
               "semaines et la météo des 7 prochains jours.</p>",
@@ -279,8 +277,8 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
         etat = ("hors saison" if n in (0, None) else "défavorable partout" if n == 1 else
                 f"{NIVEAUX_COURTS[n]} dans {departements_de(len(j0[n]))}")
         milieu = '<span class="milieu">des prés</span>' if x.get("milieu") == "pre" else ""
-        lignes.append(f'    <li><a href="especes/{x["code"]}.html"><strong>{e(x["nom"])}</strong> '
-                      f'<span class="latin">{e(x["latin"])}</span>{milieu}<span class="cl">{e(etat)}</span></a></li>')
+        lignes.append(f'    <li><a href="especes/{x["code"]}.html">{icone("", x["code"], 44)}<span><strong>{e(x["nom"])}</strong> '
+                      f'<span class="latin">{e(x["latin"])}</span>{milieu}<span class="cl">{e(etat)}</span></span></a></li>')
     lignes += ["  </ul>",
                "  <h2>Par département</h2>",
                '  <ul class="liste-departements">']
@@ -301,8 +299,7 @@ def page_en_ce_moment(departements: list[dict], especes: list[dict], nat: dict, 
                 f"Où les conditions sont bonnes en ce moment, département par département, pour "
                 f"aujourd'hui et les sept jours suivants : {noms_especes(especes)}.", "", "en-ce-moment.html",
                 image=image_partage("france", genere_le))
-    lignes = [entete("", ("carte/", "La carte"), ("especes/", "Les espèces"), ("departements/", "Par département")),
-              "  <h1>Les champignons en ce moment</h1>",
+    lignes = ["  <h1>Les champignons en ce moment</h1>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}, pour aujourd\'hui et les sept jours '
               "suivants, sur les forêts de chaque département.</p>",
               '  <ul class="ce-matin">']

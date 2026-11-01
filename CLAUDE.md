@@ -96,7 +96,10 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   tous les 576 m dans les prairies, pelouses et mosaïques agricoles de Corine Land Cover, avec
   altitude et commune), publiées dans les résumés par département et par commune comme les
   autres (pages, semaine, alertes, images). Affinités par milieu (`prairies.MILIEUX`), pas
-  d'essence, de roche ni de pente. Sur la carte : pas de calque, un bandeau le dit. Vérifiées
+  d'essence, de roche ni de pente. Sur la carte, COMMUNE PAR COMMUNE (jamais un pré) : l'indice
+  moyen des prés de chaque commune (`export_france.indices_communes`, rien sous 25 ha de prés),
+  publié en table (`data/communes/<espèce>_<k>.png`, peinte de près avec la couche « c » des
+  blocs) et en aperçu (chaque pixel prend sa commune) ; un bandeau le dit. Vérifiées
   sur le seul moment (pas d'habitat à 50 m à tester). Le fichier porte l'empreinte des communes
   de l'habitat : un habitat refait avec une autre liste oblige à relancer `python -m champi.prairies`
   (sinon l'export saute ces espèces et le dit).
@@ -108,6 +111,19 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   de 9,2 km, `ici.js` : test Python/JS). Sur téléphone, la carte plein écran et le panneau en feuille
   qui glisse du bas (`feuille.js`), une case touchée s'y ouvre. Présentation de première visite
   (`guide.js`, `champi-guide`).
+- **Barre du haut, sur toutes les pages** (`pages.barre`, rubriques `pages.BARRE`) : les pages du
+  matin l'écrivent ; celles écrites à la main (`pages.STATIQUES`, la carte comprise) la portent
+  entre `<!-- barre -->` et `<!-- /barre -->`, réécrite par `python -m champi.pages barre` (test).
+  Sur écran étroit, un menu qui s'ouvre sans JavaScript.
+- **Dessins et photos des espèces** : un dessin SVG par espèce (`site/img/especes/<code>.svg`, fait
+  main : liste de la carte, pages) ; une photo de Wikimedia Commons, l'image de l'article de
+  Wikipédia (`python -m champi.photos` → `<code>.jpg` et `data/photos.json`), licences libres
+  seulement et CRÉDITÉE partout où elle paraît. Une photo aide à chercher, jamais à identifier.
+- **Le panneau de la carte** : l'espèce (bouton illustré, liste en boîte de dialogue, en saison
+  d'abord), le jour, puis quatre onglets — Ici (que chercher ici, légende), Département (verdict,
+  semaine, altitude, communes, France), L'espèce (fiche), Mes outils (coins, alertes, exploration).
+  Fonds : plan IGN grisé par défaut (l'indice ressort), relief (estompage IGN), photos ; le choix
+  est gardé (`champi-fond`).
 - **Alertes personnalisées** (`site/alertes.js` → `alertes.json` du dépôt privé du lien de groupe
   → `alertes.py`, étape de `carte.yml` avant le déploiement) : un département, des espèces, un
   seuil (« bon » ou « par endroits ») ; notification Web Push quand une espèce DEVIENT favorable

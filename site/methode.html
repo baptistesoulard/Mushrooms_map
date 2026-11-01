@@ -10,8 +10,34 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- barre -->
+<header class="barre">
+  <a class="marque" href="./"><img src="favicon.svg" alt="" width="22" height="22">Champignons en France</a>
+  <nav class="barre-liens" aria-label="Rubriques">
+    <a href="carte/">La carte</a>
+    <a href="en-ce-moment.html">En ce moment</a>
+    <a href="especes/">Les espèces</a>
+    <a href="departements/">Départements</a>
+    <a href="avant-de-partir.html">Avant de partir</a>
+    <a href="methode.html" aria-current="page">Méthode</a>
+  </nav>
+  <details class="barre-menu">
+    <summary>Menu</summary>
+    <nav aria-label="Rubriques">
+      <a href="./">Accueil</a>
+      <a href="carte/">La carte</a>
+      <a href="en-ce-moment.html">En ce moment</a>
+      <a href="especes/">Les espèces</a>
+      <a href="departements/">Départements</a>
+      <a href="avant-de-partir.html">Avant de partir</a>
+      <a href="methode.html" aria-current="page">Méthode</a>
+      <a href="validation.html">Face aux observations</a>
+      <a href="a-propos.html">À propos</a>
+    </nav>
+  </details>
+</header>
+<!-- /barre -->
 <div class="page">
-  <header><a href="./">Champignons en France</a> · <a href="carte/">La carte</a></header>
   <h1>Comment la carte est calculée</h1>
   <p>Chaque matin, le site publie la météo du jour ; votre navigateur en déduit, pour chaque
   espèce, un indice entre 0 et 1 sur les forêts de France métropolitaine découpées en cases de

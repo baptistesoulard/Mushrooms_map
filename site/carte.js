@@ -16,6 +16,7 @@ const MONDE = 2 * Math.PI * R;
 const DETAIL = 11;                     // à partir de ce zoom, une case ≈ un pixel d'écran
 const CLE_ESPECE = "champi-espece";    // gardées dans le navigateur (voir a-propos.html)
 const CLE_DEPARTEMENT = "champi-departement";
+const CLE_FOND = "champi-fond";
 const NIVEAU_COURT = ["hors saison", "défavorable", "possible", "par endroits", "bon"];
 const OPACITE = 175;                   // sur 255 : le fond de carte reste lisible
 const PROTEGE = 252;                   // code d'une case protégée (hachures)
@@ -213,6 +214,28 @@ async function demarrer() {
     };
   });
 
+  // Une espèce des prés se peint commune par commune : la commune de chaque case (couche « c »
+  // seule, légère) et l'indice moyen des prés de chaque commune (data/communes/<espèce>_<jour>.png).
+  const communesBloc = memoire(60, async (nom) => {
+    const c = await pixels(`habitat/blocs/${nom}_c.png`);
+    const v = new Uint16Array(B.taille * B.taille);
+    for (let i = 0; i < v.length; i++) v[i] = (c.d[i * 4] << 8) | c.d[i * 4 + 1];
+    return v;
+  });
+  const tablesCommunes = memoire(4, async (cle) => {
+    const px = await pixels(`data/communes/${cle}.png`);
+    const v = new Uint8Array(px.l * px.h);
+    for (let i = 0; i < v.length; i++) v[i] = px.d[i * 4];
+    return v;
+  });
+  const codesCommunes = memoire(60, async (cle) => {
+    const [nom, esp, k] = cle.split("|");
+    const [commune, table] = await Promise.all([communesBloc(nom), tablesCommunes(`${esp}_${k}`)]);
+    const codes = new Uint8Array(commune.length);
+    for (let i = 0; i < codes.length; i++) codes[i] = commune[i] ? table[commune[i]] : 0;
+    return codes;
+  });
+
   // Codes d'un bloc pour l'espèce et le jour : un octet par case, comme l'aperçu. « Forêts
   // publiques seulement » laisse les autres sans couleur.
   const codesBlocs = memoire(60, async (cle) => {
@@ -286,27 +309,34 @@ async function demarrer() {
     if (!vueFaite && map.getSize().x > 0) { vueFaite = true; vueInitiale(); }
   }).observe($("carte"));
   map.attributionControl.setPrefix(false);
-  const wmts = (couche, format) =>
-    "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal" +
+  const wmts = (couche, format, style = "normal") =>
+    `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=${style}` +
     `&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=${couche}&FORMAT=${format}`;
+  // Les fonds : le plan IGN grisé par défaut (les couleurs de l'indice ressortent), le même avec
+  // l'estompage du relief (vallées, versants), ou les photographies aériennes. Le choix est gardé.
+  const plan = () => L.tileLayer(wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2", "image/png"),
+    { maxZoom: 19, className: "fond-gris", attribution: "Fond © IGN" });
   const fonds = {
-    plan: L.tileLayer(wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2", "image/png"),
-      { maxZoom: 19, attribution: "Fond © IGN" }),
-    photo: L.tileLayer(wmts("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"),
-      { maxZoom: 19, attribution: "Photographies © IGN" }),
+    plan: [plan()],
+    relief: [plan(), L.tileLayer(wmts("ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW", "image/png", "estompage_grayscale"),
+      { maxZoom: 19, maxNativeZoom: 15, className: "estompage", attribution: "Relief © IGN" })],
+    photo: [L.tileLayer(wmts("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"), { maxZoom: 19, attribution: "Photographies © IGN" })],
   };
-  fonds.plan.addTo(map);
+  let fond = fonds[lire(CLE_FOND)] ? lire(CLE_FOND) : "plan";
+  for (const c of fonds[fond]) c.addTo(map);
   map.attributionControl.addAttribution("Indice : météo Météo-France et ECMWF via Open-Meteo, forêts et relief IGN, roches BRGM");
 
   const ControleFonds = L.Control.extend({
     onAdd() {
       const div = L.DomUtil.create("div", "fonds");
       L.DomEvent.disableClickPropagation(div);
-      for (const [cle, nom] of [["plan", "Plan"], ["photo", "Photos"]]) {
-        const bt = el("button", { type: "button", "aria-pressed": String(cle === "plan") }, nom);
+      for (const [cle, nom] of [["plan", "Plan"], ["relief", "Relief"], ["photo", "Photos"]]) {
+        const bt = el("button", { type: "button", "aria-pressed": String(cle === fond) }, nom);
         bt.addEventListener("click", () => {
-          for (const f of Object.values(fonds)) map.removeLayer(f);
-          fonds[cle].addTo(map).bringToBack();
+          for (const c of fonds[fond]) map.removeLayer(c);
+          fond = cle;
+          ecrire(CLE_FOND, cle);
+          for (const c of fonds[cle]) c.addTo(map);
           div.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === bt)));
         });
         div.append(bt);
@@ -327,13 +357,16 @@ async function demarrer() {
     return { xs, ys };
   }
 
-  function peindre(o, p, code, hachure) {
+  // Une commune entière peinte (espèces des prés) : plus transparente, le fond reste lisible.
+  const OPACITE_COMMUNES = 120;
+  function peindre(o, p, code, hachure, alpha = 0) {
     if (code === PROTEGE) {             // hachures : « réglementation propre », jamais un gris plein
       if (hachure) { o[p] = pal.hachure[0]; o[p + 1] = pal.hachure[1]; o[p + 2] = pal.hachure[2]; o[p + 3] = 150; }
       return;
     }
     const t = code * 4;
-    o[p] = TABLE[t]; o[p + 1] = TABLE[t + 1]; o[p + 2] = TABLE[t + 2]; o[p + 3] = TABLE[t + 3];
+    o[p] = TABLE[t]; o[p + 1] = TABLE[t + 1]; o[p + 2] = TABLE[t + 2];
+    o[p + 3] = alpha && TABLE[t + 3] ? alpha : TABLE[t + 3];
   }
 
   // Vue large : l'aperçu national.
@@ -344,6 +377,7 @@ async function demarrer() {
       const tuile = document.createElement("canvas");
       tuile.width = tuile.height = 256;
       if (!apercu || etat.filtre) return tuile;   // l'exploration ne se lit que de près
+      const alpha = desPres(etat.espece) ? OPACITE_COMMUNES : 0;
       const { xs, ys } = axes(coords);
       const ctx = tuile.getContext("2d");
       const img = ctx.createImageData(256, 256);
@@ -354,7 +388,7 @@ async function demarrer() {
           const col = Math.floor((xs[i] - g.x0) / g.pas);
           if (col < 0 || col >= g.nx) continue;
           const code = apercu[lig * g.nx + col];
-          if (code <= carte.echelle) peindre(img.data, (j * 256 + i) * 4, code, false);
+          if (code <= carte.echelle) peindre(img.data, (j * 256 + i) * 4, code, false, alpha);
         }
       }
       ctx.putImageData(img, 0, 0);
@@ -370,11 +404,12 @@ async function demarrer() {
       tuile.width = tuile.height = 256;
       const { xs, ys } = axes(coords);
       const filtre = etat.filtre;
-      if (!filtre && desPres(etat.espece)) { setTimeout(() => fini(null, tuile)); return tuile; }
       const codesDe = filtre
         ? (nom) => codesFiltre(`${nom}#${JSON.stringify(filtre)}`)
-        : (nom) => codesBlocs(`${nom}|${etat.espece}|${etat.jour}|${etat.publiques ? 1 : 0}`);
+        : desPres(etat.espece) ? (nom) => codesCommunes(`${nom}|${etat.espece}|${etat.jour}`)
+          : (nom) => codesBlocs(`${nom}|${etat.espece}|${etat.jour}|${etat.publiques ? 1 : 0}`);
       const [er, eg, eb] = pal.exploration;
+      const alpha = !filtre && desPres(etat.espece) ? OPACITE_COMMUNES : 0;
       const noms = new Set();
       for (const x of [xs[0], xs[255]]) for (const y of [ys[0], ys[255]]) {
         const nom = `${Math.floor(x / B.cote)}_${Math.floor(y / B.cote)}`;
@@ -401,7 +436,7 @@ async function demarrer() {
                 img.data[p] = er; img.data[p + 1] = eg; img.data[p + 2] = eb; img.data[p + 3] = OPACITE;
                 continue;
               }
-              peindre(img.data, p, code, (coords.x * 256 + i + coords.y * 256 + j) % 7 < 2);
+              peindre(img.data, p, code, (coords.x * 256 + i + coords.y * 256 + j) % 7 < 2, alpha);
             }
           }
           ctx.putImageData(img, 0, 0);
@@ -563,12 +598,8 @@ async function demarrer() {
   async function rafraichirCalques() {
     $("bandeau-pres").hidden = !desPres(etat.espece);
     if (desPres(etat.espece)) {
-      $("bandeau-pres").textContent = `${especes[etat.espece].nom} : pas de carte des prés, presque tous privés. ` +
-        "Les conditions par département et par commune sont dans le panneau.";
-      apercu = null;
-      calqueApercu.redraw();
-      calqueDetail.redraw();
-      return;
+      $("bandeau-pres").textContent = `${especes[etat.espece].nom} : les prés sont presque tous privés, la carte ` +
+        "ne les note pas un par un. Chaque commune prend la couleur de l'ensemble de ses prés.";
     }
     const demande = `${etat.espece}_${etat.jour}`;
     const a = await apercus(demande);
@@ -602,24 +633,43 @@ async function demarrer() {
       map.fitBounds([[d.bornes[0], d.bornes[1]], [d.bornes[2], d.bornes[3]]]);
       if (feuille.etroit()) feuille.poser("bas");
     }
+    if (centrer) onglet("departement");
     resume = await resumes(code);
     if (etat.departement === code) panneau();
   }
 
+  // L'espèce : le bouton du panneau (son dessin, son nom, son état dans le département) ouvre la
+  // liste illustrée, en saison d'abord, au verdict du département pour le jour choisi.
+  const icone = (code, taille = 40) => el("img", { class: "icone", src: `img/especes/${code}.svg`, alt: "",
+    width: String(taille), height: String(taille) });
   function choixEspeces() {
-    const zone = $("choix-espece");
-    zone.replaceChildren();
-    for (const e of carte.especes) {
-      const r = resume?.[e.code]?.[etat.jour];
-      const input = el("input", { type: "radio", name: "espece", value: e.code });
-      input.checked = e.code === etat.espece;
-      input.addEventListener("change", () => choisirEspece(e.code));
-      const pre = desPres(e.code);
-      zone.append(el("label", pre ? { class: "pre", title: "Espèce des prés : par département et par commune, sans carte fine" } : {},
-        input, e.nom, el("span", { class: "niv" }, r ? NIVEAU_COURT[r.niveau] : "")));
-    }
-    enVue(zone);
+    const e = especes[etat.espece];
+    const r = resume?.[e.code]?.[etat.jour];
+    $("choix-espece-icone").src = `img/especes/${e.code}.svg`;
+    $("choix-espece-nom").textContent = e.nom;
+    $("choix-espece-niv").textContent = r ? NIVEAU_COURT[r.niveau] : "";
+    $("choix-espece-niv").className = `niv n${r ? r.niveau : "x"}`;
+    const d = deps[etat.departement];
+    $("dialogue-especes-sous-titre").textContent = `Les conditions en ${d?.nom ?? "France"}, ${carte.jours[etat.jour].libelle}`;
+    const lignes = carte.especes.map((x, rang) => ({ x, rang, n: resume?.[x.code]?.[etat.jour]?.niveau ?? -1 }));
+    const groupe = (titre, liste) => liste.length ? [el("h3", {}, titre), ...liste.map(({ x, n }) => el("button", {
+      type: "button", class: `espece-choix${x.code === etat.espece ? " choisi" : ""}${n === 0 ? " hors" : ""}`,
+      "aria-pressed": String(x.code === etat.espece),
+      onclick: () => { $("dialogue-especes").close(); choisirEspece(x.code); },
+    }, icone(x.code), el("span", { class: "nom" }, el("strong", {}, x.nom), el("em", {}, x.latin),
+      desPres(x.code) ? el("span", { class: "milieu" }, "des prés, par commune") : ""),
+    el("span", { class: `niv n${n < 0 ? "x" : n}` }, n < 0 ? "—" : NIVEAU_COURT[n])))] : [];
+    const enSaison = lignes.filter((l) => l.n !== 0).sort((a, b) => b.n - a.n || a.rang - b.rang);
+    $("liste-especes").replaceChildren(...groupe("En saison", enSaison), ...groupe("Hors saison", lignes.filter((l) => l.n === 0)));
   }
+  $("choix-espece-bouton").addEventListener("click", () => {
+    $("dialogue-especes").showModal();
+    $("liste-especes").querySelector(".choisi")?.focus();
+  });
+  $("dialogue-especes-fermer").addEventListener("click", () => $("dialogue-especes").close());
+  $("dialogue-especes").addEventListener("click", (ev) => {      // un clic à côté de la liste la ferme
+    if (ev.target === ev.currentTarget) ev.currentTarget.close();
+  });
 
   // Sur téléphone, les choix tiennent sur une ligne qui défile : le choix courant au milieu.
   function enVue(zone) {
@@ -665,11 +715,13 @@ async function demarrer() {
     ];
     if (e.repere) corps.push(el("p", {}, el("strong", {}, "Repère de terrain : "), e.repere));
     if (e.confusions) corps.push(el("p", { class: "confusions" }, el("strong", {}, "Confusions possibles : "), e.confusions));
+    if (e.avertissement) corps.push(el("p", {}, el("strong", {}, e.avertissement)));
     corps.push(el("p", { class: "muet" }, "Ce portrait ne suffit jamais pour identifier un champignon."));
+    const photo = el("img", { class: "photo-fiche", src: `img/especes/${e.code}.jpg`, alt: e.nom, loading: "lazy" });
+    photo.addEventListener("error", () => { photo.src = `img/especes/${e.code}.svg`; }, { once: true });
     $("fiche").replaceChildren(
-      el("details", { open: "" },
-        el("summary", {}, el("strong", {}, e.nom), " ", el("span", { class: "latin" }, e.latin)),
-        ...corps));
+      el("h3", {}, e.nom, " ", el("span", { class: "latin" }, e.latin)), photo, ...corps,
+      el("p", {}, el("a", { href: `especes/${e.code}.html` }, "La fiche complète : saison, milieux, sosies, vérification")));
   }
 
   // La semaine du département : le niveau de chaque espèce, jour par jour (celui du verdict).
@@ -793,7 +845,7 @@ async function demarrer() {
     for (const x of liste) {
       ol.append(el("li", {}, el("button", { type: "button", class: x.code === etat.espece ? "choisi" : "",
         "aria-pressed": String(x.code === etat.espece), onclick: () => choisirEspece(x.code) },
-        el("span", { class: "nom" }, el("span", { class: `pastille n${x.n}` }), especes[x.code].nom),
+        el("span", { class: "nom" }, icone(x.code, 26), el("span", { class: `pastille n${x.n}` }), especes[x.code].nom),
         el("span", { class: "cl" }, NIVEAU_COURT[x.n]))));
     }
   }
@@ -866,6 +918,12 @@ async function demarrer() {
     const nom = `${bx}_${by}`;
     const i = Math.floor(((by + 1) * B.cote - y) / B.pas) * B.taille + Math.floor((x - bx * B.cote) / B.pas);
     try {
+      if (desPres(etat.espece)) {
+        const [commune, table, communes] = await Promise.all([
+          communesBloc(nom), tablesCommunes(`${etat.espece}_${etat.jour}`), annexes("habitat/communes.json")]);
+        montrer(fenetreCommune(commune[i], table[commune[i]], communes, c.ll));
+        return;
+      }
       const [h, m, communes, zones] = await Promise.all([
         habitats(nom), meteos(nom), annexes("habitat/communes.json"), annexes("habitat/blocs.json")]);
       montrer(fenetre(h, m, i, communes, zones.blocs[nom], c.ll));
@@ -906,11 +964,6 @@ async function demarrer() {
       div.append(el("p", {}, `${z ? `${z.nature} « ${z.nom} »` : "Zone protégée"}. Ces espaces ont leur propre ` +
         "réglementation, souvent plus stricte sur la cueillette : renseignez-vous avant d'y ramasser quoi que ce soit. " +
         "Le site n'y calcule pas d'indice."), el("p", {}, el("a", { href: "avant-de-partir.html#zones-protegees" }, "Les règles")));
-      return div;
-    }
-    if (desPres(etat.espece)) {
-      div.append(el("p", {}, `${e.nom} : une espèce des prés, sans indice case par case (les prés sont presque ` +
-        "tous privés). Le panneau donne les conditions du département et de ses communes."), boutonCoin(ll));
       return div;
     }
     const f = h.foret.indexOf(i);
@@ -979,6 +1032,33 @@ async function demarrer() {
         `Résumé : ${deps[com.dep].nom}`));
     }
     div.append(actions);
+    return div;
+  }
+
+  // Une espèce des prés : la commune touchée et l'indice moyen de ses prés, jamais un pré.
+  function fenetreCommune(n, code, communes, ll) {
+    const e = especes[etat.espece];
+    const com = communes[n - 1];
+    const div = el("div", { class: "case-fenetre" });
+    if (!com) {
+      div.append(el("p", {}, "Hors de France : pas d'indice."));
+      return div;
+    }
+    div.append(el("h4", {}, `${com.nom} (${com.dep})`));
+    if (code > carte.echelle) {
+      div.append(el("p", {}, `Trop peu de prés dans cette commune pour noter les conditions ${e.de}.`), boutonCoin(ll));
+      return div;
+    }
+    const v = code / carte.echelle, kc = classeDe(v, carte.classes);
+    div.append(el("div", { class: "score" },
+      el("span", { class: "score-valeur" }, String(Math.round(v * 100)), el("small", {}, " /100")),
+      el("span", { class: "score-classe" }, carte.classes[kc].nom), jauge(v)));
+    div.append(el("p", { class: "muet score-jour" }, `Indice moyen des prés de la commune, pour ${e.nom.toLowerCase()}, ` +
+      `${carte.jours[etat.jour].libelle}`));
+    div.append(el("p", {}, "Les prés sont presque tous privés : la carte ne les note pas un par un. Dans un pré, " +
+      "les champignons appartiennent au propriétaire, il faut son accord. ",
+      el("a", { href: "avant-de-partir.html#proprietaire" }, "Les règles")));
+    div.append(el("p", { class: "actions-case" }, boutonCoin(ll)));
     return div;
   }
 
@@ -1106,6 +1186,27 @@ async function demarrer() {
     map.on("zoomend", message);
   }
 
+  // Les onglets du panneau : un seul visible ; flèches gauche et droite d'un onglet à l'autre.
+  const ONGLETS = ["ici", "departement", "espece", "outils"];
+  function onglet(nom) {
+    for (const o of ONGLETS) {
+      const choisi = o === nom;
+      $(`tab-${o}`).setAttribute("aria-selected", String(choisi));
+      $(`tab-${o}`).tabIndex = choisi ? 0 : -1;
+      $(`onglet-${o}`).hidden = !choisi;
+    }
+  }
+  for (const o of ONGLETS) {
+    $(`tab-${o}`).addEventListener("click", () => onglet(o));
+    $(`tab-${o}`).addEventListener("keydown", (ev) => {
+      const pas = { ArrowRight: 1, ArrowLeft: -1 }[ev.key];
+      if (!pas) return;
+      const suivant = ONGLETS[(ONGLETS.indexOf(o) + pas + ONGLETS.length) % ONGLETS.length];
+      onglet(suivant);
+      $(`tab-${suivant}`).focus();
+    });
+  }
+
   function tout() {
     choixJours();
     panneau();
@@ -1126,6 +1227,7 @@ async function demarrer() {
       (resume[b.code]?.[jourDepart]?.niveau ?? 0) - (resume[a.code]?.[jourDepart]?.niveau ?? 0))[0];
     etat.espece = meilleure.code;
   }
+  if (depDemande) onglet("departement");
   tout();
   // Première visite : la présentation, puis la demande de position (elle attend la fermeture).
   const guide = installerGuide($("guide"), { etroit: feuille.etroit });

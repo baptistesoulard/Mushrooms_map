@@ -11,8 +11,9 @@ const ETAPES = (etroit) => [
     "De près, chaque case de 50 m a sa fiche : son indice sur 100, ce qui le limite, la pluie, le sol, " +
     "le gel, et si la forêt est publique ou privée. « Y aller » ouvre l'itinéraire."],
   [etroit ? "Tirez le panneau vers le haut" : "Le panneau, à gauche",
-    "« Que chercher ici ? » classe les espèces pour la zone affichée ; viennent ensuite le verdict du " +
-    "département, sa semaine espèce par espèce et les communes les mieux placées."],
+    "En haut, l'espèce (un toucher ouvre la liste illustrée) et le jour. Puis quatre onglets : « Ici » " +
+    "classe les espèces pour la zone affichée ; « Département » donne le verdict, la semaine et les " +
+    "communes ; « L'espèce », sa fiche ; « Mes outils », vos coins et vos alertes."],
   ["Vos coins, vos alertes",
     `${etroit ? "Un appui long" : "Un clic droit"} sur la carte note une trouvaille, gardée dans ce navigateur. ` +
     "« Mes alertes » prévient quand une espèce devient favorable dans votre département."],

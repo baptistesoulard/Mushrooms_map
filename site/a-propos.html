@@ -10,8 +10,34 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- barre -->
+<header class="barre">
+  <a class="marque" href="./"><img src="favicon.svg" alt="" width="22" height="22">Champignons en France</a>
+  <nav class="barre-liens" aria-label="Rubriques">
+    <a href="carte/">La carte</a>
+    <a href="en-ce-moment.html">En ce moment</a>
+    <a href="especes/">Les espèces</a>
+    <a href="departements/">Départements</a>
+    <a href="avant-de-partir.html">Avant de partir</a>
+    <a href="methode.html">Méthode</a>
+  </nav>
+  <details class="barre-menu">
+    <summary>Menu</summary>
+    <nav aria-label="Rubriques">
+      <a href="./">Accueil</a>
+      <a href="carte/">La carte</a>
+      <a href="en-ce-moment.html">En ce moment</a>
+      <a href="especes/">Les espèces</a>
+      <a href="departements/">Départements</a>
+      <a href="avant-de-partir.html">Avant de partir</a>
+      <a href="methode.html">Méthode</a>
+      <a href="validation.html">Face aux observations</a>
+      <a href="a-propos.html" aria-current="page">À propos</a>
+    </nav>
+  </details>
+</header>
+<!-- /barre -->
 <div class="page">
-  <header><a href="./">Champignons en France</a> · <a href="carte/">La carte</a></header>
   <h1>Sources et mentions</h1>
   <p>Toutes les données utilisées sont publiques et réutilisables. Le code qui les assemble
   est ouvert : <a href="https://github.com/baptistesoulard/Mushrooms_map">github.com/baptistesoulard/Mushrooms_map</a>.</p>
@@ -39,11 +65,11 @@
   <h2>Ce que le site garde et ce qu'il appelle</h2>
   <ul>
     <li>Le site ne dépose aucun cookie et ne mesure pas l'audience.</li>
-    <li>Il garde dans votre navigateur trois informations : la dernière espèce consultée
+    <li>Il garde dans votre navigateur quatre informations : la dernière espèce consultée
     (clé <code>champi-espece</code>) et le dernier département affiché
     (<code>champi-departement</code>), pour les rouvrir à la visite suivante, et le fait d'avoir
-    vu la présentation de la carte (<code>champi-guide</code>). Elles ne quittent jamais votre
-    appareil.</li>
+    vu la présentation de la carte (<code>champi-guide</code>), et le fond de carte choisi
+    (<code>champi-fond</code>). Elles ne quittent jamais votre appareil.</li>
     <li>Vos coins (« Mes coins ») sont gardés au même endroit (clés <code>champi-coins</code> et
     <code>champi-coins-effaces</code>, la liste des trouvailles effacées) : le site n'a pas de
     serveur qui pourrait les recevoir. Ils disparaissent si vous effacez les données du site,

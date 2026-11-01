@@ -101,3 +101,17 @@ def test_classes_de_couleur_alignees_sur_le_modele():
     from champi.modele import CLASSES
     css = (SITE / "style.css").read_text(encoding="utf-8")
     assert len(set(re.findall(r"--classe-(\d):", css))) == len(CLASSES) - 1
+
+
+def test_barre_des_pages_ecrites_a_la_main_a_jour():
+    """La barre du haut des pages écrites à la main est celle du socle : sinon,
+    `python -m champi.pages barre` la réécrit."""
+    from champi import pages
+    for chemin in pages.STATIQUES:
+        assert pages.barre("", chemin) in (SITE / chemin).read_text(encoding="utf-8"), chemin
+
+
+def test_saison_mois_par_mois():
+    from champi.pages import mois_saison
+    assert mois_saison(["06-01", "07-15", "10-20", "11-30"]) == \
+        ["", "", "", "", "", "possible", "plein", "plein", "plein", "plein", "possible", ""]
