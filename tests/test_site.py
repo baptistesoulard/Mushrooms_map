@@ -6,6 +6,7 @@ import pytest
 
 SITE = Path(__file__).resolve().parent.parent / "site"
 PAGES = sorted(SITE.glob("*.html"))
+GENERES = {"departements/"}   # écrits chaque matin par l'export (pages_departements), hors git
 
 
 @pytest.mark.parametrize("page", PAGES, ids=lambda p: p.name)
@@ -21,7 +22,7 @@ def test_page_complete(page):
 def test_liens_internes_existent(page):
     html = page.read_text(encoding="utf-8")
     for cible in re.findall(r'(?:href|src)="([^"#:]+)"', html):
-        if cible == "./":
+        if cible == "./" or cible in GENERES:
             continue
         assert (SITE / cible).exists(), f"{page.name} → {cible} introuvable"
 

@@ -12,7 +12,7 @@ bai et lactaire délicieux ajoutés le même jour (bois acides du bocage, pinèd
 
 ```
 champi.france (habitat.yml, rarement) → release « habitat » (blocs PNG, échantillon) — jamais dans git
-champi.depot + champi.export_france (carte.yml, chaque matin) → site/data/ → GitHub Pages
+champi.depot + champi.export_france (carte.yml, chaque matin) → site/data/ + site/departements/ → GitHub Pages
 site/modele.js : le navigateur calcule l'indice des blocs affichés
 champi.validation (à la main, France et trois régions) → data/validation.json (versionné) → copié par l'export
 ```
@@ -62,6 +62,10 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   on n'insiste pas, le bouton dit comment réautoriser. Elle est suivie tant que la page est
   visible, ne change jamais un département choisi entre-temps et ne quitte pas l'appareil.
   Le département vient de la commune de la case (blocs d'habitat).
+- **Pages par département** (`pages_departements.py`) : réécrites chaque matin par l'export
+  dans `site/departements/` (hors git), lisibles sans JavaScript. Aucun coin : le département,
+  les altitudes, les communes, comme le panneau. Non indexées tant que `INDEXER` est faux (il
+  ouvre les pages et écrit `sitemap.xml`). La carte lit `?departement=&espece=&jour=` (une date).
 - **Zones protégées : hachurées, sans indice** (réserves, arrêtés de biotope, cœurs de parcs
   nationaux). Leur règlement varie ; le site ne dit jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur

@@ -28,8 +28,9 @@ import numpy as np
 from . import depot
 from . import especes as E
 from . import modele as M
+from . import pages_departements
 from . import redaction
-from .config import DATA, PAS_FIN, RACINE, SITE_DATA
+from .config import DATA, PAS_FIN, RACINE, SITE, SITE_DATA
 from .export import COUVERTURE_PLEINE, ECHELLE, HORS_FORET, JOURS_FUTURS, TRANCHE_M, ecrire_png
 from .france import BLOC, COTE, ECHANTILLON, Bloc
 from .grille import Grille, lonlat_vers_merc
@@ -354,7 +355,9 @@ def exporter(meteo: Meteo | None = None) -> dict:
     ecrire_json(SITE_DATA / "especes.json", regles)
     if validation:
         ecrire_json(SITE_DATA / "validation.json", validation)
-    print(f"Écrit site/data/ en {time.time() - t0:.0f} s")
+    pages_departements.ecrire(SITE, departements, regles["especes"], resumes,
+                              [meteo.dates[k0 + k] for k in range(JOURS_FUTURS)], carte["genere_le"])
+    print(f"Écrit site/data/ et site/departements/ en {time.time() - t0:.0f} s")
     return carte
 
 

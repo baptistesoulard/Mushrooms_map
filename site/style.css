@@ -320,6 +320,21 @@ nav.pied { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 4px 14px; font
 .page th, .page td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--trait); vertical-align: top; }
 .page th { color: var(--texte-2); font-weight: 600; }
 .page td.num, .page th.num { text-align: right; font-variant-numeric: tabular-nums; }
+/* La semaine sur une page de département : la grille de la carte, pas un tableau de données. */
+.page table.semaine { border-collapse: separate; font-size: .8rem; margin: .4em 0 0; }
+.page .semaine th, .page .semaine td { border: 0; padding: 0 0 2px; vertical-align: middle; }
+.page .semaine tbody th { padding-right: 6px; font-weight: 400; }
+.page .semaine thead th { text-align: center; font-weight: 400; }
+.page .semaine thead th.actuel { font-weight: 600; }
+.semaine a.niveau { text-decoration: none; text-align: center; line-height: 22px; }
+.page .departements { list-style: none; padding: 0; }
+.page .departements li { margin: 0; }
+.page .departements a {
+  display: flex; justify-content: space-between; gap: 12px; padding: 7px 0;
+  border-bottom: 1px solid var(--trait); color: var(--texte); text-decoration: none;
+}
+.page .departements a:hover { color: var(--accent); }
+.page .departements .cl { color: var(--texte-3); font-size: .85rem; text-align: right; }
 .tableau { overflow-x: auto; }
 .carte-espece { border: 1px solid var(--trait); border-radius: var(--rayon); padding: 12px 14px; margin: 12px 0; background: var(--surface); }
 .carte-espece h3 { font-size: 1.05rem; }

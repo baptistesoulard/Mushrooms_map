@@ -229,11 +229,16 @@ async function demarrer() {
   });
 
   // --- État ---------------------------------------------------------------------
+  // Un lien d'une page de département (?departement=85&espece=cepe&jour=2026-11-03) l'emporte
+  // sur ce que le navigateur a gardé ; le jour se donne par sa date, pas par son rang.
+  const demande = new URLSearchParams(location.search);
+  const depDemande = deps[demande.get("departement")]?.centre ? demande.get("departement") : null;
+  const jourDemande = carte.jours.findIndex((j) => j.date === demande.get("jour"));
   const memoDep = lire(CLE_DEPARTEMENT);
   const etat = {
-    departement: deps[memoDep]?.centre ? memoDep : "74",
-    espece: especes[lire(CLE_ESPECE)] ? lire(CLE_ESPECE) : carte.especes[0].code,
-    jour: jourDepart,
+    departement: depDemande ?? (deps[memoDep]?.centre ? memoDep : "74"),
+    espece: [demande.get("espece"), lire(CLE_ESPECE)].find((c) => especes[c]) ?? carte.especes[0].code,
+    jour: jourDemande >= 0 ? jourDemande : jourDepart,
     filtre: null,       // mode exploration : les critères, ou null pour l'indice
   };
 
@@ -438,8 +443,8 @@ async function demarrer() {
     if (aCentrer) { aCentrer = false; map.setView(ll, Math.max(map.getZoom(), 14)); }
     if (premiere) {
       departementEn(ll.lat, ll.lng).then((dep) => {
-        // À l'ouverture, un département choisi entre-temps par l'utilisateur l'emporte.
-        if (depAuto && etat.departement !== depOuverture) return;
+        // À l'ouverture, un département demandé par le lien ou choisi entre-temps l'emporte.
+        if (depAuto && (depDemande || etat.departement !== depOuverture)) return;
         if (dep && dep !== etat.departement) allerDepartement(dep, depAuto);
       }).catch((err) => console.error(err));
     }
@@ -622,6 +627,9 @@ async function demarrer() {
         }, r?.niveau === 0 ? "–" : ""));
       })));
     $("semaine").replaceChildren(el("thead", {}, tete), el("tbody", {}, ...lignes));
+    const d = deps[etat.departement];
+    $("lien-departement").replaceChildren(d
+      ? el("a", { href: `departements/${etat.departement}.html` }, `La semaine en ${d.nom}, sur une page à part`) : "");
   }
 
   function classement() {
@@ -858,7 +866,7 @@ async function demarrer() {
   installerExploration();
   antipoison();
   resume = await resumes(etat.departement);
-  if (!lire(CLE_ESPECE)) {   // première visite : l'espèce la mieux placée dans le département
+  if (!lire(CLE_ESPECE) && !especes[demande.get("espece")]) {   // première visite : la mieux placée
     const meilleure = carte.especes.slice().sort((a, b) =>
       (resume[b.code]?.[jourDepart]?.niveau ?? 0) - (resume[a.code]?.[jourDepart]?.niveau ?? 0))[0];
     etat.espece = meilleure.code;
