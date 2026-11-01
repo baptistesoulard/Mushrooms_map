@@ -4,7 +4,8 @@
 // (habitat/blocs/*.png, data/meteo/*.bin, modele.js), à la résolution de calcul.
 import { installerAlertes } from "./alertes.js";
 import { installerCoins } from "./coins.js";
-import { evaluer, facteurPh, indices, preparer } from "./modele.js";
+import { liensItineraire } from "./itineraire.js";
+import { datesSaison, evaluer, indices, preparer } from "./modele.js";
 import { partager } from "./partage.js";
 
 const R = 6378137;
@@ -206,14 +207,16 @@ async function demarrer() {
     };
   });
 
-  // Codes d'un bloc pour l'espèce et le jour : un octet par case, comme l'aperçu.
+  // Codes d'un bloc pour l'espèce et le jour : un octet par case, comme l'aperçu. « Forêts
+  // publiques seulement » laisse les autres sans couleur.
   const codesBlocs = memoire(60, async (cle) => {
-    const [nom, esp, k] = cle.split("|");
+    const [nom, esp, k, publiques] = cle.split("|");
     const [h, m] = await Promise.all([habitats(nom), meteos(nom)]);
     if (!h.prep) h.prep = preparer(h.cases, m);
     const ind = indices(especes[esp], h.prep, m, jourDe(Number(k)), communs);
     const codes = new Uint8Array(B.taille * B.taille);
     h.foret.forEach((i, f) => {
+      if (publiques === "1" && !h.cases.public[f]) return;
       codes[i] = h.protege[i] ? PROTEGE : Math.min(carte.echelle, Math.round(ind[f] * carte.echelle));
     });
     return codes;
@@ -249,6 +252,7 @@ async function demarrer() {
     espece: [demande.get("espece"), lire(CLE_ESPECE)].find((c) => especes[c]) ?? carte.especes[0].code,
     jour: jourDemande >= 0 ? jourDemande : jourDepart,
     filtre: null,       // mode exploration : les critères, ou null pour l'indice
+    publiques: false,   // l'indice des seules forêts publiques (régime forestier)
   };
 
   // --- Carte ----------------------------------------------------------------------
@@ -352,7 +356,7 @@ async function demarrer() {
       const filtre = etat.filtre;
       const codesDe = filtre
         ? (nom) => codesFiltre(`${nom}#${JSON.stringify(filtre)}`)
-        : (nom) => codesBlocs(`${nom}|${etat.espece}|${etat.jour}`);
+        : (nom) => codesBlocs(`${nom}|${etat.espece}|${etat.jour}|${etat.publiques ? 1 : 0}`);
       const [er, eg, eb] = pal.exploration;
       const noms = new Set();
       for (const x of [xs[0], xs[255]]) for (const y of [ys[0], ys[255]]) {
@@ -400,7 +404,7 @@ async function demarrer() {
     const nom = `${bx}_${by}`;
     if (!blocsPresents.has(nom)) return null;
     const [h, codes, communes] = await Promise.all([
-      habitats(nom), codesBlocs(`${nom}|${code}|${etat.jour}`), annexes("habitat/communes.json")]);
+      habitats(nom), codesBlocs(`${nom}|${code}|${etat.jour}|0`), annexes("habitat/communes.json")]);
     const col = Math.floor((x - bx * B.cote) / B.pas), lig = Math.floor(((by + 1) * B.cote - y) / B.pas);
     let s = 0, n = 0, protege = false;
     for (let l = Math.max(0, lig - 1); l <= Math.min(B.taille - 1, lig + 1); l++) {
@@ -754,10 +758,12 @@ async function demarrer() {
     }
   });
 
+  // La fenêtre d'une case, en tuiles : l'indice sur 100 et sa classe, ce qui le retient, puis
+  // chaque facteur, la propriété de la forêt et les actions (y aller, noter, Géoportail).
   function fenetre(h, meteo, i, communes, infoBloc, ll) {
     const e = especes[etat.espece];
     const com = communes[h.commune[i] - 1];
-    const div = el("div");
+    const div = el("div", { class: "case-fenetre" });
     if (!com) {
       div.append(el("p", {}, "Hors de France : pas d'indice."));
       return div;
@@ -767,7 +773,7 @@ async function demarrer() {
       const z = infoBloc?.protections?.[h.protege[i] - 1];
       div.append(el("p", {}, `${z ? `${z.nature} « ${z.nom} »` : "Zone protégée"}. Ces espaces ont leur propre ` +
         "réglementation, souvent plus stricte sur la cueillette : renseignez-vous avant d'y ramasser quoi que ce soit. " +
-        "Le site n'y calcule pas d'indice."));
+        "Le site n'y calcule pas d'indice."), el("p", {}, el("a", { href: "avant-de-partir.html#zones-protegees" }, "Les règles")));
       return div;
     }
     const f = h.foret.indexOf(i);
@@ -780,49 +786,110 @@ async function demarrer() {
     const k = h.cases;
     const cas = { essence: k.essence[f], ouverte: k.ouverte[f], roche: k.roche[f], altitude: k.altitude[f],
                   pente: k.pente[f], ensoleillement: k.ensoleillement[f], lat: k.lat[f], lon: k.lon[f], ph: k.ph[f] };
-    const r = evaluer(e, cas, meteo, jourDe(etat.jour), communs);
+    const jour = jourDe(etat.jour);
+    const r = evaluer(e, cas, meteo, jour, communs);
     const kc = classeDe(r.indice, carte.classes);
-    const pastille = kc > 0 ? el("span", { class: "pastille", style: `background:rgb(${pal.classes[kc].join(",")})` })
-      : el("span", { class: "pastille vide" });
-    div.append(el("div", { class: "pop-indice" }, pastille,
-      `${e.nom} : ${carte.classes[kc].nom.toLowerCase()} (${fr2.format(r.indice)})`));
-    div.append(el("div", { class: "muet" }, carte.jours[etat.jour].libelle));
+    div.append(el("div", { class: "score" },
+      el("span", { class: "score-valeur" }, String(Math.round(r.indice * 100)), el("small", {}, " /100")),
+      el("span", { class: "score-classe" }, carte.classes[kc].nom),
+      jauge(r.indice)));
+    div.append(el("p", { class: "muet score-jour" }, `Indice ${e.de}, ${carte.jours[etat.jour].libelle}`));
+    div.append(el("p", { class: "raison" }, ...raison(e, r, cas, jour)));
 
-    const [p0, p1] = e.pluie_mm;
+    const p = r.parts;
+    const [, p1] = e.pluie_mm;
     const [, s1, s2] = e.sol;
-    const mot = (a) => (a >= 0.8 ? "élevée" : a >= 0.5 ? "moyenne" : "faible");
-    const dl = el("dl");
-    const ligne = (t, d, cls) => { dl.append(el("dt", {}, t), el("dd", cls ? { class: cls } : {}, d)); };
-    ligne("Forêt", `${leg.essences[cas.essence]}${cas.ouverte ? " (ouverte)" : ""}`);
-    const parLePh = e.sol_ph && cas.ph > 0;
-    ligne("Affinité", `${mot(e.essences[cas.essence] ?? 0)} pour cette forêt, ` +
-      (parLePh ? `${mot(facteurPh(e, cas.ph))} pour le sol` : `${mot(e.roches[cas.roche] ?? 0)} pour la roche`));
-    ligne("Roche", leg.roches[cas.roche]);
-    if (cas.ph > 0) ligne("Sol", `pH ${fr1.format(cas.ph / 10)} (estimé, SoilGrids)`);
-    ligne("Altitude", `${fr.format(cas.altitude)} m`);
-    ligne("Exposition", leg.orientations[k.orientation[f]]);
-    ligne("Statut", k.public[f] ? "forêt publique (régime forestier)" : "forêt probablement privée");
     const [jmin, jmax] = e.pluie_jours;
-    ligne(`Pluie ${jmin}–${jmax} j avant`,
-      `${fr.format(r.pluie)} mm ${r.pluie >= p1 ? "✓" : r.pluie < p0 ? "✗ trop peu" : "– un peu juste"}`,
-      r.pluie >= p1 ? "ok" : r.pluie < p0 ? "ko" : "");
-    ligne("Sol (7 jours)", `${fr1.format(r.tSol)} °C ${r.tSol < s1 ? "✗ trop froid" : r.tSol > s2 ? "✗ trop chaud" : "✓"}`,
-      r.tSol < s1 || r.tSol > s2 ? "ko" : "ok");
-    if (r.gel) ligne("Gel", `${r.gel} jour${r.gel > 1 ? "s" : ""} sur 7`, "ko");
-    if (r.saison < 1) ligne("Saison", r.saison === 0 ? "hors saison ✗" : "début ou fin de saison", r.saison === 0 ? "ko" : "");
-    div.append(dl);
-    div.append(el("p", { class: "muet" },
-      `Case de 50 m ; météo AROME à 2,5 km. Pleine pousse au-delà de ${fr.format(p1)} mm, ` +
-      `sol entre ${fr.format(s1)} et ${fr.format(s2)} °C.`));
-    if (com.dep !== etat.departement && deps[com.dep]) {
-      div.append(el("p", {}, el("button", { type: "button", class: "lien", onclick: () => allerDepartement(com.dep, false) },
-        `Résumé du département : ${deps[com.dep].nom}`)));
-    }
-    div.append(el("a", {
+    const qualite = (v) => (v >= 0.8 ? "ok" : v >= 0.5 ? "moyen" : "ko");
+    const affinite = (v) => `affinité ${v >= 0.8 ? "élevée" : v >= 0.5 ? "moyenne" : "faible"}`;
+    const tuiles = el("div", { class: "tuiles" });
+    const tuile = (titre, valeur, note, v) => tuiles.append(el("div", { class: `tuile ${qualite(v)}` },
+      el("span", { class: "t" }, titre), el("strong", {}, valeur), el("span", { class: "n" }, note)));
+    tuile("Forêt", `${leg.essences[cas.essence]}${cas.ouverte ? ", ouverte" : ""}`, affinite(p.essence),
+      p.essence * p.ouverte);
+    tuile("Sol", p.parLePh ? `pH ${fr1.format(cas.ph / 10)}` : leg.roches[cas.roche],
+      p.parLePh ? `${affinite(p.sol)} ; pH estimé, roche ${leg.roches[cas.roche].toLowerCase()}`
+        : `${affinite(p.sol)}${cas.ph > 0 ? ` ; pH estimé ${fr1.format(cas.ph / 10)}` : ""}`, p.sol);
+    tuile("Altitude", `${fr.format(cas.altitude)} m`, p.altitude >= 1 ? `pleine jusqu'à ${fr.format(p.plafond)} m ici`
+      : p.altitude > 0 ? "près de son plafond" : "au-dessus de son plafond", p.altitude);
+    tuile("Exposition", leg.orientations[k.orientation[f]], `pente ${fr.format(cas.pente)}°`, p.pente);
+    tuile("Pluie", `${fr.format(r.pluie)} mm`, `entre ${jmax} et ${jmin} jours avant ; pleine pousse dès ${fr.format(p1)} mm`,
+      r.facteurs.pluie);
+    tuile("Sol, 7 jours", `${fr1.format(r.tSol)} °C`, r.tSol < s1 ? `trop froid : il faut ${fr.format(s1)} °C`
+      : r.tSol > s2 ? `trop chaud : au-delà de ${fr.format(s2)} °C` : `de ${fr.format(s1)} à ${fr.format(s2)} °C : bien`,
+      r.facteurs.sol);
+    tuile("Gel", r.gel ? `${r.gel} jour${r.gel > 1 ? "s" : ""}` : "Aucun", "sur les 7 derniers jours", r.facteurs.gel);
+    const [, b, c] = datesSaison(e, jour.annee, cas.lat, communs);
+    tuile("Saison", phaseSaison(e, r.saison, jour, cas.lat), `plein du ${jourEnMots(b)} au ${jourEnMots(c)} ici`, r.saison);
+    div.append(tuiles);
+    div.append(el("div", { class: `statut ${k.public[f] ? "public" : "prive"}` },
+      el("strong", {}, k.public[f] ? "Forêt publique" : "Forêt probablement privée"),
+      k.public[f] ? " (régime forestier) : une cueillette familiale y est en général tolérée, dans la limite des arrêtés locaux. "
+        : " : les champignons appartiennent au propriétaire, il faut son accord. ",
+      el("a", { href: "avant-de-partir.html#proprietaire" }, "Les règles")));
+    div.append(el("p", { class: "muet" }, "Case de 50 m ; météo AROME à 2,5 km."));
+    div.append(liensItineraire(ll.lat, ll.lng));
+    const actions = el("p", { class: "actions-case" }, boutonCoin(ll), " · ", el("a", {
       href: `https://www.geoportail.gouv.fr/carte?c=${ll.lng.toFixed(5)},${ll.lat.toFixed(5)}&z=16&permalink=yes`,
       target: "_blank", rel: "noopener",
-    }, "Voir le lieu sur le Géoportail (IGN)"), " ", boutonCoin(ll));
+    }, "Géoportail (IGN)"));
+    if (com.dep !== etat.departement && deps[com.dep]) {
+      actions.append(" · ", el("button", { type: "button", class: "lien", onclick: () => allerDepartement(com.dep, false) },
+        `Résumé : ${deps[com.dep].nom}`));
+    }
+    div.append(actions);
     return div;
+  }
+
+  // L'indice sur 100 et sa place parmi les classes (seuils fixes) : 45 n'est pas « moyen », c'est « bon ».
+  function jauge(v) {
+    const z = el("div", { class: "jauge", role: "img", "aria-label": `${Math.round(v * 100)} sur 100` });
+    let bas = 0;
+    carte.classes.forEach((c, k) => {
+      const haut = Math.min(c.seuil, 1);
+      z.append(el("span", { style: `width:${(haut - bas) * 100}%${k ? `;background:rgb(${pal.classes[k].join(",")})` : ""}` }));
+      bas = haut;
+    });
+    z.append(el("i", { style: `left:${Math.min(v, 1) * 100}%` }));
+    return z;
+  }
+
+  function phaseSaison(e, s, jour, lat) {
+    if (s >= 1) return "Pleine saison";
+    if (s <= 0) return "Hors saison";
+    // Avant ou après le milieu du plein de la saison (celle de l'an passé compte en janvier).
+    const [, b, c] = datesSaison(e, jour.annee, lat, communs);
+    const avant = jour.num < (b + c) / 2 && jour.num > datesSaison(e, jour.annee - 1, lat, communs)[3];
+    return avant ? "Début de saison" : "Fin de saison";
+  }
+
+  // Ce qui retient l'indice : les facteurs sous 0,7, du plus bas au plus haut, deux au plus.
+  function raison(e, r, cas, jour) {
+    const p = r.parts;
+    const [, p1] = e.pluie_mm;
+    const [, s1, s2] = e.sol;
+    const [jmin, jmax] = e.pluie_jours;
+    const ph = fr1.format(cas.ph / 10);
+    const facteurs = [
+      [p.essence, `la forêt (${leg.essences[cas.essence].toLowerCase()}), ${p.essence < 0.5 ? "peu" : "moyennement"} favorable`],
+      [p.ouverte, "une forêt ouverte, au couvert clairsemé"],
+      [p.sol, p.parLePh ? `le sol, pH ${ph} : ${cas.ph / 10 < e.ph[1] ? "trop acide" : "pas assez acide"}`
+        : `la roche (${leg.roches[cas.roche].toLowerCase()})`],
+      [p.altitude, p.altitude > 0 ? `l'altitude, près de son plafond (${fr.format(p.plafond)} m ici)`
+        : "l'altitude, au-dessus de son plafond"],
+      [p.pente, `la pente (${fr.format(cas.pente)}°)`],
+      [r.saison, phaseSaison(e, r.saison, jour, cas.lat).toLowerCase()],
+      [r.facteurs.pluie, `la pluie : ${fr.format(r.pluie)} mm entre ${jmax} et ${jmin} jours avant, ` +
+        `il en faut ${fr.format(p1)} pour une pleine pousse`],
+      [r.facteurs.sol, r.tSol < s1 ? `le sol, trop froid (${fr1.format(r.tSol)} °C sur 7 jours, il faut ${fr.format(s1)} °C)`
+        : `le sol, trop chaud (${fr1.format(r.tSol)} °C sur 7 jours, au-delà de ${fr.format(s2)} °C)`],
+      [r.facteurs.gel, `le gel (${r.gel} jour${r.gel > 1 ? "s" : ""} sur les 7 derniers)`],
+    ].sort((a, b) => a[0] - b[0]);
+    const limitent = facteurs.filter(([v]) => v < 0.7).slice(0, 2).map(([, t]) => t);
+    if (limitent.length) return [el("strong", {}, "Ce qui limite : "), `${limitent.join(" ; ")}.`];
+    if (r.indice >= carte.classes[2].seuil) return [el("strong", {}, "Tout est réuni : "),
+      "forêt, sol, pluie et température conviennent."];
+    return [el("strong", {}, "Rien ne bloque, "), `mais des facteurs moyens se cumulent : ${facteurs.slice(0, 2).map(([, t]) => t).join(" ; ")}.`];
   }
 
   function boutonCoin(ll) {
@@ -878,6 +945,19 @@ async function demarrer() {
     });
   }
 
+  // Forêts publiques seulement : de près (la vue large ne distingue pas les forêts publiques).
+  function installerPubliques() {
+    const message = () => {
+      $("publiques-message").textContent = etat.publiques && map.getZoom() < DETAIL ? "(de près seulement)" : "";
+    };
+    $("publiques").addEventListener("change", (ev) => {
+      etat.publiques = ev.target.checked;
+      message();
+      calqueDetail.redraw();
+    });
+    map.on("zoomend", message);
+  }
+
   function tout() {
     choixJours();
     panneau();
@@ -887,6 +967,7 @@ async function demarrer() {
 
   legende();
   installerExploration();
+  installerPubliques();
   antipoison();
   resume = await resumes(etat.departement);
   if (!lire(CLE_ESPECE) && !especes[demande.get("espece")]) {   // première visite : la mieux placée
@@ -907,6 +988,11 @@ const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", 
 function dateCourte(mmjj) {
   const [m, j] = mmjj.split("-").map(Number);
   return `${j === 1 ? "1er" : j} ${MOIS[m - 1]}`;
+}
+
+function jourEnMots(num) {
+  const d = new Date(Math.round(num) * 864e5);
+  return `${d.getUTCDate() === 1 ? "1er" : d.getUTCDate()} ${MOIS[d.getUTCMonth()]}`;
 }
 
 function dateLongue(iso) {

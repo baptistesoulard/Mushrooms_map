@@ -29,13 +29,19 @@ const f = JSON.parse(readFileSync(entree, "utf8"));
 const champs = Object.fromEntries(Object.entries(f.champs).map(([n, v]) => [n, Float32Array.from(v, (x) => x / 10)]));
 const meteo = { lats: f.lats, lons: f.lons, champ: (n) => champs[n] };
 const res = {}, bloc = {};
+let ecartParts = 0;      // le produit des facteurs de la fenêtre d'une case = l'habitat calculé
 const colonnes = Object.fromEntries(Object.keys(f.cases[0]).map((k) => [k, f.cases.map((c) => c[k])]));
 const prep = M.preparer(colonnes, meteo);
 for (const esp of f.regles.especes) {
-  res[esp.code] = f.jours.map((j) => f.cases.map((c) => M.evaluer(esp, c, meteo, j, f.regles.communs).indice));
+  res[esp.code] = f.jours.map((j) => f.cases.map((c) => {
+    const r = M.evaluer(esp, c, meteo, j, f.regles.communs);
+    const p = r.parts;
+    ecartParts = Math.max(ecartParts, Math.abs(p.essence * p.sol * p.altitude * p.pente * p.ouverte - r.habitat));
+    return r.indice;
+  }));
   bloc[esp.code] = f.jours.map((j) => Array.from(M.indices(esp, prep, meteo, j, f.regles.communs)));
 }
-writeFileSync(sortie, JSON.stringify({ res, bloc }));
+writeFileSync(sortie, JSON.stringify({ res, bloc, ecartParts }));
 """
 
 
@@ -107,3 +113,4 @@ def test_navigateur_egal_export(tmp_path, debut, lat0, sol_ph):
             np.testing.assert_allclose(obtenu["bloc"][code][k], ind, atol=2e-4, err_msg=f"{code}, jour {k} (bloc)")
             n_positifs += int((ind > 0.01).sum())
     assert n_positifs > 10, "le cas de test doit contenir des indices non nuls"
+    assert obtenu["ecartParts"] < 1e-12, "les facteurs de la fenêtre d'une case ne refont plus l'habitat"

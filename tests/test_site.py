@@ -67,6 +67,14 @@ def test_stockage_navigateur_declare():
         assert c in mentions
 
 
+def test_l_appli_hors_ligne_garde_tous_les_scripts():
+    """Un module oublié dans la coquille de sw.js, et la carte ne s'ouvre plus sans réseau."""
+    coquille = re.search(r"const COQUILLE = \[(.*?)\];", (SITE / "sw.js").read_text(encoding="utf-8"), re.S).group(1)
+    for js in SITE.glob("*.js"):
+        if js.name != "sw.js":
+            assert f'"{js.name}"' in coquille, js.name
+
+
 def test_carte_lit_les_fichiers_que_l_export_ecrit():
     js = (SITE / "carte.js").read_text(encoding="utf-8")
     export = (SITE.parent / "champi" / "export_france.py").read_text(encoding="utf-8")

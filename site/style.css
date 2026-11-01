@@ -125,6 +125,7 @@ legend { font-weight: 600; font-size: .85rem; color: var(--texte-2); padding: 0;
 .choix label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .choix .niv { font-size: .75rem; color: var(--texte-3); font-weight: 400; }
 
+label.case.publiques { margin-top: 10px; }
 .departement { display: grid; gap: 4px; margin-top: 16px; font-size: .85rem; font-weight: 600; color: var(--texte-2); }
 .departement select {
   font: inherit; font-size: .95rem; font-weight: 600; color: var(--texte); background: var(--surface);
@@ -296,6 +297,36 @@ nav.pied { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 4px 14px; font
 .leaflet-popup-content .ok { color: #0a7a0a; }
 .leaflet-popup-content .ko { color: #b23a1d; }
 .pop-indice { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+/* La fenêtre d'une case : l'indice sur 100 et sa jauge, ce qui le limite, puis les tuiles. */
+.case-fenetre { color: #1d1b17; }
+.score { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 0 10px; }
+.score-valeur { font-size: 1.9rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.score-valeur small { font-size: .8rem; font-weight: 400; color: #6b665c; }
+.score-classe { font-size: 1rem; font-weight: 600; }
+.jauge { grid-column: 1 / -1; position: relative; display: flex; height: 8px; margin: 8px 0 2px;
+  border-radius: 4px; overflow: visible; background: #efece5; }
+.jauge span { height: 100%; }
+.jauge span:first-child { border-radius: 4px 0 0 4px; }
+.jauge span:nth-last-child(2) { border-radius: 0 4px 4px 0; }
+.jauge i { position: absolute; top: -4px; width: 3px; height: 16px; margin-left: -1.5px; background: #1d1b17;
+  border-radius: 2px; box-shadow: 0 0 0 1.5px #fff; }
+.leaflet-popup-content .score-jour { margin: 2px 0 6px; }
+.raison { margin: 0 0 8px; }
+.tuiles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 0 6px; }
+.tuile { display: grid; gap: 0; padding: 5px 7px; border-radius: 6px; background: #f3f1ec;
+  border-left: 3px solid #c9c4b8; font-size: .78rem; line-height: 1.3; min-width: 0; }
+.tuile .t { color: #6b665c; }
+.tuile strong { font-size: .86rem; overflow-wrap: anywhere; }
+.tuile .n { color: #57534a; }
+.tuile.ok { border-left-color: #2f8a3a; }
+.tuile.moyen { border-left-color: #e0a030; }
+.tuile.ko { border-left-color: #b23a1d; }
+.statut { padding: 6px 8px; border-radius: 6px; font-size: .8rem; line-height: 1.35; margin-bottom: 6px; }
+.statut.public { background: #e6f2e4; }
+.statut.prive { background: #fbeee3; }
+.itineraire { margin: 6px 0 4px; }
+.itineraire a, .actions-case a { white-space: nowrap; }
+.actions-case { margin: 0; }
 
 .fonds {
   background: var(--surface);

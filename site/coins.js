@@ -3,6 +3,8 @@
 // propres coins, jamais ceux qu'un ami a confiés. Entre ses appareils, et avec les proches à qui
 // l'on donne le lien, elles se synchronisent par un dépôt GitHub privé, ouvert par un lien qui
 // porte le jeton : chacun signe ses coins de son prénom et n'efface que les siens.
+import { liensItineraire } from "./itineraire.js";
+
 const CLE = "champi-coins";            // les quatre clés sont déclarées dans a-propos.html
 const CLE_EFFACES = "champi-coins-effaces";
 const CLE_SYNCHRO = "champi-synchro";
@@ -251,7 +253,7 @@ export function installerCoins({ map, especes, ordre, etat, indiceEn, decrire })
         mien(t) || t.de ? el("button", { type: "button", class: "lien", onclick: () => effacer(t) }, "effacer") : "",
         t.note ? el("div", { class: "muet" }, t.note) : ""));
     }
-    div.append(ul);
+    div.append(ul, liensItineraire(groupe.lat, groupe.lon));
     indiceEn(groupe.lat, groupe.lon, t0.espece).then((r) => {
       if (!r) ligne.textContent = "Hors des forêts calculées : pas d'indice.";
       else if (r.indice == null) ligne.textContent = r.protege ? "Zone protégée : pas d'indice." : "Hors forêt : pas d'indice.";

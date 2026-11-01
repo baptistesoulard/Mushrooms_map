@@ -64,6 +64,21 @@ export function facteurHabitat(esp, essence, ouverte, roche, altitude, pente, la
   return ouverte ? f * c.foret_ouverte : f;
 }
 
+// Les facteurs de l'habitat d'une case, un par un, pour dire lequel limite (fenêtre d'une case).
+// Leur produit, dans cet ordre, est facteurHabitat : tests/test_modele_js.py le vérifie.
+export function partsHabitat(esp, essence, ouverte, roche, altitude, pente, lat, c, ph = 0) {
+  const parLePh = Boolean(esp.sol_ph && ph > 0);
+  const [plein, nul] = plafondAltitude(esp, lat, c);
+  return {
+    essence: esp.essences[essence] ?? 0,
+    sol: parLePh ? facteurPh(esp, ph) : (esp.roches[roche] ?? 0),
+    altitude: Math.min(Math.max((nul - altitude) / (nul - plein), 0), 1),
+    pente: facteurPente(pente, c),
+    ouverte: ouverte ? c.foret_ouverte : 1,
+    parLePh, plafond: plein,
+  };
+}
+
 export function pluieEfficace(pluie, ensoleillement, c) {
   return pluie * (1 - c.secheresse_sud * ensoleillement);
 }
@@ -172,6 +187,7 @@ export function indices(esp, prep, meteo, jour, c) {
 export function evaluer(esp, cas, meteo, jour, c) {
   const habitat = facteurHabitat(esp, cas.essence, cas.ouverte, cas.roche, cas.altitude, cas.pente, cas.lat, c,
                                  cas.ph ?? 0);
+  const parts = partsHabitat(esp, cas.essence, cas.ouverte, cas.roche, cas.altitude, cas.pente, cas.lat, c, cas.ph ?? 0);
   const saison = facteurSaison(esp, jour, cas.lat, c);
   const it = interpolateur(meteo.lats, meteo.lons, cas.lat, cas.lon);
   const [jmin, jmax] = esp.pluie_jours;
@@ -183,5 +199,5 @@ export function evaluer(esp, cas, meteo, jour, c) {
     if (temperatureLocale(it(meteo.champ(`tmin_${d}`)), cas.altitude, c.gradient_air) < c.gel_seuil) gel++;
   }
   const f = facteursMeteo(esp, pluie, tSol, gel);
-  return { habitat, saison, pluie, tSol, gel, facteurs: f, indice: habitat * saison * f.pluie * f.sol * f.gel };
+  return { habitat, parts, saison, pluie, tSol, gel, facteurs: f, indice: habitat * saison * f.pluie * f.sol * f.gel };
 }

@@ -7,7 +7,7 @@
 // - l'habitat (habitat/) : la copie d'abord, il ne change qu'avec une reconstruction.
 //   Changer le format des blocs (france.FORMAT) = incrémenter VERSION, sinon les copies restent.
 const VERSION = "champi-hors-ligne-1";
-const COQUILLE = ["carte/", "./", "carte.js", "coins.js", "alertes.js", "modele.js", "partage.js", "style.css",
+const COQUILLE = ["carte/", "./", "carte.js", "coins.js", "alertes.js", "modele.js", "partage.js", "itineraire.js", "pages.js", "style.css",
   "favicon.svg", "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css", "manifest.webmanifest",
   "icone-192.png", "avant-de-partir.html", "a-propos.html"];
 const LIMITES = { coquille: 100, donnees: 400, habitat: 600 };   // entrées gardées par cache
