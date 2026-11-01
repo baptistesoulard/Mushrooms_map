@@ -43,6 +43,14 @@ jobs:
         run: |
           python -m champi.export_france
           rm site/habitat/echantillon.npz   # lu par l'export seulement : pas à publier
+      # Avant le déploiement : le site en ligne est encore la publication précédente, à laquelle
+      # les alertes se comparent. Une alerte manquée n'empêche jamais la carte de paraître.
+      - name: Alertes (ntfy)
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          ALERTES: ${{ vars.ALERTES }}
+        run: python -m champi.alertes
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

@@ -66,6 +66,10 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   dans `site/departements/` (hors git), lisibles sans JavaScript. Aucun coin : le département,
   les altitudes, les communes, comme le panneau. Non indexées tant que `INDEXER` est faux (il
   ouvre les pages et écrit `sitemap.xml`). La carte lit `?departement=&espece=&jour=` (une date).
+- **Alertes** (`alertes.py`, étape de `carte.yml` avant le déploiement) : ntfy, canal en secret
+  `NTFY_TOPIC`, départements en variable `ALERTES`. Ne sonne que ce qui PASSE à « bon » dans les
+  4 jours, par différence avec la publication en ligne (pas d'état gardé). `continue-on-error` :
+  une alerte manquée n'empêche jamais la carte de paraître.
 - **Zones protégées : hachurées, sans indice** (réserves, arrêtés de biotope, cœurs de parcs
   nationaux). Leur règlement varie ; le site ne dit jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur
