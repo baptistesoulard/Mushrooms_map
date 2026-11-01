@@ -19,6 +19,7 @@ Les calculs de ce job (aperçu, résumés) se font sur l'échantillon de l'habit
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
@@ -30,7 +31,7 @@ from . import especes as E
 from . import modele as M
 from . import pages_departements
 from . import redaction
-from .config import DATA, PAS_FIN, RACINE, SITE, SITE_DATA
+from .config import DATA, PAS_FIN, RACINE, SITE, SITE_DATA, VAPID_PUBLIQUE
 from .export import COUVERTURE_PLEINE, ECHELLE, HORS_FORET, JOURS_FUTURS, TRANCHE_M, ecrire_png
 from .france import BLOC, COTE, ECHANTILLON, Bloc
 from .grille import Grille, lonlat_vers_merc
@@ -356,6 +357,8 @@ def exporter(meteo: Meteo | None = None) -> dict:
         "classement": classement,
         "fiabilite": fiabilite,
         "habitat_construit_le": index["construit_le"],
+        # Alertes : la clé publique des notifications, et si l'envoi est branché (secrets posés).
+        "alertes": {"cle_push": VAPID_PUBLIQUE, "actives": os.environ.get("ALERTES_ACTIVES") == "true"},
         "blocs_manquants": len(index.get("manquants", [])),
     }
     ecrire_json(SITE_DATA / "carte.json", carte)

@@ -66,10 +66,15 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   dans `site/departements/` (hors git), lisibles sans JavaScript. Aucun coin : le département,
   les altitudes, les communes, comme le panneau. Non indexées tant que `INDEXER` est faux (il
   ouvre les pages et écrit `sitemap.xml`). La carte lit `?departement=&espece=&jour=` (une date).
-- **Alertes** (`alertes.py`, étape de `carte.yml` avant le déploiement) : ntfy, canal en secret
-  `NTFY_TOPIC`, départements en variable `ALERTES`. Ne sonne que ce qui PASSE à « bon » dans les
-  4 jours, par différence avec la publication en ligne (pas d'état gardé). `continue-on-error` :
-  une alerte manquée n'empêche jamais la carte de paraître.
+- **Alertes personnalisées** (`site/alertes.js` → `alertes.json` du dépôt privé du lien de groupe
+  → `alertes.py`, étape de `carte.yml` avant le déploiement) : un département, des espèces, un
+  seuil (« bon » ou « par endroits ») ; notification Web Push quand une espèce DEVIENT favorable
+  dans les 7 jours (par différence avec la publication en ligne, sans état gardé), rappel la
+  veille, « à confirmer » au-delà de 3 jours. Clé publique dans `config.VAPID_PUBLIQUE`, clé privée
+  en secret `VAPID_PRIVEE` (jamais dans git ; la changer oblige à se réabonner) ; lecture du dépôt
+  par `ALERTES_JETON` et `ALERTES_DEPOT`. L'envoi (pywebpush) ne tourne que dans Actions : ce poste
+  bloque la DLL de `cryptography`. `continue-on-error` : une alerte manquée n'empêche jamais la
+  carte de paraître. Plus de ntfy (décision du 2026-11-01).
 - **Appli installable et hors ligne** (`manifest.webmanifest`, `sw.js`) : le site et les données
   du jour en « réseau d'abord » (copie au-delà de 5 s), l'habitat en « copie d'abord ». Changer
   le format des blocs (`france.FORMAT`) oblige à incrémenter `sw.VERSION`, sinon les anciennes

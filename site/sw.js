@@ -23,6 +23,25 @@ self.addEventListener("activate", (ev) => {
     .then(() => self.clients.claim()));
 });
 
+// Alertes (champi/alertes.py) : le contenu arrive chiffré, le navigateur le déchiffre et le montre.
+self.addEventListener("push", (ev) => {
+  let d = {};
+  try { d = ev.data ? ev.data.json() : {}; } catch { d = { texte: ev.data?.text() || "" }; }
+  ev.waitUntil(self.registration.showNotification(d.titre || "Champignons", {
+    body: d.texte || "", icon: "icone-192.png", badge: "icone-192.png", tag: d.tag, data: { lien: d.lien },
+  }));
+});
+
+// Un appui sur la notification ouvre la page qu'elle annonce, dans l'appli si elle est ouverte.
+self.addEventListener("notificationclick", (ev) => {
+  ev.notification.close();
+  const lien = ev.notification.data?.lien || self.registration.scope;
+  ev.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((fenetres) => {
+    const ici = fenetres.find((f) => f.url.startsWith(self.registration.scope));
+    return ici ? ici.navigate(lien).then((f) => f?.focus()) : self.clients.openWindow(lien);
+  }));
+});
+
 self.addEventListener("fetch", (ev) => {
   const url = new URL(ev.request.url);
   if (ev.request.method !== "GET" || url.origin !== self.location.origin) return;   // le réseau seul

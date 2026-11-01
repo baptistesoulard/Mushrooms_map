@@ -13,6 +13,11 @@ on:
     workflows: ["Habitat de la France", "pH du sol dans l'habitat"]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      essai_alertes:
+        description: "Envoyer une notification d'essai à chaque abonné aux alertes"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -44,17 +49,21 @@ jobs:
           tar -xf "$RUNNER_TEMP/habitat.tar" -C site/habitat
           du -sh site/habitat
       - name: Calculer la carte du jour
+        env:
+          # Le site dit si les alertes sont branchées, sans jamais voir les secrets eux-mêmes.
+          ALERTES_ACTIVES: ${{ secrets.VAPID_PRIVEE != '' && secrets.ALERTES_JETON != '' && vars.ALERTES_DEPOT != '' }}
         run: |
           python -m champi.export_france
           rm site/habitat/echantillon.npz   # lu par l'export seulement : pas à publier
       # Avant le déploiement : le site en ligne est encore la publication précédente, à laquelle
       # les alertes se comparent. Une alerte manquée n'empêche jamais la carte de paraître.
-      - name: Alertes (ntfy)
+      - name: Alertes personnalisées
         continue-on-error: true
         env:
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          ALERTES: ${{ vars.ALERTES }}
-        run: python -m champi.alertes
+          ALERTES_DEPOT: ${{ vars.ALERTES_DEPOT }}
+          ALERTES_JETON: ${{ secrets.ALERTES_JETON }}
+          VAPID_PRIVEE: ${{ secrets.VAPID_PRIVEE }}
+        run: python -m champi.alertes ${{ inputs.essai_alertes && '--essai' || '' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

@@ -23,3 +23,7 @@ PAS_ZONE = PAS_FIN * FACTEUR_ZONE
 MARGE_M = 1500.0
 
 USER_AGENT = "Mushrooms_map/0.1 (+https://github.com/baptistesoulard/Mushrooms_map)"
+
+# Alertes : clé publique des notifications (Web Push, courbe P-256). La clé privée assortie est le
+# secret VAPID_PRIVEE du dépôt, jamais dans git : la changer oblige chacun à se réabonner.
+VAPID_PUBLIQUE = "BFhHLkWa6-ucIftTKmUxfKv8oDjIOkywthD2EoqzDpmw28akKzUaVOtmgOtvUGeB4H6Dy3x6vQNfXS6ZoxLBQiY"

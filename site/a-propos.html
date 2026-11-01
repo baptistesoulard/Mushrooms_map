@@ -115,22 +115,16 @@
     reprendre la main, supprimez le jeton et donnez un nouveau lien à ceux que vous gardez.</li>
   </ul>
 
-  <h2 id="alertes">Être prévenu sur son téléphone</h2>
-  <p>Chaque matin, après le calcul de la carte, une notification part pour chaque département
-  suivi quand une espèce y <strong>passe</strong> à « bonnes conditions » dans les quatre jours
-  qui viennent : « Vendée : c'est le moment pour le bolet bai ». Une espèce déjà bonne la veille
-  ne sonne pas une seconde fois. L'envoi passe par <a href="https://ntfy.sh/">ntfy</a>, un
-  service de notifications gratuit et sans compte ; votre navigateur n'y est pour rien.</p>
-  <ol>
-    <li>Installez l'application ntfy (Android ou iPhone) et abonnez-vous à un canal au nom
-    long et imprévisible, par exemple <code>champi-</code> suivi d'une suite de lettres au
-    hasard : qui connaît ce nom reçoit les alertes.</li>
-    <li>Dans le dépôt GitHub du site, Settings → Secrets and variables → Actions : un secret
-    <code>NTFY_TOPIC</code> avec ce nom, et une variable <code>ALERTES</code> avec les numéros
-    des départements suivis, séparés par des virgules (par exemple <code>85,74</code>).</li>
-  </ol>
-  <p>Pour partager les alertes avec votre groupe, donnez-lui le nom du canal. Sans canal, rien
-  n'est envoyé.</p>
+  <h2 id="alertes">Recevoir des alertes</h2>
+  <p>Dans « Mes alertes », chacun choisit un département, des espèces et un seuil. Chaque matin,
+  une notification part sur son appareil quand l'une de ces espèces devient favorable dans les
+  7 prochains jours, puis un rappel la veille. Les alertes passent par le lien de groupe : les
+  choix (prénom, départements, espèces, seuil) et l'adresse technique de notification de
+  l'appareil sont écrits dans le dépôt privé du groupe, que ses membres peuvent lire. Cet
+  appareil garde son identifiant et ses alertes (clé <code>champi-alertes</code>). Le contenu des
+  notifications est chiffré : le service de notification du navigateur (Google, Apple ou
+  Mozilla) le transporte sans le lire. Sur iPhone, il faut d'abord ajouter la carte à l'écran
+  d'accueil.</p>
 
   <h2>Mentions légales</h2>
   <p>Site personnel, non commercial, publié par l'auteur du dépôt GitHub

@@ -81,6 +81,24 @@
       <a href="a-propos.html#synchro">la synchronisation</a>.</p>
     </div>
 
+    <details class="section alertes" id="alertes">
+      <summary><h3>Mes alertes</h3></summary>
+      <p class="muet">Une notification sur cet appareil quand une espèce devient favorable dans
+      votre département au cours des 7 prochains jours, puis un rappel la veille.</p>
+      <ul class="communes" id="alertes-liste"></ul>
+      <p class="muet" id="alertes-etat" aria-live="polite"></p>
+      <form id="alertes-form" hidden>
+        <label class="departement"><span>Département</span><select id="alertes-dep"></select></label>
+        <fieldset><legend>Espèces</legend><div class="cases" id="alertes-especes"></div></fieldset>
+        <fieldset><legend>Prévenir pour</legend>
+          <label class="case"><input type="radio" name="seuil" value="bon" checked> de bonnes conditions</label>
+          <label class="case"><input type="radio" name="seuil" value="endroits"> de bonnes conditions par endroits (plus souvent)</label>
+        </fieldset>
+        <button type="submit">Ajouter cette alerte</button>
+      </form>
+      <button type="button" class="lien" id="alertes-arreter" hidden>Ne plus être prévenu sur cet appareil</button>
+    </details>
+
     <div class="section">
       <h3>Où chercher en France</h3>
       <ol class="communes" id="classement"></ol>

@@ -2,6 +2,7 @@
 // Vue large (zoom < DETAIL) : l'aperçu national calculé chaque matin (pixels de 1,15 km).
 // Vue rapprochée : le navigateur calcule lui-même l'indice des cases de 50 m, bloc par bloc
 // (habitat/blocs/*.png, data/meteo/*.bin, modele.js), à la résolution de calcul.
+import { installerAlertes } from "./alertes.js";
 import { installerCoins } from "./coins.js";
 import { evaluer, facteurPh, indices, preparer } from "./modele.js";
 
@@ -420,6 +421,7 @@ async function demarrer() {
       return { nom: carte.classes[k].nom, couleur: k > 0 ? `rgb(${pal.classes[k].join(",")})` : null };
     },
   });
+  const alertes = installerAlertes({ carte, etat: () => ({ departement: etat.departement, espece: etat.espece }) });
 
   // --- Ma position ------------------------------------------------------------------
   // Demandée à l'ouverture pour choisir le département, puis montrée et suivie tant que la
