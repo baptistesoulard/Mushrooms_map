@@ -288,6 +288,7 @@ async function demarrer() {
   // --- Feuille du bas (téléphone) --------------------------------------------------------
   // Repliée, elle montre la poignée, les espèces et les jours ; une case ouverte, son indice.
   let caseCourante = null;            // { ll, popup } : la case touchée, montrée
+  let detailOuvert = false;           // le détail d'une case, ouvert une fois, le reste pour les suivantes
   const feuille = installerFeuille($("panneau"), $("poignee"), {
     bas: () => {
       const ref = caseCourante ? ($("case").querySelector(".score") ?? $("case")) : $("choix-jour");
@@ -904,7 +905,7 @@ async function demarrer() {
       const yCase = map.latLngToContainerPoint(ev.latlng).y, libre = innerHeight - feuille.hauteur("milieu");
       if (yCase > libre - 40) map.panBy([0, yCase - libre / 2]);
     } else {
-      caseCourante = { ll: ev.latlng, popup: L.popup({ maxWidth: 340 }).setLatLng(ev.latlng).setContent("Chargement…").openOn(map) };
+      caseCourante = { ll: ev.latlng, popup: L.popup({ maxWidth: 300 }).setLatLng(ev.latlng).setContent("Chargement…").openOn(map) };
     }
     afficherCase();
   });
@@ -984,9 +985,24 @@ async function demarrer() {
       el("span", { class: "score-valeur" }, String(Math.round(r.indice * 100)), el("small", {}, " /100")),
       el("span", { class: "score-classe" }, carte.classes[kc].nom),
       jauge(r.indice)));
-    div.append(el("p", { class: "muet score-jour" }, `Indice ${e.de}, ${carte.jours[etat.jour].libelle}`));
     div.append(el("p", { class: "raison" }, ...raison(e, r, cas, jour)));
+    div.append(el("p", { class: `statut ${k.public[f] ? "public" : "prive"}` },
+      el("strong", {}, k.public[f] ? "Forêt publique" : "Forêt probablement privée"),
+      k.public[f] ? " : cueillette familiale tolérée en général, dans la limite des arrêtés. "
+        : " : les champignons sont au propriétaire, il faut son accord. ",
+      el("a", { href: "avant-de-partir.html#proprietaire" }, "Les règles")));
+    div.append(liensItineraire(ll.lat, ll.lng));
+    const actions = el("p", { class: "actions-case" }, boutonCoin(ll), " · ", el("a", {
+      href: `https://www.geoportail.gouv.fr/carte?c=${ll.lng.toFixed(5)},${ll.lat.toFixed(5)}&z=16&permalink=yes`,
+      target: "_blank", rel: "noopener",
+    }, "Géoportail (IGN)"));
+    if (com.dep !== etat.departement && deps[com.dep]) {
+      actions.append(" · ", el("button", { type: "button", class: "lien", onclick: () => allerDepartement(com.dep, false) },
+        `Résumé : ${deps[com.dep].nom}`));
+    }
+    div.append(actions);
 
+    // Le détail des facteurs, replié : la fenêtre reste petite et ne déplace pas la carte.
     const p = r.parts;
     const [, p1] = e.pluie_mm;
     const [, s1, s2] = e.sol;
@@ -1016,23 +1032,14 @@ async function demarrer() {
     tuile("Gel", r.gel ? `${r.gel} jour${r.gel > 1 ? "s" : ""}` : "Aucun", "sur les 7 derniers jours", r.facteurs.gel);
     const [, b, c] = datesSaison(e, jour.annee, cas.lat, communs);
     tuile("Saison", phaseSaison(e, r.saison, jour, cas.lat), `plein du ${jourEnMots(b)} au ${jourEnMots(c)} ici`, r.saison);
-    div.append(tuiles);
-    div.append(el("div", { class: `statut ${k.public[f] ? "public" : "prive"}` },
-      el("strong", {}, k.public[f] ? "Forêt publique" : "Forêt probablement privée"),
-      k.public[f] ? " (régime forestier) : une cueillette familiale y est en général tolérée, dans la limite des arrêtés locaux. "
-        : " : les champignons appartiennent au propriétaire, il faut son accord. ",
-      el("a", { href: "avant-de-partir.html#proprietaire" }, "Les règles")));
-    div.append(el("p", { class: "muet" }, "Case de 50 m ; météo AROME à 2,5 km."));
-    div.append(liensItineraire(ll.lat, ll.lng));
-    const actions = el("p", { class: "actions-case" }, boutonCoin(ll), " · ", el("a", {
-      href: `https://www.geoportail.gouv.fr/carte?c=${ll.lng.toFixed(5)},${ll.lat.toFixed(5)}&z=16&permalink=yes`,
-      target: "_blank", rel: "noopener",
-    }, "Géoportail (IGN)"));
-    if (com.dep !== etat.departement && deps[com.dep]) {
-      actions.append(" · ", el("button", { type: "button", class: "lien", onclick: () => allerDepartement(com.dep, false) },
-        `Résumé : ${deps[com.dep].nom}`));
-    }
-    div.append(actions);
+    const detail = el("details", { class: "detail-case" }, el("summary", {}, "Le détail : forêt, sol, pluie…"), tuiles,
+      el("p", { class: "muet" }, `Indice ${e.de}, ${carte.jours[etat.jour].libelle}. Case de 50 m ; météo AROME à 2,5 km.`));
+    detail.open = detailOuvert;
+    detail.addEventListener("toggle", () => {
+      detailOuvert = detail.open;
+      caseCourante?.popup?.update();      // la fenêtre grandit vers le haut : rester dans la carte
+    });
+    div.append(detail);
     return div;
   }
 
