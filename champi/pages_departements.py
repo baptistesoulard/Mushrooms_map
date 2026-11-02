@@ -14,9 +14,9 @@ from pathlib import Path
 import json
 
 from .carte_departements import charger as charger_contours
-from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, PARTAGER, article, cle_departement, date_longue, e,
-                    enumerer, icone, image_partage, instant_paris, meilleur_niveau, national, ordre_saison, pied,
-                    tete)
+from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, PARTAGER, article, calcule_pour, cle_departement,
+                    date_longue, e, enumerer, icone, image_partage, instant_paris, meilleur_niveau, national,
+                    ordre_saison, pied, tete)
 from .redaction import NIVEAUX
 
 DOSSIER = "departements"                  # sous site/, à côté de la carte
@@ -69,8 +69,9 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
                 image=image_partage(code, genere_le))
     lignes = [f'  <p class="fil"><a href="./">Départements</a> › {e(nom)}</p>',
               f"  <h1>Champignons en {e(nom)} cette semaine</h1>",
-              f'  <p class="muet">Calculé le {instant_paris(genere_le)}, pour aujourd\'hui et les sept jours '
-              "suivants, sur les forêts du département (sur ses prés, pour les espèces des champs).</p>"]
+              f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
+              "et les sept jours suivants, sur les forêts du département (sur ses prés, pour les espèces des "
+              "champs).</p>"]
     lignes += [f"  <p>{e(p)}</p>" for p in synthese(especes, resumes, jours)]
     lignes.append(f'  <p class="actions"><a class="bouton principal" href="{carte}">Voir sur la carte</a>{PARTAGER}</p>')
 
@@ -143,7 +144,7 @@ def page_index(departements: list[dict], especes: list[dict], resumes: dict, jou
               f'  <p class="chapeau">Choisissez une espèce et un jour : chaque département prend la couleur de '
               "ses conditions, d'après ses forêts (ses prés pour les espèces des champs). Un clic ouvre sa "
               "page, avec la semaine de chaque espèce.</p>",
-              f'  <p class="muet">Calculé le {instant_paris(genere_le)}.</p>']
+              f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}.</p>']
     if contours:
         # Les choix (cachés sans JavaScript : la carte montre alors l'espèce du moment, aujourd'hui).
         boutons = "".join(

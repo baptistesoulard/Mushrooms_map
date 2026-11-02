@@ -14,7 +14,7 @@ chanterelle en tube, oronge et hygrophore de mars le 2026-11-01, avec deux espè
 
 ```
 champi.france (habitat.yml, rarement) → release « habitat » (blocs PNG, échantillon) — jamais dans git
-champi.depot + champi.export_france (carte.yml, chaque matin) → site/data/ + pages du matin → GitHub Pages
+champi.depot + champi.export_france (carte.yml, chaque nuit) → site/data/ + pages du matin → GitHub Pages
 site/modele.js : le navigateur calcule l'indice des blocs affichés
 champi.validation (à la main, France et trois régions) → data/validation.json (versionné) → copié par l'export
 ```
@@ -145,7 +145,19 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   en secret `VAPID_PRIVEE` (jamais dans git ; la changer oblige à se réabonner) ; lecture du dépôt
   par `ALERTES_JETON` et `ALERTES_DEPOT`. L'envoi (pywebpush) ne tourne que dans Actions : ce poste
   bloque la DLL de `cryptography`. `continue-on-error` : une alerte manquée n'empêche jamais la
-  carte de paraître. Plus de ntfy (décision du 2026-11-01).
+  carte de paraître. Plus de ntfy (décision du 2026-11-01). Le rappel ne sonne qu'à la première
+  publication du jour (le workflow peut en faire plusieurs).
+- **GitHub part en retard, ou pas du tout** : ses départs programmés sont « au mieux » (6 et 7 h
+  de retard les 31 octobre et 1er novembre 2026, rien à 7 h 15 le 2 novembre). `carte.yml` prend
+  donc trois rendez-vous par nuit, tous après 23 h UTC (avant, `publication.jour_de_la_carte`
+  donnerait encore la veille, que la garde trouverait en ligne), et le job `verifier`
+  (`champi/publication.py`, bibliothèque standard seulement) arrête en quelques secondes ceux qui
+  trouvent la carte du jour déjà publiée. La concurrence se règle par job, pas par workflow : un
+  départ qui s'arrête n'annule jamais un calcul en attente. Si le retard dépasse encore la nuit,
+  le remède est un déclencheur extérieur (`workflow_dispatch` appelé par un service de cron, avec
+  un jeton que l'utilisateur crée lui-même).
+- **Une page du jour porte sa date** (`pages.calcule_pour`, sur sa ligne « Calculé le ») : quand
+  la mise à jour de la nuit manque, `pages.js` le dit en tête de page, comme `carte.js` sur la carte.
 - **Appli installable et hors ligne** (`manifest.webmanifest`, `sw.js`) : le site et les données
   du jour en « réseau d'abord » (copie au-delà de 5 s), l'habitat en « copie d'abord ». Changer
   le format des blocs (`france.FORMAT`) oblige à incrémenter `sw.VERSION`, sinon les anciennes

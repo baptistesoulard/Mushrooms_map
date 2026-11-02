@@ -44,14 +44,17 @@ def premiers(resumes_dep: dict, dates: list[date], seuil: int) -> dict[str, date
     return out
 
 
-def evenements(maintenant: dict[str, date], avant: dict[str, date], demain: date) -> list[tuple[str, date, str]]:
+def evenements(maintenant: dict[str, date], avant: dict[str, date], demain: date,
+               rappels: bool = True) -> list[tuple[str, date, str]]:
     """Ce qui mérite un message : les espèces qui DEVIENNENT favorables (« nouveau »), et celles
-    déjà annoncées dont le premier jour favorable est demain (« rappel »)."""
+    déjà annoncées dont le premier jour favorable est demain (« rappel »). Le rappel ne sonne
+    qu'une fois par jour : `rappels` est faux quand la publication précédente est déjà du jour
+    (le workflow peut publier plusieurs fois, un départ en retard ou un commit)."""
     evts = []
     for code, d in maintenant.items():
         if code not in avant:
             evts.append((code, d, "nouveau"))
-        elif d == demain:
+        elif d == demain and rappels:
             evts.append((code, d, "rappel"))
     return sorted(evts, key=lambda e: (e[1], e[0]))
 
@@ -179,7 +182,8 @@ def main(argv: list[str]) -> None:
             liste = set(alerte.get("especes", []))
             maintenant = {c: d for c, d in premiers(resumes[dep], dates, seuil).items() if c in liste}
             precedent = {c: d for c, d in premiers(avant[dep], dates_avant or [], seuil).items() if c in liste}
-            evts = evenements(maintenant, precedent, dates[1] if len(dates) > 1 else dates[0])
+            evts = evenements(maintenant, precedent, dates[1] if len(dates) > 1 else dates[0],
+                              rappels=not dates_avant or dates_avant[0] < dates[0])
             if not evts:
                 continue
             titre, texte = message(noms[dep], evts, especes, dates[0], resumes[dep], dates, seuil)

@@ -13,8 +13,8 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, cle_departement, date_courte,
-                    date_longue, departements_de, e, enumerer, icone, image_partage, instant_paris,
+from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, cle_departement,
+                    date_courte, date_longue, departements_de, e, enumerer, icone, image_partage, instant_paris,
                     meilleur_niveau, national, noms_especes, ordre_saison, pct, pied, tete)
 from .photos import charger as charger_photos
 from .redaction import NBSP, nombre
@@ -300,7 +300,8 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
     hors = [article(x["de"]) for x in especes if x not in en_saison]
     lignes += ['  <section class="bloc">',
                "  <h2>En saison cette semaine</h2>",
-               f'  <p class="muet">Calculé le {instant_paris(genere_le)}, sur les forêts (les prés pour les espèces '
+               f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, sur les forêts '
+               "(les prés pour les espèces "
                "des champs) de chaque département. Les mieux placées d'abord.</p>",
                '  <ul class="saison-cartes">']
     for x in en_saison:
@@ -391,7 +392,8 @@ def page_en_ce_moment(departements: list[dict], especes: list[dict], nat: dict, 
                 f"aujourd'hui et les sept jours suivants : {noms_especes(especes)}.", "", "en-ce-moment.html",
                 image=image_partage("france", genere_le))
     lignes = ["  <h1>Les champignons en ce moment</h1>",
-              f'  <p class="muet">Calculé le {instant_paris(genere_le)}, pour aujourd\'hui et les sept jours '
+              f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
+              "et les sept jours "
               "suivants, sur les forêts de chaque département.</p>",
               '  <ul class="ce-matin">']
     lignes += [f"    <li>{x}</li>" for x in ce_matin(especes, nat, phases, jours, noms)]

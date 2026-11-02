@@ -33,6 +33,7 @@ import requests
 from . import especes as E
 from .config import CACHE, USER_AGENT
 from .meteo import Interpolateur, Meteo
+from .publication import jour_de_la_carte
 
 DEPOT = "https://openmeteo.s3.amazonaws.com/data"
 
@@ -183,7 +184,7 @@ def meteo_france(jour: date | None = None, jours_passes: int = 30, jours_futurs:
 
     Le résultat est gardé trois heures dans `cache/` : relancer l'export ne retélécharge rien.
     """
-    jour = jour or datetime.fromtimestamp(time.time() + 3600, timezone.utc).date()
+    jour = jour or jour_de_la_carte()
     jours = [jour + timedelta(days=k) for k in range(-jours_passes, jours_futurs)]
     li, co, lats, lons = AROME.fenetre()
     memo = CACHE / f"meteo_france_{jour.isoformat()}_{jours_passes}_{jours_futurs}.npz"

@@ -77,8 +77,10 @@ gh release download habitat -p habitat.tar && mkdir -p site/habitat && tar -xf h
 - `.github/workflows/habitat.yml` (à la poussée du code de l'habitat, et chaque dimanche) :
   les blocs qui manquent à l'asset `habitat.tar` de la release `habitat` (984 en tout, en
   40 tâches au plus), ajoutés à ceux déjà publiés. `champi.france.FORMAT` changé : tout.
-- `.github/workflows/carte.yml` (chaque matin et à chaque poussée sur `main`) : tests,
+- `.github/workflows/carte.yml` (chaque nuit et à chaque poussée sur `main`) : tests,
   habitat, météo du jour, publication sur GitHub Pages. Aucune donnée du jour n'est commitée.
+  GitHub lance ses départs programmés avec parfois des heures de retard : trois rendez-vous par
+  nuit, et le premier qui part publie (les suivants voient la carte du jour en ligne et s'arrêtent).
 
 ## Licences des données
 

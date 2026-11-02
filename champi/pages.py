@@ -12,11 +12,11 @@ import html
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from .config import ADRESSE
 from .depot import decalage_paris
 from .redaction import JOURS, MOIS, NBSP
 
 INDEXER = False
-ADRESSE = "https://baptistesoulard.github.io/Mushrooms_map/"
 NOM = "Champignons en France"
 NIVEAUX_COURTS = ["hors saison", "défavorable", "possible", "par endroits", "bon"]
 JOURS_COURTS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
@@ -80,6 +80,12 @@ def instant_paris(iso: str) -> str:
     t = datetime.fromisoformat(iso).astimezone(timezone.utc)
     t = t + timedelta(seconds=decalage_paris(int(t.timestamp())))
     return f"{date_longue(t.date())} {t.year} à {t.hour} h {t.minute:02d}"
+
+
+def calcule_pour(jours: list[date]) -> str:
+    """L'attribut qui date une page, sur sa ligne « Calculé le » : `pages.js` prévient en tête
+    quand la mise à jour de la nuit n'a pas eu lieu (« aujourd'hui » y est alors un jour passé)."""
+    return f' data-premier-jour="{jours[0].isoformat()}"'
 
 
 def cle_departement(code: str) -> str:

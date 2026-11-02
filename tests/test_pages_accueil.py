@@ -180,6 +180,10 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
             rel = chemin.relative_to(tmp_path.resolve())
             assert chemin.exists() or (SITE / rel).exists(), f"{page.relative_to(tmp_path)} → {cible}"
         assert not liens_imbriques(html), f"{page.relative_to(tmp_path)} : un lien dans un lien"
+    # Les pages du jour se datent : pages.js prévient quand la mise à jour de la nuit manque.
+    for nom in ("index.html", "en-ce-moment.html", "departements/index.html", "departements/85.html"):
+        html = (tmp_path / nom).read_text(encoding="utf-8")
+        assert html.count(f'data-premier-jour="{JOURS[0].isoformat()}"') == 1, nom
 
 
 def liens_imbriques(html: str) -> list[str]:

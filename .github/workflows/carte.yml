@@ -1,11 +1,18 @@
 name: Carte quotidienne
 
-# Chaque matin : météo du jour (dépôt public d'Open-Meteo) → données du site → GitHub Pages.
+# Chaque nuit : météo du jour (dépôt public d'Open-Meteo) → données du site → GitHub Pages.
 # L'habitat de la France (~250 Mo) vient de la release « habitat » (workflow habitat.yml).
 # Rien n'est commité : les données du jour vivent dans l'artefact déployé, pas dans git.
 on:
+  # GitHub ne tient pas l'heure de ses départs programmés : depuis la fin de l'été 2026, il les crée
+  # souvent avec des heures de retard (6 h le 31 octobre, 7 h le 1er novembre, et le 2 novembre
+  # toujours rien à 7 h 15). Trois rendez-vous dans la nuit, dès 0 h 20 à Paris (1 h 20 l'été) :
+  # le premier qui part publie la carte du jour, les suivants la trouvent en ligne et s'arrêtent
+  # (job « verifier », champi/publication.py).
   schedule:
-    - cron: "20 4 * * *"      # 05 h 20 ou 06 h 20 à Paris selon l'heure d'été
+    - cron: "20 23 * * *"
+    - cron: "50 1 * * *"
+    - cron: "20 4 * * *"
   push:
     branches: [main]
   # La release « habitat » vient de changer (blocs construits, couche « d ») : la carte suit.
@@ -24,12 +31,28 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
+  # Un départ programmé qui trouve la carte du jour en ligne s'arrête ici, en quelques secondes.
+  # Les autres déclencheurs (commit, release de l'habitat, lancement à la main) calculent toujours.
+  verifier:
+    runs-on: ubuntu-latest
+    outputs:
+      a_faire: ${{ steps.garde.outputs.a_faire }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'schedule'
+      - id: garde
+        if: github.event_name == 'schedule'
+        run: python3 -m champi.publication
+
   construire:
+    needs: verifier
+    if: needs.verifier.outputs.a_faire != 'non'
+    # Un calcul à la fois ; en attente, le plus récent remplace les autres. Au niveau des jobs, pas
+    # du workflow : un départ programmé qui s'arrête n'annule jamais un calcul en attente.
+    concurrency:
+      group: carte
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -70,6 +93,9 @@ jobs:
 
   publier:
     needs: construire
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -241,6 +241,20 @@ function carteDepartements(choix) {
   if (espece !== d.defaut) peindre();
 }
 
+// Une page calculée pour un jour passé : la mise à jour de la nuit n'a pas eu lieu (GitHub lance
+// parfois son départ programmé avec des heures de retard). Le dire en tête, comme la carte.
+function perime(p) {
+  const jour = p.dataset.premierJour;
+  if (jour >= new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" })) return;
+  const [a, m, j] = jour.split("-").map(Number);
+  const nom = new Date(Date.UTC(a, m - 1, j)).toLocaleDateString("fr-FR", { weekday: "long", timeZone: "UTC" });
+  document.querySelector(".page").prepend(el("p", { class: "alerte perime" },
+    `Cette page date du ${nom} ${j === 1 ? "1er" : j} ${MOIS[m - 1]} : la mise à jour de cette nuit n'a pas `
+    + "encore eu lieu, et « aujourd'hui » y désigne ce jour-là."));
+}
+
+const datee = document.querySelector("[data-premier-jour]");
+if (datee) perime(datee);
 if (document.getElementById("mon-departement")) monDepartement(document.getElementById("mon-departement"));
 for (const b of document.querySelectorAll("[data-filtres]")) filtres(b);
 for (const c of document.querySelectorAll("[data-carte-deps]")) carteDepartements(c);

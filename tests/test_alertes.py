@@ -25,6 +25,8 @@ def test_nouveau_et_rappel_la_veille():
     # Le cèpe, déjà annoncé, est bon demain : rappel. Le bolet bai devient favorable : nouveau.
     # La girolle, déjà annoncée et pas encore demain : rien.
     assert A.evenements(maintenant, avant, demain=J[1]) == [("cepe", J[1], "rappel"), ("bolet_bai", J[5], "nouveau")]
+    # Deuxième publication du jour (départ programmé en retard, commit) : le rappel a déjà sonné.
+    assert A.evenements(maintenant, avant, demain=J[1], rappels=False) == [("bolet_bai", J[5], "nouveau")]
 
 
 def test_message_d_une_espece_nouvelle():
