@@ -48,6 +48,7 @@ champi/especes.py        les règles, espèce par espèce : le seul fichier à t
 champi/modele.py         le même calcul en Python (export, validation), sans entrée-sortie
 champi/redaction.py      les phrases du panneau, à partir de faits
 champi/validation.py     (à la main) GBIF + météo passée → data/validation.json (France, régions)
+champi/climatologie.py   (à la main, après) ce qui est habituel à chaque date → data/climatologie.json
 site/                    le site statique (HTML, CSS, JS, Leaflet servi localement) ; la carte est sous site/carte/
 ```
 

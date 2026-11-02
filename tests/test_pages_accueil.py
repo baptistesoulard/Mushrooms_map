@@ -10,6 +10,7 @@ from champi import pages
 from champi import pages_accueil as A
 from champi import pages_departements, pages_especes, partage
 from champi.habitat import ESSENCES, ROCHES
+from champi.modele import CLASSES
 
 SITE = Path(__file__).resolve().parent.parent / "site"
 JOURS = [date(2026, 11, 1) + timedelta(days=k) for k in range(8)]
@@ -139,6 +140,26 @@ def test_fiches_especes():
     assert "Forêts favorables : hêtre." in page
 
 
+def test_ce_qui_est_habituel_a_cote_du_verdict():
+    """« Météo favorable 7 années sur 10 à cette date » sur la vignette, l'accueil et la fiche ;
+    rien pour une espèce hors saison, ni sans mesure."""
+    r = resumes({"85": {"cepe": [4] * 8, "pied_de_mouton": [4] * 8}})
+    nat = pages.national(ESPECES, DEPS, r, 8)
+    mesure = {"cepe": 0.14, "pied_de_mouton": 0.74, "morille": 0.0}
+    especes = [dict(x, habituel=mesure.get(x["code"])) for x in ESPECES]
+    index = pages_especes.page_index(especes, nat, JOURS, NOMS, GENERE_LE)
+    assert '<span class="habituel">Météo favorable 7 années sur 10 à cette date</span>' in index
+    assert '<span class="habituel">Météo favorable 1 année sur 10 à cette date</span>' in index
+    assert "rarement favorable" not in index                    # la morille, hors saison : rien
+    accueil = A.page_accueil(DEPS, especes, nat, {}, JOURS, None, GENERE_LE)
+    assert '<p class="habituel">Météo favorable 7 années sur 10 à cette date.</p>' in accueil
+    cepe = next(x for x in especes if x["code"] == "cepe")
+    fiche = pages_especes.page_espece(cepe, REGLES["communs"], LEGENDES, nat["cepe"], JOURS, NOMS, None, GENERE_LE)
+    assert "Météo favorable 1 année sur 10 à cette date, d'après trente ans de météo passée" in fiche
+    assert 'href="../methode.html#habituel"' in fiche
+    assert "habituel" not in pages_especes.page_index(ESPECES, nat, JOURS, NOMS, GENERE_LE)
+
+
 def test_fiche_d_une_espece_des_pres():
     """Pas de carte fine : ni bouton vers la carte, ni essences ; ses milieux, le propriétaire."""
     r = resumes({"85": {"rose_pres": [4] * 8}})
@@ -168,7 +189,7 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
     codes = np.full((30, 30), 100, dtype=np.uint8)                # une bande de forêt par département
     pixel_dep = np.repeat(np.arange(3, dtype=np.int16), 300)
     partage.ecrire(tmp_path / "data" / "partage", DEPS, {d["code"]: k for k, d in enumerate(DEPS)}, ESPECES, r,
-                   pages.national(ESPECES, DEPS, r, 8), JOURS, codes, pixel_dep, 200, [0.1, 0.25, 0.4, 0.55, 1.01])
+                   pages.national(ESPECES, DEPS, r, 8), JOURS, codes, pixel_dep, 200, [s for s, _ in CLASSES])
     for page in tmp_path.rglob("*.html"):
         html = page.read_text(encoding="utf-8")
         assert '<meta name="robots" content="noindex, nofollow">' in html, page

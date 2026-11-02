@@ -33,7 +33,17 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 - **Indice, pas probabilité.** Ne jamais écrire « probabilité » ni « chance de trouver ».
 - **Un produit, pas une moyenne** : chaque facteur peut fermer la porte (gel, hors saison).
 - **Classes à seuils fixes** (`modele.CLASSES`), jamais des quantiles : un jour sans pousse
-  doit donner une carte pâle.
+  doit donner une carte pâle. Six classes en marches de 15 points depuis le 2026-11-02
+  (« Excellent » dès 0,70) ; une couleur `--classe-k` par classe visible, reprise par
+  `partage.CLASSES` (tests). Le verdict d'un département ne bouge pas : il compte les forêts à
+  0,40 et plus (`redaction.SEUILS_NIVEAU`).
+- **Ce qui est habituel à cette date** (`climatologie.py` → `data/climatologie.json`, versionné,
+  recalculé à la main après la validation) : par espèce et par décade, la part des jours où sa
+  météo (indice sans l'habitat) atteint 0,5, sur la météo passée de la validation. Affiché à côté
+  du verdict (vignettes, accueil, fiches : « météo favorable 7 années sur 10 à cette date »), parce
+  qu'un verdict ne dit pas s'il est ordinaire (le pied-de-mouton « bon » dans 95 départements début
+  novembre, question de l'utilisateur du 2026-11-02). Un repère pour le lecteur : aucune règle ni
+  aucun seuil n'en dépend.
 - **Site à usage personnel (décision du 2026-10-31) : l'indice est publié à 50 m**, la
   résolution de calcul, et le site n'est pas indexé (`noindex`). Le repasser en public
   (partage, indexation) obligerait à revenir à des zones de 250 m au moins : une carte
@@ -256,6 +266,7 @@ python -m champi.export_france          # demande site/habitat/ (asset de la rel
 python -m champi.france bloc 18_156     # un bloc, pour essayer (habitat/)
 python -m champi.validation meteo       # réseau ; la météo passée des cas, sans attendre le fond
 python -m champi.validation             # réseau (~1 h la 1re fois) ; demande site/habitat/ ; caches dans cache/validation/
+python -m champi.climatologie           # après la validation, ~5 min : data/climatologie.json (ce qui est habituel)
 python -m champi.prairies               # réseau, ~10 min : data/prairies.npz (les prés), à refaire avec l'habitat
 python -m champi.carte_departements     # réseau, quelques secondes : data/departements_carte.json (contours)
 python -m champi.photos                 # réseau : les photos des espèces (Wikimedia Commons), avec leurs crédits

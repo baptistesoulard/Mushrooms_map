@@ -14,7 +14,8 @@ from datetime import date
 from pathlib import Path
 
 from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, cle_departement,
-                    date_courte, date_longue, departements_de, e, enumerer, icone, image_partage, instant_paris,
+                    date_courte, date_longue, departements_de, e, enumerer, habituel, icone, image_partage,
+                    instant_paris,
                     meilleur_niveau, national, noms_especes, ordre_saison, pct, pied, tete)
 from .photos import charger as charger_photos
 from .redaction import NBSP, nombre
@@ -316,10 +317,12 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
             tags.append('<span class="badge">des prés</span>')
         if phases.get(x["code"]):
             tags.append(f'<span class="badge">{e(phases[x["code"]].rstrip("."))}</span>')
+        h = habituel(x)
         lignes.append(f'    <li><a class="saison-photo" href="especes/{x["code"]}.html" tabindex="-1">{photo}</a>'
                       f'<div><h3><a href="especes/{x["code"]}.html">{e(x["nom"])}</a></h3>'
                       f'<p class="badges">{"".join(tags)}</p>'
-                      f'<p class="etat">{t[:1].upper()}{t[1:]}.</p></div></li>')
+                      f'<p class="etat">{t[:1].upper()}{t[1:]}.</p>'
+                      + (f'<p class="habituel">{e(h)}.</p>' if h else "") + "</div></li>")
     lignes.append("  </ul>")
     if hors:
         lignes.append(f'  <p class="muet">Hors saison partout : {e(enumerer(hors))}.</p>')

@@ -5,7 +5,7 @@ const CLE = "champi-guide";
 const ETAPES = (etroit) => [
   ["Où chercher, jour par jour",
     "Choisissez une espèce et un jour : la carte colore les forêts selon un indice de conditions " +
-    "favorables, du plus clair (faible) au plus foncé (très bon). Il tient compte de la forêt, du sol, " +
+    "favorables, du plus clair (faible) au plus foncé (excellent). Il tient compte de la forêt, du sol, " +
     "de la pluie des dernières semaines et de la météo des sept prochains jours."],
   ["Rapprochez-vous, touchez une forêt",
     "De près, chaque case de 50 m a sa fiche : son indice sur 100, ce qui le limite, la pluie, le sol, " +

@@ -175,13 +175,15 @@ def indice(habitat, saison: float, facteurs: dict[str, np.ndarray]) -> np.ndarra
 
 
 # Classes affichées. Seuils fixes, pas des quantiles : quand il ne pousse rien, la carte
-# doit rester pâle partout, pas « remplir » ses classes.
+# doit rester pâle partout, pas « remplir » ses classes. Des marches de 15 points ; « Excellent »
+# (2026-11-02, à la demande de l'utilisateur) coupe en deux l'ancien « Très bon », de 55 à 100.
 CLASSES = [
     (0.10, "Très faible"),
     (0.25, "Faible"),
     (0.40, "Moyen"),
     (0.55, "Bon"),
-    (1.01, "Très bon"),
+    (0.70, "Très bon"),
+    (1.01, "Excellent"),
 ]
 
 

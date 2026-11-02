@@ -11,8 +11,8 @@ from datetime import date
 from pathlib import Path
 
 from .pages import (MOIS_COURTS, NIVEAUX_COURTS, PARTAGER, calendrier_mois, credit_photo, date_courte,
-                    departements_de, e, icone, image_partage, instant_paris, meilleur_niveau, mois_saison,
-                    national, noms_especes, ordre_saison, pct, pied, tete)
+                    departements_de, e, habituel, icone, image_partage, instant_paris, meilleur_niveau,
+                    mois_saison, national, noms_especes, ordre_saison, pct, pied, tete)
 from .photos import charger as charger_photos
 from .pages_accueil import etat_espece
 from .prairies import NOMS_MILIEUX
@@ -130,6 +130,9 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
                               f"{'prés favorables' if pre else 'forêt favorable'} d'abord) : "
                               + ", ".join(f'<a href="../departements/{c}.html">{e(noms.get(c, c))}</a>'
                                           for c in j0[n]) + ".</p>")
+    if meilleur_niveau(j0) not in (0, None) and habituel(x):
+        lignes.append(f'  <p class="habituel">{e(habituel(x))}, d\'après trente ans de météo passée : de quoi '
+                      'dire si le jour est ordinaire (<a href="../methode.html#habituel">ce que cela mesure</a>).</p>')
     # Une espèce des champs n'a pas de carte fine : la semaine en France d'abord.
     semaine = f'<a class="bouton{" principal" if pre else ""}" href="../en-ce-moment.html#{code}">La semaine en France</a>'
     voir = "" if pre else f'<a class="bouton principal" href="{carte}">Voir la carte {e(x["de"])}</a>'
@@ -225,8 +228,10 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
                    f'  <p class="sur-titre">En ce moment · {MOIS_COURTS[mois - 1].rstrip(".")} {jours[0].year}</p>',
                    f'  <h2><a href="{vedette["code"]}.html">{e(vedette["nom"])}</a> '
                    f'<span class="latin">{e(vedette["latin"])}</span></h2>',
-                   f"  <p>{t[:1].upper()}{t[1:]}.</p>",
-                   f'  <p class="muet">{e(vedette["habitat_texte"])}</p>',
+                   f"  <p>{t[:1].upper()}{t[1:]}.</p>"]
+        if habituel(vedette):
+            lignes.append(f'  <p class="habituel">{e(habituel(vedette))}.</p>')
+        lignes += [f'  <p class="muet">{e(vedette["habitat_texte"])}</p>',
                    f'  <p class="actions"><a class="bouton principal" href="{vedette["code"]}.html">La fiche</a>'
                    f'<a class="bouton" href="../en-ce-moment.html#{vedette["code"]}">La semaine en France</a></p>',
                    "  </div></section>"]
@@ -237,11 +242,13 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
         etat = ("hors saison" if n in (0, None) else "défavorable partout" if n == 1 else
                 f"{NIVEAUX_COURTS[n]} dans {departements_de(len(j0[n]))}")
         milieu = "Prés" if x.get("milieu") == "pre" else "Forêt"
+        h = habituel(x) if n not in (0, None) else ""
         return (f'    <li data-milieu="{x.get("milieu", "foret")}" data-saison="{"non" if n in (0, None) else "oui"}">'
                 f'<a href="{x["code"]}.html">'
                 f'{figure_photo(x, photos.get(x["code"]), classe="photo vignette-espece", credit=False)}'
                 f'<span class="badges"><span class="badge">{milieu}</span>'
                 f'<span class="badge n{n or 0}">{e(etat)}</span></span>'
+                + (f'<span class="habituel">{e(h)}</span>' if h else "") +
                 f'<strong>{e(x["nom"])}</strong><span class="latin">{e(x["latin"])}</span>'
                 f'{calendrier_mois(x["saison"], mois)}</a></li>')
 

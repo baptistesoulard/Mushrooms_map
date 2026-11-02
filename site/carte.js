@@ -89,13 +89,14 @@ function memoire(taille, charger) {
   };
 }
 
-function couleurs() {
+// Une couleur par classe visible (--classe-1, --classe-2…), la première restant transparente.
+function couleurs(n) {
   const s = getComputedStyle(document.documentElement);
   const hex = (v) => {
     const h = s.getPropertyValue(v).trim().replace("#", "");
     return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
   };
-  return { classes: [null, hex("--classe-1"), hex("--classe-2"), hex("--classe-3"), hex("--classe-4")],
+  return { classes: [null, ...Array.from({ length: n - 1 }, (_, k) => hex(`--classe-${k + 1}`))],
            hachure: hex("--hachure"), exploration: hex("--exploration") };
 }
 
@@ -118,7 +119,7 @@ async function demarrer() {
   const B = carte.blocs;
   const blocsPresents = new Set(B.liste);
   const leg = carte.legendes;
-  const pal = couleurs();
+  const pal = couleurs(carte.classes.length);
 
   // Couleur de chaque code d'indice (0-255), calculée une fois : RVBA à plat.
   const TABLE = new Uint8ClampedArray(256 * 4);

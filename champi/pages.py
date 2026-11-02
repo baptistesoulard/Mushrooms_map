@@ -12,6 +12,7 @@ import html
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from .climatologie import en_mots
 from .config import ADRESSE
 from .depot import decalage_paris
 from .redaction import JOURS, MOIS, NBSP
@@ -80,6 +81,13 @@ def instant_paris(iso: str) -> str:
     t = datetime.fromisoformat(iso).astimezone(timezone.utc)
     t = t + timedelta(seconds=decalage_paris(int(t.timestamp())))
     return f"{date_longue(t.date())} {t.year} à {t.hour} h {t.minute:02d}"
+
+
+def habituel(x: dict) -> str:
+    """« Météo favorable 7 années sur 10 à cette date » : ce qui est ordinaire pour l'espèce ce
+    jour-là (`climatologie`, que l'export attache sous « habituel ») ; vide sans mesure."""
+    t = en_mots(x.get("habituel"))
+    return f"{t[:1].upper()}{t[1:]}" if t else ""
 
 
 def calcule_pour(jours: list[date]) -> str:

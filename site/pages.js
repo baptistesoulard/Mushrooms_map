@@ -4,6 +4,7 @@
 import { partager } from "./partage.js";
 
 const fr = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+const fr2 = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });   // seuils de l'indice
 const pct = (v) => `${Math.round(v * 100)} %`;
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
   "septembre", "octobre", "novembre", "décembre"];
@@ -77,6 +78,10 @@ async function methode() {
     ["Forêt ouverte", `indice multiplié par ${fr.format(c.foret_ouverte)}`],
     ["Pente", `pleine jusqu'à ${fr.format(c.pente[0])}°, réduite jusqu'à ${pct(c.pente[2])} à ${fr.format(c.pente[1])}° et au-delà`],
     ["Latitude (loi de Hopkins)", `règles écrites à ${fr.format(c.latitude_ref)}° N ; par degré vers le sud, saison de printemps ${fr.format(c.hopkins_jours)} jours plus tôt, d'automne ${fr.format(c.hopkins_jours)} jours plus tard, plafond d'altitude ${fr.format(c.hopkins_metres)} m plus haut`],
+    ["Classes de l'indice", carte.classes.slice(1).map((k, i) => `${k.nom.toLowerCase()} dès ${fr2.format(carte.classes[i].seuil)}`).join(" · ") +
+      ` ; sous ${fr2.format(carte.classes[0].seuil)}, ${carte.classes[0].nom.toLowerCase()} (sans couleur). Seuils fixes : un jour sans pousse donne une carte pâle`],
+    ["Verdict d'un département", `bonnes conditions quand ${pct(carte.niveaux.bon)} de ses forêts au moins ont un indice bon ou mieux, par endroits dès ${pct(carte.niveaux.endroits)}`],
+    ...(carte.habituel ? [["Ce qui est habituel", `part des jours de la même décade où la météo de l'espèce (saison × pluie × sol × gel) atteint ${fr2.format(carte.habituel.seuil)}, de ${carte.habituel.periode[0]} à ${carte.habituel.periode[1]} (réanalyse ERA5), aux lieux d'observation de la vérification`]] : []),
   ]));
   document.getElementById("references").replaceChildren(...regles.references.map((r) => el("li", {}, r)));
 }

@@ -24,7 +24,7 @@ CARTE = (560, 430)                           # la place de la carte, à gauche, 
 VIGNETTE = (560, 560)                        # la carte seule, pour l'accueil
 # Les couleurs du site (style.css) : la classe 0 de l'indice n'en a pas (transparente sur la carte).
 FOND, TRAIT, TEXTE, TEXTE_2, TEXTE_3 = "#fbfaf7", "#e2ded5", "#1d1b17", "#57534a", "#7a756a"
-CLASSES = ["#f9d7a6", "#f2a65a", "#d9662b", "#9c3510"]          # --classe-1 à --classe-4
+CLASSES = ["#f9d7a6", "#f2a65a", "#d9662b", "#9c3510", "#5e1b13"]   # --classe-1 à --classe-5
 FORET = "#dfe6d3"                 # forêt à l'indice très faible : la forme des massifs
 VOISINS = "#e6e3dc"               # la forêt des départements voisins, pour situer
 POLICES = {

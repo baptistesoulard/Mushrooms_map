@@ -38,6 +38,7 @@ from datetime import date, datetime, timezone
 import numpy as np
 from PIL import Image
 
+from . import climatologie
 from . import depot
 from . import especes as E
 from . import modele as M
@@ -480,6 +481,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
     fiabilite = ({code: redaction.fiabilite(r["meteo"])
                   for code, r in validation["regions"]["france"]["especes"].items()}
                  if validation else {})
+    clim = climatologie.charger()        # « météo favorable 7 années sur 10 à cette date »
     b = g_apercu.bornes_lonlat()
     carte = {
         "genere_le": datetime.now(timezone.utc).isoformat(timespec="minutes"),
@@ -504,6 +506,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
         "legendes": {"essences": ESSENCES, "roches": ROCHES, "orientations": ORIENTATIONS},
         "classement": classement,
         "fiabilite": fiabilite,
+        "habituel": {"seuil": clim["seuil"], "periode": clim["periode"]} if clim else None,
         "habitat_construit_le": index["construit_le"],
         # Alertes : la clé publique des notifications, et si l'envoi est branché (secrets posés).
         "alertes": {"cle_push": VAPID_PUBLIQUE, "actives": os.environ.get("ALERTES_ACTIVES") == "true"},
@@ -514,6 +517,9 @@ def exporter(meteo: Meteo | None = None) -> dict:
     if validation:
         ecrire_json(SITE_DATA / "validation.json", validation)
     jours = [meteo.dates[k0 + k] for k in range(JOURS_FUTURS)]
+    # Pour les pages seulement (especes.json reste les règles) : ce qui est habituel aujourd'hui.
+    for x in regles["especes"]:
+        x["habituel"] = climatologie.frequence(clim, x["code"], jours[0])
     chemins = pages_departements.ecrire(SITE, departements, regles["especes"], resumes, jours, carte["genere_le"])
     chemins += pages_accueil.ecrire(SITE, departements, regles["especes"], resumes, jours, carte["genere_le"],
                                     validation)

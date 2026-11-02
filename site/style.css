@@ -11,11 +11,14 @@
   --accent-doux: #fbeee3;
   --alerte-fond: #fff4e0;
   --alerte-trait: #e9b44c;
-  /* Indice : une seule teinte, du clair au foncé (lumière OKLab 0,90 → 0,47). */
+  /* Indice : une seule teinte, du clair au foncé (lumière OKLab 0,90 → 0,33 ; entre voisines,
+     ΔE OKLab × 100 de 12,6 à 16,8). */
   --classe-1: #f9d7a6;
   --classe-2: #f2a65a;
   --classe-3: #d9662b;
   --classe-4: #9c3510;
+  --classe-5: #5e1b13;
+  --pastille-trait: rgba(0, 0, 0, .12);   /* le tour d'une pastille de légende */
   --hachure: #6b6b6b;
   /* Mode exploration : une teinte hors de la gamme de l'indice et du vert des forêts IGN. */
   --exploration: #6a3d9a;
@@ -39,6 +42,7 @@
     --alerte-fond: #33291a;
     --alerte-trait: #9a7429;
     --barre: #f2a65a;
+    --pastille-trait: rgba(255, 255, 255, .35);   /* « excellent », presque noir, reste lisible */
   }
 }
 :root[data-theme="dark"] {
@@ -55,6 +59,7 @@
   --alerte-fond: #33291a;
   --alerte-trait: #9a7429;
   --barre: #f2a65a;
+  --pastille-trait: rgba(255, 255, 255, .35);
 }
 
 * { box-sizing: border-box; }
@@ -388,7 +393,7 @@ label.case { display: flex; gap: 6px; align-items: center; font-size: .85rem; co
 .legende div { display: flex; align-items: center; gap: 8px; }
 .pastille {
   width: 18px; height: 12px; border-radius: 3px; flex: none;
-  border: 1px solid rgba(0, 0, 0, .12);
+  border: 1px solid var(--pastille-trait);
 }
 .pastille.hachure {
   background: repeating-linear-gradient(45deg, var(--hachure) 0 1.5px, transparent 1.5px 5px);
@@ -703,6 +708,10 @@ a.bouton.principal:hover { filter: brightness(1.08); }
 .saison-cartes h3 a:hover { color: var(--accent); }
 .saison-cartes .badges { margin: 0 0 6px !important; }
 .saison-cartes .etat { margin: 0; font-size: .9rem; color: var(--texte-2); }
+/* « Météo favorable 7 années sur 10 à cette date » : ce qui est habituel, à côté du verdict. */
+.habituel { font-size: .82rem; color: var(--texte-3); }
+.saison-cartes .habituel { margin: 4px 0 0; }
+.fiches-especes .habituel { font-size: .76rem; line-height: 1.3; }
 .etapes-cartes { list-style: none; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .etapes-cartes li, .fonctions li {
   margin: 0; padding: 14px 16px; border: 1px solid var(--trait); border-radius: 14px; background: var(--surface);

@@ -20,13 +20,13 @@ def test_couleurs_du_site():
     css = (SITE / "style.css").read_text(encoding="utf-8")
     racine = css.split("@media")[0]
     jetons = dict(re.findall(r"--([\w-]+):\s*(#[0-9a-f]{6});", racine))
-    assert partage.CLASSES == [jetons[f"classe-{k}"] for k in range(1, 5)]
+    assert partage.CLASSES == [jetons[f"classe-{k}"] for k in range(1, len(CLASSES))]
     assert (partage.FOND, partage.TRAIT, partage.TEXTE) == (jetons["fond"], jetons["trait"], jetons["texte"])
 
 
 def test_classes_comme_le_modele():
-    codes = np.array([0, 19, 20, 49, 50, 80, 109, 110, 200, 251, 255])
-    attendu = [0, 0, 1, 1, 2, 3, 3, 4, 4, -1, -1]           # seuils 0,10 · 0,25 · 0,40 · 0,55 ; hors forêt
+    codes = np.array([0, 19, 20, 49, 50, 80, 109, 110, 139, 140, 200, 251, 255])
+    attendu = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, -1, -1]     # seuils 0,10 · 0,25 · 0,40 · 0,55 · 0,70 ; hors forêt
     assert partage.classes(codes, 200, SEUILS).tolist() == attendu
 
 
