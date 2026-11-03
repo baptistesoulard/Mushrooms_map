@@ -48,7 +48,8 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   résolution de calcul, et le site n'est pas indexé (`noindex`). Le repasser en public
   (partage, indexation) obligerait à revenir à des zones de 250 m au moins : une carte
   publique à 50 m enverrait tout le monde aux mêmes coins. Aucune observation publique
-  ponctuelle n'est affichée.
+  ponctuelle n'est affichée. Un passage éventuel en service payant est décidé ailleurs : voir
+  `CLAUDE.local.md` s'il existe ; d'ici là, cette règle s'applique telle quelle.
 - **Mes coins (`site/coins.js`) : les trouvailles de l'utilisateur restent dans SON
   navigateur** (`champi-coins`). Pas de serveur, pas de carte communautaire (décision du
   2026-10-31) : elle demanderait comptes, modération et données personnelles, et
