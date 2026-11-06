@@ -1,4 +1,4 @@
-# Champignons en France
+# Champimétéo
 
 Carte des forêts de France métropolitaine où les conditions sont favorables aux champignons
 (cèpe, bolet bai, girolle, trompette de la mort, pied-de-mouton, lactaire délicieux, morille,

@@ -18,7 +18,7 @@ from .depot import decalage_paris
 from .redaction import JOURS, MOIS, NBSP
 
 INDEXER = False
-NOM = "Champignons en France"
+NOM = "Champimétéo"
 NIVEAUX_COURTS = ["hors saison", "défavorable", "possible", "par endroits", "bon"]
 JOURS_COURTS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
 # Le plan du pied de page, en chemins depuis la racine du site.

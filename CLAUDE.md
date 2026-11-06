@@ -5,7 +5,8 @@ validation vivent dans `data/validation.json`, les décisions datées dans les c
 
 ## Le projet
 
-Site personnel : carte des forêts de France métropolitaine favorables aux champignons
+**Champimétéo** (nom du site depuis le 2026-11-06 : `pages.NOM`, titres des pages écrites à la
+main, manifeste) — site personnel : carte des forêts de France métropolitaine favorables aux champignons
 (`especes.ESPECES`), aujourd'hui et à J+7. **Indice = habitat × météo** (`champi/modele.py`),
 par cases de 50 m. Né en Haute-Savoie (2026-10-30), étendu à la France le 2026-10-31 ; bolet
 bai et lactaire délicieux ajoutés le même jour (bois acides du bocage, pinèdes du littoral) ;

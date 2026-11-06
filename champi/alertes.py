@@ -153,7 +153,7 @@ def main(argv: list[str]) -> None:
     print(f"Alertes : {len(abonnes)} appareil(s) abonné(s).")
     if "--essai" in argv:
         for a in abonnes:
-            envoyer(a["push"], "Champignons : notification d'essai",
+            envoyer(a["push"], "Champimétéo : notification d'essai",
                     "Si tu lis ceci, les alertes arrivent bien sur cet appareil.", ADRESSE, cle, "essai")
         return
 

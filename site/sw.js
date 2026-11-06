@@ -27,7 +27,7 @@ self.addEventListener("activate", (ev) => {
 self.addEventListener("push", (ev) => {
   let d = {};
   try { d = ev.data ? ev.data.json() : {}; } catch { d = { texte: ev.data?.text() || "" }; }
-  ev.waitUntil(self.registration.showNotification(d.titre || "Champignons", {
+  ev.waitUntil(self.registration.showNotification(d.titre || "Champimétéo", {
     body: d.texte || "", icon: "icone-192.png", badge: "icone-192.png", tag: d.tag, data: { lien: d.lien },
   }));
 });
