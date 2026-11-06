@@ -91,9 +91,12 @@ def test_carte_lit_les_fichiers_que_l_export_ecrit():
 
 
 @pytest.mark.parametrize("page", PAGES, ids=nom)
-def test_site_personnel_non_indexe(page):
-    """Publié à 50 m pour un usage personnel : jamais indexé (CLAUDE.md)."""
-    assert '<meta name="robots" content="noindex, nofollow">' in page.read_text(encoding="utf-8")
+def test_indexation_suit_indexer(page):
+    """Les pages écrites à la main s'ouvrent aux moteurs avec les pages du matin (pages.INDEXER) :
+    depuis que la carte publique est en zones de 250 m (CLAUDE.md)."""
+    from champi import pages as P
+    robots = "index, follow" if P.INDEXER else "noindex, nofollow"
+    assert f'<meta name="robots" content="{robots}">' in page.read_text(encoding="utf-8")
 
 
 def test_classes_de_couleur_alignees_sur_le_modele():

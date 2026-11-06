@@ -2,6 +2,7 @@
 import re
 from datetime import date, timedelta
 
+from champi import pages
 from champi import pages_departements as P
 
 JOURS = [date(2026, 11, 1) + timedelta(days=k) for k in range(8)]
@@ -44,7 +45,7 @@ def test_page_departement():
     r = resumes([4] * 8, [1] * 8, [0] * 8)
     r["cepe"][0]["communes"] = [{"nom": "Saint-<Mesmin>"}]
     page = P.page_departement({"code": "85", "nom": "Vendée"}, ESPECES, r, JOURS, "2026-11-01T05:20+00:00")
-    assert '<meta name="robots" content="noindex, nofollow">' in page        # pas indexée tant qu'INDEXER est faux
+    assert f'<meta name="robots" content="{"index, follow" if pages.INDEXER else "noindex, nofollow"}">' in page
     assert "<title>Champignons en Vendée (85) : les conditions de la semaine</title>" in page
     assert "Calculé le dimanche 1er novembre 2026 à 6 h 20" in page          # heure de Paris, heure d'hiver
     assert len(re.findall(r'<a class="niveau n\w"', page)) == 3 * 8

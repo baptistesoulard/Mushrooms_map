@@ -61,8 +61,8 @@ def trait(nom: str) -> str:
 
 
 FONCTIONS = [
-    ("carte", "La carte à 50 m", "Chaque case de forêt, du pâle au foncé, pour l'espèce et le jour choisis. "
-     "Les zones protégées sont hachurées ; un clic sur une case dit pourquoi elle est notée ainsi."),
+    ("carte", "La carte à 250 m", "Chaque zone de forêt, du pâle au foncé, pour l'espèce et le jour choisis. "
+     "Les zones protégées sont hachurées ; un clic sur une zone dit pourquoi elle est notée ainsi."),
     ("semaine", "Les 7 prochains jours", "La pluie déjà tombée et les prévisions : la carte dit si la pousse "
      "arrive, dure ou s'arrête, jour par jour."),
     ("alerte", "Mes alertes", "Une notification quand une espèce que vous suivez devient favorable dans votre "
@@ -345,7 +345,7 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
                '  <ol class="etapes-cartes">',
                f"    <li>{trait('foret')}<strong>La forêt</strong> Pour chaque case de 50 m : l'essence des "
                "arbres, la roche ou le pH du sol, l'altitude, la pente et l'exposition. Chaque espèce a ses "
-               "préférences.</li>",
+               "préférences ; la carte réunit les cases en zones de 250 m.</li>",
                f"    <li>{trait('meteo')}<strong>La météo</strong> Chaque matin, la pluie des dernières semaines, "
                "la température du sol et le gel, d'après Météo-France et le Centre européen, puis leurs "
                "prévisions pour 7 jours.</li>",

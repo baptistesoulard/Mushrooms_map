@@ -1,11 +1,12 @@
 // Carte de l'indice de pousse, France entière.
 // Vue large (zoom < DETAIL) : l'aperçu national calculé chaque matin (pixels de 1,15 km).
-// Vue rapprochée : le navigateur calcule lui-même l'indice des cases de 50 m, bloc par bloc
-// (habitat/blocs/*.png, data/meteo/*.bin, modele.js), à la résolution de calcul.
+// Vue rapprochée : le navigateur calcule lui-même l'indice, bloc par bloc (data/meteo/*.bin,
+// modele.js) : par zones de 250 m pour tout le monde (data/zones/*.png, champi/zones.py), par
+// cases de 50 m avec le mot de passe de la carte fine (habitat/fin/, déchiffré par fin.js).
 import { installerAlertes } from "./alertes.js";
 import { installerCoins } from "./coins.js";
-import { installerDemenagement } from "./demenagement.js";
 import { installerFeuille } from "./feuille.js";
+import { cleGardee, dechiffrer, deriver, garder, importer, oublier } from "./fin.js";
 import { installerGuide } from "./guide.js";
 import { niveau as niveauZone, partsZone } from "./ici.js";
 import { liensItineraire } from "./itineraire.js";
@@ -63,7 +64,11 @@ function ecrire(cle, v) {
 async function pixels(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${url} : ${r.status}`);
-  const bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+  return pixelsDe(await r.blob());
+}
+
+async function pixelsDe(blob) {
+  const bmp = await createImageBitmap(blob, { colorSpaceConversion: "none", premultiplyAlpha: "none" });
   const c = document.createElement("canvas");
   c.width = bmp.width;
   c.height = bmp.height;
@@ -119,6 +124,12 @@ async function demarrer() {
   const deps = Object.fromEntries(carte.departements.map((d) => [d.code, d]));
   const B = carte.blocs;
   const blocsPresents = new Set(B.liste);
+  // La carte publique, par zones de 250 m (carte.zones) ; la carte fine, par cases de 50 m, pour
+  // qui a la clé (carte.fine : ses couches sont chiffrées). Sans carte.zones (un essai sur le
+  // poste, habitat en clair), la carte fine est la seule.
+  const Z = carte.zones;
+  let cleFine = await cleGardee(carte.fine);
+  const modeFin = () => !Z || cleFine !== null;
   const leg = carte.legendes;
   const pal = couleurs(carte.classes.length);
 
@@ -157,9 +168,19 @@ async function demarrer() {
   // Habitat d'un bloc : les cases boisées, à plat, plus ce qu'il faut pour dessiner. La couche
   // « d » (champi.sol) : bits 0-6 = pH du sol × 10, bit 7 = zone urbanisée, dont les bois ne
   // comptent pas comme forêt. Une release ancienne peut ne pas l'avoir : rien n'est alors exclu.
+  // Une couche d'un bloc : chiffrée (a, b, d de la carte fine) ou en clair (c, ou un essai sur le poste).
+  async function couche(nom, l) {
+    if (!carte.fine || l === "c") return pixels(`habitat/blocs/${nom}_${l}.png`);
+    if (!cleFine) throw new Error("carte fine verrouillée");
+    const url = `habitat/fin/${carte.fine.id}/${nom}_${l}.bin`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${url} : ${r.status}`);
+    const png = await dechiffrer(cleFine, `${nom}_${l}.png`, await r.arrayBuffer());
+    return pixelsDe(new Blob([png], { type: "image/png" }));
+  }
   const habitats = memoire(40, async (nom) => {
-    const [a, b, c, d] = await Promise.all([...["a", "b", "c"].map((l) => pixels(`habitat/blocs/${nom}_${l}.png`)),
-      pixels(`habitat/blocs/${nom}_d.png`).catch(() => null)]);
+    const [a, b, c, d] = await Promise.all([...["a", "b", "c"].map((l) => couche(nom, l)),
+      couche(nom, "d").catch(() => null)]);
     const [bx, by] = nom.split("_").map(Number);
     const n = B.taille * B.taille;
     const essence = new Uint8Array(n), protege = new Uint8Array(n), commune = new Uint16Array(n);
@@ -218,11 +239,48 @@ async function demarrer() {
 
   // Une espèce des prés se peint commune par commune : la commune de chaque case (couche « c »
   // seule, légère) et l'indice moyen des prés de chaque commune (data/communes/<espèce>_<jour>.png).
-  const communesBloc = memoire(60, async (nom) => {
+  // La couche c, toujours en clair : la commune et la zone protégée de chaque case.
+  const couchesC = memoire(60, async (nom) => {
     const c = await pixels(`habitat/blocs/${nom}_c.png`);
-    const v = new Uint16Array(B.taille * B.taille);
-    for (let i = 0; i < v.length; i++) v[i] = (c.d[i * 4] << 8) | c.d[i * 4 + 1];
-    return v;
+    const n = B.taille * B.taille, commune = new Uint16Array(n), protege = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      commune[i] = (c.d[i * 4] << 8) | c.d[i * 4 + 1];
+      protege[i] = c.d[i * 4 + 2];
+    }
+    return { commune, protege };
+  });
+  const communesBloc = async (nom) => (await couchesC(nom)).commune;
+
+  // Les zones de 250 m d'un bloc (champi/zones.py) : celles qui ont de la forêt, à plat, comme
+  // les cases de la carte fine, avec leur habitat déjà calculé pour chaque espèce.
+  const zoneDe = (lig, col) => Math.min(Math.floor(lig / Z.facteur), Z.n - 1) * Z.n
+    + Math.min(Math.floor(col / Z.facteur), Z.n - 1);
+  const zonesBloc = memoire(40, async (nom) => {
+    const px = await pixels(`data/zones/${nom}.png`);
+    const N = Z.n, NN = N * N, E = Z.especes.length;
+    const plan = (p, i) => px.d[(p * NN + i) * 4];
+    const [bx, by] = nom.split("_").map(Number);
+    const y1 = (by + 1) * B.cote, x0 = bx * B.cote;
+    // Centre d'une zone, en cases : la dernière de chaque ligne prend les 7 dernières cases.
+    const centre = (r) => (r === N - 1 ? (r * Z.facteur + B.taille) / 2 : (r + 0.5) * Z.facteur);
+    const drapeaux = new Uint8Array(NN), rang = new Int32Array(NN).fill(-1), avec = [];
+    for (let i = 0; i < NN; i++) {
+      drapeaux[i] = plan(E + 3, i);
+      if (drapeaux[i] & 1) { rang[i] = avec.length; avec.push(i); }
+    }
+    const nz = avec.length;
+    const cases = { lat: new Float64Array(nz), lon: new Float64Array(nz), altitude: new Float64Array(nz),
+                    ensoleillement: new Float64Array(nz), habitat: {} };
+    for (const code of Z.especes) cases.habitat[code] = new Float32Array(nz);
+    avec.forEach((i, f) => {
+      const r = Math.floor(i / N), q = i % N;
+      cases.lat[f] = latDeY(y1 - centre(r) * B.pas);
+      cases.lon[f] = (x0 + centre(q) * B.pas) / R * 180 / Math.PI;
+      cases.altitude[f] = ((plan(E, i) << 8) | plan(E + 1, i)) - Z.altitude_decalage;
+      cases.ensoleillement[f] = (plan(E + 2, i) - 100) / 100;
+      Z.especes.forEach((code, k) => { cases.habitat[code][f] = plan(k, i) / 255; });
+    });
+    return { drapeaux, rang, cases, prep: null };
   });
   const tablesCommunes = memoire(4, async (cle) => {
     const px = await pixels(`data/communes/${cle}.png`);
@@ -240,8 +298,10 @@ async function demarrer() {
 
   // Codes d'un bloc pour l'espèce et le jour : un octet par case, comme l'aperçu. « Forêts
   // publiques seulement » laisse les autres sans couleur.
+  const cleCodes = (nom, esp, k, publiques) => `${nom}|${esp}|${k}|${publiques ? 1 : 0}|${modeFin() ? 1 : 0}`;
   const codesBlocs = memoire(60, async (cle) => {
-    const [nom, esp, k, publiques] = cle.split("|");
+    const [nom, esp, k, publiques, fin] = cle.split("|");
+    if (fin === "0") return codesZones(nom, esp, Number(k), publiques === "1");
     const [h, m] = await Promise.all([habitats(nom), meteos(nom)]);
     if (!h.prep) h.prep = preparer(h.cases, m);
     const ind = indices(especes[esp], h.prep, m, jourDe(Number(k)), communs);
@@ -252,6 +312,26 @@ async function demarrer() {
     });
     return codes;
   });
+
+  // La carte publique : l'indice de chaque zone de 250 m, peint sur toutes ses cases ; les cases
+  // protégées des zones boisées restent hachurées (couche c, en clair).
+  async function codesZones(nom, esp, k, publiques) {
+    const [z, m, cc] = await Promise.all([zonesBloc(nom), meteos(nom), couchesC(nom)]);
+    if (!z.prep) z.prep = preparer(z.cases, m);
+    const ind = indices(especes[esp], z.prep, m, jourDe(k), communs);
+    const parZone = new Uint8Array(Z.n * Z.n);
+    z.rang.forEach((f, i) => {
+      if (f >= 0 && !(publiques && !(z.drapeaux[i] & 2))) parZone[i] = Math.min(carte.echelle, Math.round(ind[f] * carte.echelle));
+    });
+    const codes = new Uint8Array(B.taille * B.taille);
+    for (let lig = 0; lig < B.taille; lig++) {
+      for (let col = 0; col < B.taille; col++) {
+        const i = lig * B.taille + col, zi = zoneDe(lig, col);
+        codes[i] = cc.protege[i] && (z.drapeaux[zi] & 4) ? PROTEGE : parZone[zi];
+      }
+    }
+    return codes;
+  }
 
   // Mode exploration : les cases boisées qui passent les filtres (essence, roche, altitude,
   // exposition, forêts publiques), sans météo ni saison, sur la même grille que l'indice.
@@ -410,7 +490,7 @@ async function demarrer() {
       const codesDe = filtre
         ? (nom) => codesFiltre(`${nom}#${JSON.stringify(filtre)}`)
         : desPres(etat.espece) ? (nom) => codesCommunes(`${nom}|${etat.espece}|${etat.jour}`)
-          : (nom) => codesBlocs(`${nom}|${etat.espece}|${etat.jour}|${etat.publiques ? 1 : 0}`);
+          : (nom) => codesBlocs(cleCodes(nom, etat.espece, etat.jour, etat.publiques));
       const [er, eg, eb] = pal.exploration;
       const alpha = !filtre && desPres(etat.espece) ? OPACITE_COMMUNES : 0;
       const noms = new Set();
@@ -459,9 +539,17 @@ async function demarrer() {
     const bx = Math.floor(x / B.cote), by = Math.floor(y / B.cote);
     const nom = `${bx}_${by}`;
     if (!blocsPresents.has(nom)) return null;
-    const [h, codes, communes] = await Promise.all([
-      habitats(nom), codesBlocs(`${nom}|${code}|${etat.jour}|0`), annexes("habitat/communes.json")]);
     const col = Math.floor((x - bx * B.cote) / B.pas), lig = Math.floor(((by + 1) * B.cote - y) / B.pas);
+    if (!modeFin()) {               // la zone de 250 m du coin
+      const [z, codes, cc, communes] = await Promise.all([zonesBloc(nom), codesBlocs(cleCodes(nom, code, etat.jour, false)),
+        couchesC(nom), annexes("habitat/communes.json")]);
+      const i = lig * B.taille + col;
+      const protege = codes[i] === PROTEGE;
+      return { indice: !protege && z.rang[zoneDe(lig, col)] >= 0 ? codes[i] / carte.echelle : null, protege,
+               commune: communes[cc.commune[i] - 1]?.nom };
+    }
+    const [h, codes, communes] = await Promise.all([
+      habitats(nom), codesBlocs(cleCodes(nom, code, etat.jour, false)), annexes("habitat/communes.json")]);
     let s = 0, n = 0, protege = false;
     for (let l = Math.max(0, lig - 1); l <= Math.min(B.taille - 1, lig + 1); l++) {
       for (let c = Math.max(0, col - 1); c <= Math.min(B.taille - 1, col + 1); c++) {
@@ -483,7 +571,6 @@ async function demarrer() {
     },
   });
   const alertes = installerAlertes({ carte, etat: () => ({ departement: etat.departement, espece: etat.espece }) });
-  installerDemenagement();
 
   // --- Ma position ------------------------------------------------------------------
   // Demandée à l'ouverture pour choisir le département, puis montrée et suivie tant que la
@@ -496,9 +583,9 @@ async function demarrer() {
     const bx = Math.floor(x / B.cote), by = Math.floor(y / B.cote);
     const nom = `${bx}_${by}`;
     if (!blocsPresents.has(nom)) return null;
-    const [h, communes] = await Promise.all([habitats(nom), annexes("habitat/communes.json")]);
+    const [commune, communes] = await Promise.all([communesBloc(nom), annexes("habitat/communes.json")]);
     const col = Math.floor((x - bx * B.cote) / B.pas), lig = Math.floor(((by + 1) * B.cote - y) / B.pas);
-    const com = communes[h.commune[lig * B.taille + col] - 1];
+    const com = communes[commune[lig * B.taille + col] - 1];
     return com && deps[com.dep]?.centre ? com.dep : null;
   }
 
@@ -874,8 +961,59 @@ async function demarrer() {
       "Zone protégée : réglementation propre, pas d'indice"));
     z.append(el("div", {}, el("span", { class: "pastille vide" }),
       "Sans couleur : indice très faible, ou hors forêt"));
-    z.append(el("p", { class: "muet" }, `En vue large, chaque pixel résume environ 1 km² ; ` +
-      "zoomez pour voir les cases de 50 m."));
+    z.append(el("p", { class: "muet" }, `En vue large, chaque pixel résume environ 1 km² ; zoomez pour voir ` +
+      (modeFin() ? "les cases de 50 m." : "les zones de 250 m (l'habitat le plus favorable de chacune).")));
+  }
+
+  // La carte fine : le mot de passe donne la clé, gardée sur l'appareil ; la carte passe des
+  // zones de 250 m aux cases de 50 m. « Revenir aux zones » oublie la clé.
+  function installerFine() {
+    if (!Z || !carte.fine) return;          // pas de carte fine publiée, ou essai sur le poste
+    $("fine").hidden = false;
+    const afficher = () => {
+      $("fine-etat").textContent = cleFine
+        ? "Cases de 50 m sur cet appareil. La clé y reste gardée : le mot de passe ne se redemande pas."
+        : "La carte montre des zones de 250 m. Avec le mot de passe, elle passe aux cases de 50 m, sur cet appareil.";
+      $("fine-form").hidden = Boolean(cleFine);
+      $("fine-oublier").hidden = !cleFine;
+    };
+    const basculer = () => {
+      if (!modeFin() && etat.filtre) { etat.filtre = null; $("explorer-actif").checked = false; }
+      afficher();
+      legende();
+      calqueDetail.redraw();
+      afficherCase();
+      coins.rafraichir();
+    };
+    $("fine-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const bouton = $("fine-form").querySelector("button");
+      bouton.disabled = true;
+      $("fine-message").textContent = "Vérification…";
+      try {
+        const { brut, id } = await deriver($("fine-mot").value, carte.fine);
+        if (id !== carte.fine.id) {
+          $("fine-message").textContent = "Ce n'est pas le bon mot de passe.";
+          return;
+        }
+        cleFine = await importer(brut);
+        garder(id, brut);
+        $("fine-mot").value = "";
+        $("fine-message").textContent = "";
+        basculer();
+      } catch (err) {
+        console.error(err);
+        $("fine-message").textContent = "Le déverrouillage n'a pas pu se faire dans ce navigateur.";
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+    $("fine-oublier").addEventListener("click", () => {
+      cleFine = null;
+      oublier();
+      basculer();
+    });
+    afficher();
   }
 
   function antipoison() {
@@ -928,6 +1066,12 @@ async function demarrer() {
         montrer(fenetreCommune(commune[i], table[commune[i]], communes, c.ll));
         return;
       }
+      if (!modeFin()) {
+        const [z, m, cc, communes, infos] = await Promise.all([zonesBloc(nom), meteos(nom), couchesC(nom),
+          annexes("habitat/communes.json"), annexes("habitat/blocs.json")]);
+        montrer(fenetreZone(z, m, cc, i, communes, infos.blocs[nom], c.ll));
+        return;
+      }
       const [h, m, communes, zones] = await Promise.all([
         habitats(nom), meteos(nom), annexes("habitat/communes.json"), annexes("habitat/blocs.json")]);
       montrer(fenetre(h, m, i, communes, zones.blocs[nom], c.ll));
@@ -964,10 +1108,7 @@ async function demarrer() {
     }
     div.append(el("h4", {}, `${com.nom} (${com.dep})`));
     if (h.protege[i]) {
-      const z = infoBloc?.protections?.[h.protege[i] - 1];
-      div.append(el("p", {}, `${z ? `${z.nature} « ${z.nom} »` : "Zone protégée"}. Ces espaces ont leur propre ` +
-        "réglementation, souvent plus stricte sur la cueillette : renseignez-vous avant d'y ramasser quoi que ce soit. " +
-        "Le site n'y calcule pas d'indice."), el("p", {}, el("a", { href: "avant-de-partir.html#zones-protegees" }, "Les règles")));
+      div.append(...messageProtege(infoBloc, h.protege[i]));
       return div;
     }
     const f = h.foret.indexOf(i);
@@ -982,11 +1123,7 @@ async function demarrer() {
                   pente: k.pente[f], ensoleillement: k.ensoleillement[f], lat: k.lat[f], lon: k.lon[f], ph: k.ph[f] };
     const jour = jourDe(etat.jour);
     const r = evaluer(e, cas, meteo, jour, communs);
-    const kc = classeDe(r.indice, carte.classes);
-    div.append(el("div", { class: "score" },
-      el("span", { class: "score-valeur" }, String(Math.round(r.indice * 100)), el("small", {}, " /100")),
-      el("span", { class: "score-classe" }, carte.classes[kc].nom),
-      jauge(r.indice)));
+    div.append(score(r.indice));
     div.append(el("p", { class: "raison" }, ...raison(e, r, cas, jour)));
     div.append(el("p", { class: `statut ${k.public[f] ? "public" : "prive"}` },
       el("strong", {}, k.public[f] ? "Forêt publique" : "Forêt probablement privée"),
@@ -994,26 +1131,11 @@ async function demarrer() {
         : " : les champignons sont au propriétaire, il faut son accord. ",
       el("a", { href: "avant-de-partir.html#proprietaire" }, "Les règles")));
     div.append(liensItineraire(ll.lat, ll.lng));
-    const actions = el("p", { class: "actions-case" }, boutonCoin(ll), " · ", el("a", {
-      href: `https://www.geoportail.gouv.fr/carte?c=${ll.lng.toFixed(5)},${ll.lat.toFixed(5)}&z=16&permalink=yes`,
-      target: "_blank", rel: "noopener",
-    }, "Géoportail (IGN)"));
-    if (com.dep !== etat.departement && deps[com.dep]) {
-      actions.append(" · ", el("button", { type: "button", class: "lien", onclick: () => allerDepartement(com.dep, false) },
-        `Résumé : ${deps[com.dep].nom}`));
-    }
-    div.append(actions);
+    div.append(actionsCase(ll, com));
 
-    // Le détail des facteurs, replié : la fenêtre reste petite et ne déplace pas la carte.
     const p = r.parts;
-    const [, p1] = e.pluie_mm;
-    const [, s1, s2] = e.sol;
-    const [jmin, jmax] = e.pluie_jours;
-    const qualite = (v) => (v >= 0.8 ? "ok" : v >= 0.5 ? "moyen" : "ko");
     const affinite = (v) => `affinité ${v >= 0.8 ? "élevée" : v >= 0.5 ? "moyenne" : "faible"}`;
-    const tuiles = el("div", { class: "tuiles" });
-    const tuile = (titre, valeur, note, v) => tuiles.append(el("div", { class: `tuile ${qualite(v)}` },
-      el("span", { class: "t" }, titre), el("strong", {}, valeur), el("span", { class: "n" }, note)));
+    const { tuiles, tuile } = fabriqueTuiles();
     tuile("Forêt", `${leg.essences[cas.essence]}${cas.ouverte ? ", ouverte" : ""}`, affinite(p.essence),
       p.essence * p.ouverte);
     tuile("Sol", p.parLePh ? `pH ${fr1.format(cas.ph / 10)}` : leg.roches[cas.roche],
@@ -1026,22 +1148,115 @@ async function demarrer() {
       : basse ? (p.altitude > 0 ? "un peu basse pour l'espèce" : "trop basse pour l'espèce")
         : p.altitude > 0 ? "près de son plafond" : "au-dessus de son plafond", p.altitude);
     tuile("Exposition", leg.orientations[k.orientation[f]], `pente ${fr.format(cas.pente)}°`, p.pente);
+    tuilesMeteo(tuile, e, r, jour, cas.lat);
+    div.append(detailCase(tuiles, `Indice ${e.de}, ${carte.jours[etat.jour].libelle}. Case de 50 m ; météo AROME à 2,5 km.`));
+    return div;
+  }
+
+  // La pluie, le sol, le gel et la saison : les mêmes tuiles pour une case et pour une zone.
+  function tuilesMeteo(tuile, e, r, jour, lat) {
+    const [, p1] = e.pluie_mm;
+    const [, s1, s2] = e.sol;
+    const [jmin, jmax] = e.pluie_jours;
     tuile("Pluie", `${fr.format(r.pluie)} mm`, `entre ${jmax} et ${jmin} jours avant ; pleine pousse dès ${fr.format(p1)} mm`,
       r.facteurs.pluie);
     tuile("Sol, 7 jours", `${fr1.format(r.tSol)} °C`, r.tSol < s1 ? `trop froid : il faut ${fr.format(s1)} °C`
       : r.tSol > s2 ? `trop chaud : au-delà de ${fr.format(s2)} °C` : `de ${fr.format(s1)} à ${fr.format(s2)} °C : bien`,
       r.facteurs.sol);
     tuile("Gel", r.gel ? `${r.gel} jour${r.gel > 1 ? "s" : ""}` : "Aucun", "sur les 7 derniers jours", r.facteurs.gel);
-    const [, b, c] = datesSaison(e, jour.annee, cas.lat, communs);
-    tuile("Saison", phaseSaison(e, r.saison, jour, cas.lat), `plein du ${jourEnMots(b)} au ${jourEnMots(c)} ici`, r.saison);
+    const [, b, c] = datesSaison(e, jour.annee, lat, communs);
+    tuile("Saison", phaseSaison(e, r.saison, jour, lat), `plein du ${jourEnMots(b)} au ${jourEnMots(c)} ici`, r.saison);
+  }
+
+  // Le détail des facteurs, replié : la fenêtre reste petite et ne déplace pas la carte.
+  function detailCase(tuiles, note) {
     const detail = el("details", { class: "detail-case" }, el("summary", {}, "Le détail : forêt, sol, pluie…"), tuiles,
-      el("p", { class: "muet" }, `Indice ${e.de}, ${carte.jours[etat.jour].libelle}. Case de 50 m ; météo AROME à 2,5 km.`));
+      el("p", { class: "muet" }, note));
     detail.open = detailOuvert;
     detail.addEventListener("toggle", () => {
       detailOuvert = detail.open;
       caseCourante?.popup?.update();      // la fenêtre grandit vers le haut : rester dans la carte
     });
-    div.append(detail);
+    return detail;
+  }
+
+  function messageProtege(infoBloc, n) {
+    const z = infoBloc?.protections?.[n - 1];
+    return [el("p", {}, `${z ? `${z.nature} « ${z.nom} »` : "Zone protégée"}. Ces espaces ont leur propre ` +
+      "réglementation, souvent plus stricte sur la cueillette : renseignez-vous avant d'y ramasser quoi que ce soit. " +
+      "Le site n'y calcule pas d'indice."), el("p", {}, el("a", { href: "avant-de-partir.html#zones-protegees" }, "Les règles"))];
+  }
+
+  function fabriqueTuiles() {
+    const qualite = (v) => (v >= 0.8 ? "ok" : v >= 0.5 ? "moyen" : "ko");
+    const tuiles = el("div", { class: "tuiles" });
+    const tuile = (titre, valeur, note, v) => tuiles.append(el("div", { class: `tuile ${qualite(v)}` },
+      el("span", { class: "t" }, titre), el("strong", {}, valeur), el("span", { class: "n" }, note)));
+    return { tuiles, tuile };
+  }
+
+  function score(v) {
+    const kc = classeDe(v, carte.classes);
+    return el("div", { class: "score" },
+      el("span", { class: "score-valeur" }, String(Math.round(v * 100)), el("small", {}, " /100")),
+      el("span", { class: "score-classe" }, carte.classes[kc].nom), jauge(v));
+  }
+
+  function actionsCase(ll, com) {
+    const actions = el("p", { class: "actions-case" }, boutonCoin(ll), " · ", el("a", {
+      href: `https://www.geoportail.gouv.fr/carte?c=${ll.lng.toFixed(5)},${ll.lat.toFixed(5)}&z=16&permalink=yes`,
+      target: "_blank", rel: "noopener",
+    }, "Géoportail (IGN)"));
+    if (com.dep !== etat.departement && deps[com.dep]) {
+      actions.append(" · ", el("button", { type: "button", class: "lien", onclick: () => allerDepartement(com.dep, false) },
+        `Résumé : ${deps[com.dep].nom}`));
+    }
+    return actions;
+  }
+
+  // La fenêtre d'une zone de 250 m (carte publique) : son indice, ce qui le retient, la météo.
+  // L'habitat est le plus favorable de la zone ; ni essence, ni roche, ni pente : c'est la carte fine.
+  function fenetreZone(z, meteo, cc, i, communes, infoBloc, ll) {
+    const e = especes[etat.espece];
+    const com = communes[cc.commune[i] - 1];
+    const div = el("div", { class: "case-fenetre" });
+    if (!com) {
+      div.append(el("p", {}, "Hors de France : pas d'indice."));
+      return div;
+    }
+    div.append(el("h4", {}, `${com.nom} (${com.dep})`));
+    const zi = zoneDe(Math.floor(i / B.taille), i % B.taille), f = z.rang[zi];
+    if (cc.protege[i] && (z.drapeaux[zi] & 4)) {
+      div.append(...messageProtege(infoBloc, cc.protege[i]));
+      return div;
+    }
+    if (f < 0) {
+      div.append(el("p", {}, "Pas de forêt dans cette zone de 250 m : pas d'indice."), boutonCoin(ll));
+      return div;
+    }
+    const k = z.cases;
+    const cas = { habitat: k.habitat[e.code][f], altitude: k.altitude[f], ensoleillement: k.ensoleillement[f],
+                  lat: k.lat[f], lon: k.lon[f] };
+    const jour = jourDe(etat.jour);
+    const r = evaluer(e, cas, meteo, jour, communs);
+    div.append(score(r.indice));
+    div.append(el("p", { class: "raison" }, ...raison(e, r, cas, jour)));
+    const publique = z.drapeaux[zi] & 2;
+    div.append(el("p", { class: `statut ${publique ? "public" : "prive"}` },
+      el("strong", {}, publique ? "Surtout des forêts publiques" : "Surtout des forêts privées"),
+      publique ? " : cueillette familiale tolérée en général, dans la limite des arrêtés. "
+        : " : les champignons sont au propriétaire, il faut son accord. ",
+      el("a", { href: "avant-de-partir.html#proprietaire" }, "Les règles")));
+    div.append(liensItineraire(ll.lat, ll.lng));
+    div.append(actionsCase(ll, com));
+    const { tuiles, tuile } = fabriqueTuiles();
+    tuile("Habitat", `${Math.round(r.habitat * 100)} /100`, "forêt, sol, altitude et pente : le meilleur de la zone",
+      r.habitat);
+    tuile("Altitude", `${fr.format(cas.altitude)} m`, "moyenne des forêts de la zone", 1);
+    tuilesMeteo(tuile, e, r, jour, cas.lat);
+    div.append(detailCase(tuiles, `Indice ${e.de}, ${carte.jours[etat.jour].libelle}. Zone de 250 m : l'habitat le ` +
+      "plus favorable de la zone, la météo à son altitude moyenne (AROME à 2,5 km)." +
+      (carte.fine ? " Les cases de 50 m : carte fine, dans Mes outils." : "")));
     return div;
   }
 
@@ -1101,7 +1316,7 @@ async function demarrer() {
     const [, s1, s2] = e.sol;
     const [jmin, jmax] = e.pluie_jours;
     const ph = fr1.format(cas.ph / 10);
-    const facteurs = [
+    const habitat = !p ? [[r.habitat, `l'habitat de la zone (forêt, sol, altitude), ${r.habitat < 0.5 ? "peu" : "moyennement"} favorable`]] : [
       [p.essence, `la forêt (${leg.essences[cas.essence].toLowerCase()}), ${p.essence < 0.5 ? "peu" : "moyennement"} favorable`],
       [p.ouverte, "une forêt ouverte, au couvert clairsemé"],
       [p.sol, p.parLePh ? `le sol, pH ${ph} : ${cas.ph / 10 < e.ph[1] ? "trop acide" : "pas assez acide"}`
@@ -1110,7 +1325,9 @@ async function demarrer() {
         ? `l'altitude, trop basse (pleine dès ${fr.format(p.plancher)} m ici)`
         : p.altitude > 0 ? `l'altitude, près de son plafond (${fr.format(p.plafond)} m ici)`
           : "l'altitude, au-dessus de son plafond"],
-      [p.pente, `la pente (${fr.format(cas.pente)}°)`],
+      [p.pente, `la pente (${fr.format(cas.pente)}°)`]];
+    const facteurs = [
+      ...habitat,
       [r.saison, phaseSaison(e, r.saison, jour, cas.lat).toLowerCase()],
       [r.facteurs.pluie, `la pluie : ${fr.format(r.pluie)} mm entre ${jmax} et ${jmin} jours avant, ` +
         `il en faut ${fr.format(p1)} pour une pleine pousse`],
@@ -1154,6 +1371,13 @@ async function demarrer() {
         ? "Rapprochez-vous : les forêts retenues s'affichent case par case, de près." : "";
     };
     function appliquer() {
+      if ($("explorer-actif").checked && !modeFin()) {     // case par case : c'est la carte fine
+        $("explorer-actif").checked = false;
+        $("explorer-message").textContent = carte.fine
+          ? "L'exploration montre les forêts case par case : elle demande la carte fine (mot de passe, plus haut)."
+          : "L'exploration montre les forêts case par case : elle n'est pas disponible sur la carte publique.";
+        return;
+      }
       etat.filtre = $("explorer-actif").checked ? {
         essences: coches("explorer-essences"), roches: coches("explorer-roches"),
         orientations: coches("explorer-orientations"),
@@ -1228,6 +1452,7 @@ async function demarrer() {
   }
 
   legende();
+  installerFine();
   installerExploration();
   installerPubliques();
   antipoison();

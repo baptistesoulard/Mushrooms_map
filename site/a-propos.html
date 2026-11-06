@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="index, follow">
 <title>Sources et mentions — Champimétéo</title>
 <meta name="description" content="Sources des données (IGN, BRGM, INPN, Open-Meteo, GBIF), licences, données conservées dans le navigateur et mentions légales de la carte des champignons de France.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -81,6 +81,11 @@
     propres fichiers et des données déjà consultées (caches <code>champi-hors-ligne-…</code>) :
     rien d'autre, ni les fonds de carte, ni vos coins, qui ont leur propre place. Effacer les
     données du site la vide.</li>
+    <li>La carte publique montre l'indice par zones de 250 m. La carte fine, par cases de 50 m,
+    est publiée chiffrée : avec le mot de passe (Mes outils), votre navigateur la déchiffre
+    lui-même, et garde la clé qui en est tirée (clé <code>champi-carte-fine</code>), pas le mot
+    de passe, pour ne pas le redemander. Le mot de passe ne quitte jamais l'appareil.
+    « Revenir aux zones de 250 m » efface la clé.</li>
     <li>Si vous activez la synchronisation, le jeton GitHub est gardé dans le navigateur (clé
     <code>champi-synchro</code>), ainsi que le prénom qui signe vos coins
     (<code>champi-nom</code>) ; vos coins sont envoyés à <code>api.github.com</code>, dans le

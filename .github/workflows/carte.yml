@@ -84,6 +84,15 @@ jobs:
         run: |
           python -m champi.export_france
           rm site/habitat/echantillon.npz   # lu par l'export seulement : pas à publier
+      # La carte publique par zones de 250 m, puis la carte fine (cases de 50 m) chiffrée avec le
+      # mot de passe (secret CARTE_FINE_MOT_DE_PASSE) : aucune couche de 50 m ne part en clair,
+      # secret ou non (champi/zones.py, champi/chiffre.py). Un échec ici arrête la publication.
+      - name: Zones publiques et carte fine chiffrée
+        env:
+          CARTE_FINE_MOT_DE_PASSE: ${{ secrets.CARTE_FINE_MOT_DE_PASSE }}
+        run: |
+          python -m champi.zones
+          python -m champi.chiffre
       # Avant le déploiement : le site en ligne est encore la publication précédente, à laquelle
       # les alertes se comparent. Une alerte manquée n'empêche jamais la carte de paraître.
       - name: Alertes personnalisées

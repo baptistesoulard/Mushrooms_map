@@ -24,10 +24,15 @@ PAS_ZONE = PAS_FIN * FACTEUR_ZONE
 MARGE_M = 1500.0
 
 USER_AGENT = "Mushrooms_map/0.1 (+https://github.com/baptistesoulard/Mushrooms_map)"
-# Le site publié. Chez un hébergeur à soi (`carte.yml`, job « heberger »), la variable du dépôt
-# SITE_ADRESSE la donne à tout le workflow (CHAMPI_ADRESSE) : la garde de la nuit, les alertes et
-# les aperçus de partage regardent alors cette adresse-là.
-ADRESSE = (os.environ.get("CHAMPI_ADRESSE") or "https://baptistesoulard.github.io/Mushrooms_map/").rstrip("/") + "/"
+# Le site publié (champimeteo.fr depuis le 2026-11-06) : la garde de la nuit, les alertes et les
+# aperçus de partage regardent cette adresse. La variable du dépôt SITE_ADRESSE peut la remplacer
+# pour tout le workflow (CHAMPI_ADRESSE).
+ADRESSE = (os.environ.get("CHAMPI_ADRESSE") or "https://champimeteo.fr/").rstrip("/") + "/"
+
+# Carte fine (cases de 50 m) chiffrée, `chiffre.py` et `site/fin.js` : sel et coût de PBKDF2-SHA256.
+# Les changer change la clé : chacun redonne le mot de passe.
+FINE_SEL = "champimeteo/carte-fine/1"
+FINE_ITERATIONS = 600_000
 
 # Alertes : clé publique des notifications (Web Push, courbe P-256). La clé privée assortie est le
 # secret VAPID_PRIVEE du dépôt, jamais dans git : la changer oblige chacun à se réabonner.

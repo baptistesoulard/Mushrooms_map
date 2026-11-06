@@ -3,3 +3,4 @@ requests>=2.31
 pillow>=10
 omfiles>=1.2
 pywebpush>=2.0          # alertes : notifications chiffrées (envoyées depuis GitHub Actions)
+cryptography>=42       # carte fine : couches de 50 m chiffrées (champi/chiffre.py)

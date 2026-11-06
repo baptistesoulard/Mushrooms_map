@@ -115,3 +115,68 @@ def test_navigateur_egal_export(tmp_path, debut, lat0, sol_ph):
             n_positifs += int((ind > 0.01).sum())
     assert n_positifs > 10, "le cas de test doit contenir des indices non nuls"
     assert obtenu["ecartParts"] < 1e-12, "les facteurs de la fenêtre d'une case ne refont plus l'habitat"
+
+
+COUREUR_ZONES = """
+import { readFileSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
+const [, , modele, entree, sortie] = process.argv;
+const M = await import(pathToFileURL(modele).href);
+const f = JSON.parse(readFileSync(entree, "utf8"));
+const champs = Object.fromEntries(Object.entries(f.champs).map(([n, v]) => [n, Float32Array.from(v, (x) => x / 10)]));
+const meteo = { lats: f.lats, lons: f.lons, champ: (n) => champs[n] };
+const z = f.zones;
+const cases = { lat: z.lat, lon: z.lon, altitude: z.altitude, ensoleillement: z.ensoleillement,
+                habitat: Object.fromEntries(Object.entries(z.habitat).map(([c, v]) => [c, Float32Array.from(v)])) };
+const prep = M.preparer(cases, meteo);
+const res = {}, bloc = {};
+for (const esp of f.regles.especes) {
+  bloc[esp.code] = f.jours.map((j) => Array.from(M.indices(esp, prep, meteo, j, f.regles.communs)));
+  res[esp.code] = f.jours.map((j) => z.lat.map((_, i) => {
+    const r = M.evaluer(esp, { habitat: cases.habitat[esp.code][i], altitude: z.altitude[i],
+      ensoleillement: z.ensoleillement[i], lat: z.lat[i], lon: z.lon[i] }, meteo, j, f.regles.communs);
+    if (r.parts !== null) throw new Error("une zone n'a pas de parts");
+    return r.indice;
+  }));
+}
+writeFileSync(sortie, JSON.stringify({ res, bloc }));
+"""
+
+
+def test_zones_navigateur_egal_python(tmp_path):
+    """La carte publique (zones de 250 m) : l'habitat de la zone est donné (champi/zones.py, en
+    255es), le navigateur le multiplie par la saison et la météo comme pour une case."""
+    debut = date(2026, 10, 25)
+    rng = np.random.default_rng(11)
+    lats, lons, champs, c, jours = _fixture(rng, debut, 44.0)
+    habitat = {e.code: (rng.integers(0, 256, len(c["lat"])) / 255).astype(np.float32) for e in E.DE_FORET}
+    calcul = CalculChamps(champs, lats, lons, c["lat"], c["lon"], c["altitude"], c["ensoleillement"])
+    attendu = {}
+    for esp in E.DE_FORET:
+        attendu[esp.code] = []
+        for k, jour in enumerate(jours):
+            pluie, tsol, gel = calcul.entrees(esp, k)
+            attendu[esp.code].append(M.indice(habitat[esp.code], M.facteur_saison(esp, jour, c["lat"]),
+                                              M.facteurs_meteo(esp, pluie, tsol, gel)))
+    regles = E.en_json()
+    regles["especes"] = [e for e in regles["especes"] if e["milieu"] == "foret"]
+    entree = {
+        "regles": regles, "lats": lats.tolist(), "lons": lons.tolist(),
+        "champs": {n: v.ravel().tolist() for n, v in champs.items()},
+        "jours": [{"annee": j.year, "num": (j - date(1970, 1, 1)).days, "k": k} for k, j in enumerate(jours)],
+        "zones": {"lat": c["lat"].tolist(), "lon": c["lon"].tolist(), "altitude": c["altitude"].tolist(),
+                  "ensoleillement": c["ensoleillement"].astype(float).tolist(),
+                  "habitat": {k: v.astype(float).tolist() for k, v in habitat.items()}},
+    }
+    (tmp_path / "entree.json").write_text(json.dumps(entree), encoding="utf-8")
+    (tmp_path / "coureur.mjs").write_text(COUREUR_ZONES, encoding="utf-8")
+    subprocess.run([NODE, str(tmp_path / "coureur.mjs"), str(SITE / "modele.js"), str(tmp_path / "entree.json"),
+                    str(tmp_path / "sortie.json")], check=True, encoding="utf-8")
+    obtenu = json.loads((tmp_path / "sortie.json").read_text(encoding="utf-8"))
+    n_positifs = 0
+    for code, jours_esp in attendu.items():
+        for k, ind in enumerate(jours_esp):
+            np.testing.assert_allclose(obtenu["res"][code][k], ind, atol=2e-4, err_msg=f"{code}, jour {k}")
+            np.testing.assert_allclose(obtenu["bloc"][code][k], ind, atol=2e-4, err_msg=f"{code}, jour {k} (bloc)")
+            n_positifs += int((ind > 0.01).sum())
+    assert n_positifs > 10

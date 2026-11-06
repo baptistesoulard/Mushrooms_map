@@ -1,7 +1,6 @@
 // Pages Méthode et Face aux observations : tableaux construits depuis les JSON publiés,
 // pour qu'un seuil changé dans champi/especes.py ne laisse jamais une page en retard.
 // Chargé aussi par les pages générées chaque matin (champi/pages.py), qui se lisent sans lui.
-import { installerDemenagement } from "./demenagement.js";
 import { partager } from "./partage.js";
 
 const fr = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
@@ -259,7 +258,6 @@ function perime(p) {
     + "encore eu lieu, et « aujourd'hui » y désigne ce jour-là."));
 }
 
-installerDemenagement();
 const datee = document.querySelector("[data-premier-jour]");
 if (datee) perime(datee);
 if (document.getElementById("mon-departement")) monDepartement(document.getElementById("mon-departement"));

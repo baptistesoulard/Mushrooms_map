@@ -127,7 +127,9 @@ export function interpolateur(lats, lons, lat, lon) {
 // d'interpolation se calculent une fois par bloc, le gel une fois par jour.
 
 // cases : tableaux de même longueur (lat, lon, altitude, ensoleillement, pente, essence,
-// ouverte, roche, et ph s'il est connu) ; meteo : { lats, lons, champ(nom) }.
+// ouverte, roche, et ph s'il est connu) ; meteo : { lats, lons, champ(nom) }. Les zones de 250 m
+// de la carte publique (champi/zones.py) donnent leur habitat tout fait, par espèce :
+// cases.habitat[code] remplace alors essence, roche, altitude et pente.
 export function preparer(cases, meteo) {
   const n = cases.lat.length;
   const p00 = new Int32Array(n), wi = new Float64Array(n), wj = new Float64Array(n);
@@ -177,8 +179,9 @@ export function indices(esp, prep, meteo, jour, c) {
   const saisons = new Map();      // la saison ne dépend que de la latitude
   const sortie = new Float32Array(prep.n);
   for (let i = 0; i < prep.n; i++) {
-    const h = facteurHabitat(esp, k.essence[i], k.ouverte[i], k.roche[i], k.altitude[i], k.pente[i], k.lat[i], c,
-                             k.ph ? k.ph[i] : 0);
+    const h = k.habitat ? k.habitat[esp.code][i]
+      : facteurHabitat(esp, k.essence[i], k.ouverte[i], k.roche[i], k.altitude[i], k.pente[i], k.lat[i], c,
+                       k.ph ? k.ph[i] : 0);
     if (h === 0) continue;
     let s = saisons.get(k.lat[i]);
     if (s === undefined) { s = facteurSaison(esp, jour, k.lat[i], c); saisons.set(k.lat[i], s); }
@@ -193,13 +196,16 @@ export function indices(esp, prep, meteo, jour, c) {
 }
 
 // Une case : ses facteurs et son indice, pour l'espèce et le jour donnés.
-//   cas : { essence, ouverte, roche, altitude, pente, ensoleillement, lat, lon, ph }
+//   cas : { essence, ouverte, roche, altitude, pente, ensoleillement, lat, lon, ph }, ou pour une
+//         zone de 250 m { habitat, altitude, ensoleillement, lat, lon } (parts vaut alors null)
 //   meteo : { lats, lons, champ(nom) → Float32Array } (sommes et moyennes déjà faites aux points)
 //   jour : { annee, num, k } (k : rang du jour dans les champs)
 export function evaluer(esp, cas, meteo, jour, c) {
-  const habitat = facteurHabitat(esp, cas.essence, cas.ouverte, cas.roche, cas.altitude, cas.pente, cas.lat, c,
-                                 cas.ph ?? 0);
-  const parts = partsHabitat(esp, cas.essence, cas.ouverte, cas.roche, cas.altitude, cas.pente, cas.lat, c, cas.ph ?? 0);
+  const zone = cas.habitat !== undefined;
+  const habitat = zone ? cas.habitat
+    : facteurHabitat(esp, cas.essence, cas.ouverte, cas.roche, cas.altitude, cas.pente, cas.lat, c, cas.ph ?? 0);
+  const parts = zone ? null
+    : partsHabitat(esp, cas.essence, cas.ouverte, cas.roche, cas.altitude, cas.pente, cas.lat, c, cas.ph ?? 0);
   const saison = facteurSaison(esp, jour, cas.lat, c);
   const it = interpolateur(meteo.lats, meteo.lons, cas.lat, cas.lon);
   const [jmin, jmax] = esp.pluie_jours;

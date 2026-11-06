@@ -12,6 +12,8 @@ from champi import pages_departements, pages_especes, partage
 from champi.habitat import ESSENCES, ROCHES
 from champi.modele import CLASSES
 
+ROBOTS = "index, follow" if pages.INDEXER else "noindex, nofollow"
+
 SITE = Path(__file__).resolve().parent.parent / "site"
 JOURS = [date(2026, 11, 1) + timedelta(days=k) for k in range(8)]
 REGLES = E.en_json()
@@ -105,7 +107,7 @@ def test_accueil():
     r = resumes({"85": {"cepe": [4] * 8}})
     nat = pages.national(ESPECES, DEPS, r, 8)
     page = A.page_accueil(DEPS, ESPECES, nat, {}, JOURS, None, GENERE_LE)
-    assert '<meta name="robots" content="noindex, nofollow">' in page
+    assert f'<meta name="robots" content="{ROBOTS}">' in page
     assert "<h1>Où chercher les champignons cette semaine</h1>" in page
     tete, corps = page.split("</head>")
     assert "l.replace(\"carte/\" + l.search + l.hash)" in tete           # anciens liens : vers la carte
@@ -192,7 +194,7 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
                    pages.national(ESPECES, DEPS, r, 8), JOURS, codes, pixel_dep, 200, [s for s, _ in CLASSES])
     for page in tmp_path.rglob("*.html"):
         html = page.read_text(encoding="utf-8")
-        assert '<meta name="robots" content="noindex, nofollow">' in html, page
+        assert f'<meta name="robots" content="{ROBOTS}">' in html, page
         assert not re.search(r'<script[^>]+src="https?://', html)
         image = re.search(rf'<meta property="og:image" content="{re.escape(pages.ADRESSE)}([^"?]+)\?v=\d+">', html)
         assert image and (tmp_path / image.group(1)).exists(), page

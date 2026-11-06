@@ -6,17 +6,18 @@ validation vivent dans `data/validation.json`, les décisions datées dans les c
 ## Le projet
 
 **Champimétéo** (nom du site depuis le 2026-11-06 : `pages.NOM`, titres des pages écrites à la
-main, manifeste) — site personnel : carte des forêts de France métropolitaine favorables aux champignons
-(`especes.ESPECES`), aujourd'hui et à J+7. **Indice = habitat × météo** (`champi/modele.py`),
-par cases de 50 m. Né en Haute-Savoie (2026-10-30), étendu à la France le 2026-10-31 ; bolet
+main, manifeste), sur champimeteo.fr : carte des forêts de France métropolitaine favorables aux
+champignons (`especes.ESPECES`), aujourd'hui et à J+7. **Indice = habitat × météo** (`champi/modele.py`),
+calculé par cases de 50 m, montré au public par zones de 250 m (cases de 50 m avec mot de passe). Né en Haute-Savoie (2026-10-30), étendu à la France le 2026-10-31 ; bolet
 bai et lactaire délicieux ajoutés le même jour (bois acides du bocage, pinèdes du littoral) ;
 chanterelle en tube, oronge et hygrophore de mars le 2026-11-01, avec deux espèces des champs
 (coulemelle, rosé des prés) calculées par département et par commune seulement.
 
 ```
 champi.france (habitat.yml, rarement) → release « habitat » (blocs PNG, échantillon) — jamais dans git
-champi.depot + champi.export_france (carte.yml, chaque nuit) → site/data/ + pages du matin → GitHub Pages (+ hébergeur à soi)
-site/modele.js : le navigateur calcule l'indice des blocs affichés
+champi.depot + champi.export_france (carte.yml, chaque nuit) → site/data/ + pages du matin
+  → champi.zones (data/zones/, 250 m) → champi.chiffre (habitat/fin/, 50 m chiffré) → GitHub Pages (+ hébergeur à soi)
+site/modele.js : le navigateur calcule l'indice des blocs affichés (zones, ou cases déchiffrées par site/fin.js)
 champi.validation (à la main, France et trois régions) → data/validation.json (versionné) → copié par l'export
 ```
 
@@ -45,12 +46,23 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   qu'un verdict ne dit pas s'il est ordinaire (le pied-de-mouton « bon » dans 95 départements début
   novembre, question de l'utilisateur du 2026-11-02). Un repère pour le lecteur : aucune règle ni
   aucun seuil n'en dépend.
-- **Site à usage personnel (décision du 2026-10-31) : l'indice est publié à 50 m**, la
-  résolution de calcul, et le site n'est pas indexé (`noindex`). Le repasser en public
-  (partage, indexation) obligerait à revenir à des zones de 250 m au moins : une carte
-  publique à 50 m enverrait tout le monde aux mêmes coins. Aucune observation publique
-  ponctuelle n'est affichée. Un passage éventuel en service payant est décidé ailleurs : voir
-  `CLAUDE.local.md` s'il existe ; d'ici là, cette règle s'applique telle quelle.
+- **Public à 250 m, fin à 50 m sous mot de passe (décision du 2026-11-06, remplace « site
+  personnel à 50 m, non indexé » du 2026-10-31)** : une carte publique à 50 m enverrait tout le
+  monde aux mêmes coins. Le site est indexé (`pages.INDEXER`, `robots.txt`, plan du site) et la
+  carte de tous est en ZONES de 5 × 5 cases (`zones.py` → `data/zones/<bloc>.png`) : par espèce,
+  l'habitat le PLUS FAVORABLE de la zone (forêts hors urbain et zones protégées), l'altitude et
+  l'ensoleillement moyens, deux drapeaux ; le navigateur y multiplie la saison et la météo
+  (`modele.js`, `cases.habitat`, test Python/JS). Jamais rien de plus fin en clair : les couches
+  a, b, d des blocs sont chiffrées chaque nuit (`chiffre.py`, AES-256-GCM, clé PBKDF2 du secret
+  `CARTE_FINE_MOT_DE_PASSE` créé par l'utilisateur, jamais dans git ni la conversation) puis
+  retirées en clair, secret ou non ; la couche c (communes, zones protégées) reste en clair. Le
+  navigateur déchiffre (`site/fin.js`, WebCrypto) et garde la clé (`champi-carte-fine`), pas le
+  mot de passe. Un seul mot de passe partagé : le changer = changer le secret, l'adresse des
+  fichiers change (`habitat/fin/<id>/`), chacun le redonne. Exploration et fenêtre d'une case
+  (essence, roche, pente) : carte fine seulement. Limite assumée : la release « habitat » (données
+  ouvertes retraitées) et le code restent publics ; la protection vise la carte affichée, pas un
+  développeur décidé. Aucune observation publique ponctuelle n'est affichée. Un passage éventuel
+  en service payant est décidé ailleurs : voir `CLAUDE.local.md` s'il existe.
 - **Mes coins (`site/coins.js`) : les trouvailles de l'utilisateur restent dans SON
   navigateur** (`champi-coins`). Pas de serveur, pas de carte communautaire (décision du
   2026-10-31) : elle demanderait comptes, modération et données personnelles, et
@@ -82,8 +94,9 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   (`site/index.html`, `en-ce-moment.html`, `especes/`, `departements/`), lisibles sans
   JavaScript, testées sur des résumés fabriqués (`tests/test_pages_accueil.py`, liens compris).
   Aucun coin : départements, altitudes, communes, comme le panneau. Rien en dur : seuils et
-  saisons viennent des règles, les chiffres de fiabilité de `validation.json`. Non indexées tant
-  que `INDEXER` est faux (il ouvre les pages et écrit `sitemap.xml`).
+  saisons viennent des règles, les chiffres de fiabilité de `validation.json`. Indexées
+  (`INDEXER`, vrai depuis le 2026-11-06 : il ouvre les pages, écrit `sitemap.xml` et
+  `robots.txt` ; les pages écrites à la main suivent, test).
 - **Images de partage** (`partage.py` → `data/partage/`) : l'aperçu des liens dans les
   messageries (`og:image`, 1200 × 630), la carte du jour (la meilleure espèce de chaque pixel
   de 1,15 km, jamais plus fin) et la semaine. Leur adresse change à chaque export
@@ -168,22 +181,19 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   départ qui s'arrête n'annule jamais un calcul en attente. Si le retard dépasse encore la nuit,
   le remède est un déclencheur extérieur (`workflow_dispatch` appelé par un service de cron, avec
   un jeton que l'utilisateur crée lui-même).
-- **Domaine `champimeteo.fr` (décision du 2026-11-06)**, servi par GitHub Pages (domaine déclaré dans
-  les réglages Pages, pas de fichier CNAME : le déploiement passe par Actions). Pages fait alors
-  renvoyer l'ancienne adresse `baptistesoulard.github.io/Mushrooms_map/` vers le domaine. Avant la
-  bascule, `site/demenagement.js` (carte et pages) affiche sur l'ancienne adresse seulement un bandeau :
-  sauvegarder ses coins, rouvrir le lien de groupe, retirer ses alertes avant de s'y réabonner (un
-  abonnement reste lié à l'adresse où il a été pris). `SITE_ADRESSE` passe au domaine une fois
-  `https://champimeteo.fr/` servi en HTTPS, jamais avant : site injoignable = alertes comparées à vide,
-  donc tout renvoyé. Le bandeau se retire après la bascule. Un hébergeur en France plus tard ne
-  change que le DNS : l'adresse, donc ce que gardent les navigateurs, reste la même.
+- **Domaine `champimeteo.fr` (2026-11-06)**, servi par GitHub Pages (domaine déclaré dans les
+  réglages Pages, pas de fichier CNAME : le déploiement passe par Actions ; DNS chez OVH). L'ancienne
+  adresse `baptistesoulard.github.io/Mushrooms_map/` y renvoie ; le bandeau de déménagement est
+  retiré. `config.ADRESSE` vaut le domaine (la variable `SITE_ADRESSE` peut la remplacer) : un
+  site injoignable fait comparer les alertes à vide, donc tout renvoyer. Un hébergeur en France
+  plus tard ne change que le DNS : l'adresse, donc ce que gardent les navigateurs, reste la même.
 - **Hébergeur à soi** (job `heberger` de `carte.yml`, en plus de GitHub Pages) : `rsync` par SSH du
   site déployé, rien ne tourne tant que la variable `DEPLOI_HOTE` est vide (`DEPLOI_COMPTE`,
   `DEPLOI_DOSSIER`, `DEPLOI_CONNU` = ligne de `ssh-keyscan` ; secret `DEPLOI_CLE`, créé par
   l'utilisateur). `SITE_ADRESSE` (→ `CHAMPI_ADRESSE` → `config.ADRESSE`) se renseigne en même temps :
   la garde, les alertes et les aperçus regardent cette adresse. Changer d'adresse remet chaque
-  navigateur à zéro (coins, lien de groupe, alertes : le stockage suit l'adresse du site). Le
-  `noindex` et les 50 m ne changent pas avec l'hébergeur. Mentions légales (`a-propos.html`) : nom
+  navigateur à zéro (coins, lien de groupe, alertes : le stockage suit l'adresse du site). Zones
+  publiques et couches chiffrées ne changent pas avec l'hébergeur. Mentions légales (`a-propos.html`) : nom
   et adresse de l'hébergeur effectif.
 - **Une page du jour porte sa date** (`pages.calcule_pour`, sur sa ligne « Calculé le ») : quand
   la mise à jour de la nuit manque, `pages.js` le dit en tête de page, comme `carte.js` sur la carte.
@@ -282,6 +292,8 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 python -m pytest tests -q
 python -m champi.depot                  # réseau ~3 min ; gardé 3 h dans cache/
 python -m champi.export_france          # demande site/habitat/ (asset de la release « habitat »)
+python -m champi.zones                  # après l'export : data/zones/ (carte publique, 250 m)
+python -m champi.chiffre                # ensuite : chiffre a, b, d (CARTE_FINE_MOT_DE_PASSE), retire le clair
 python -m champi.france bloc 18_156     # un bloc, pour essayer (habitat/)
 python -m champi.validation meteo       # réseau ; la météo passée des cas, sans attendre le fond
 python -m champi.validation             # réseau (~1 h la 1re fois) ; demande site/habitat/ ; caches dans cache/validation/

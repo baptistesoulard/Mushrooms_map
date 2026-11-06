@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="index, follow">
 <title>Méthode — Champimétéo</title>
 <meta name="description" content="Comment l'indice de pousse est calculé : habitat (essence, roche, altitude, pente) multiplié par la météo (saison, pluie, température du sol, gel), les règles espèce par espèce et leurs limites.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -40,11 +40,13 @@
 <div class="page">
   <h1>Comment la carte est calculée</h1>
   <p>Chaque matin, le site publie la météo du jour ; votre navigateur en déduit, pour chaque
-  espèce, un indice entre 0 et 1 sur les forêts de France métropolitaine découpées en cases de
-  50 m, pour aujourd'hui et les sept jours suivants. En vue large, chaque pixel résume environ
-  1 km² ; en vous approchant, la carte affiche les cases elles-mêmes. Leur précision est celle
-  des données qui les décrivent : fine pour le relief et les contours de forêt, plus grossière
-  pour la météo, grossière pour la roche (voir plus bas).</p>
+  espèce, un indice entre 0 et 1 sur les forêts de France métropolitaine, pour aujourd'hui et
+  les sept jours suivants. Les forêts sont décrites case par case (50 m) ; la carte publique les
+  réunit en zones de 250 m : chaque zone prend l'habitat le plus favorable de ses forêts, et la
+  météo à leur altitude moyenne. Elle dit où chercher sans envoyer tout le monde au même arbre.
+  En vue large, chaque pixel résume environ 1 km² ; en vous approchant, la carte affiche les
+  zones. Leur précision est celle des données qui les décrivent : fine pour le relief et les
+  contours de forêt, plus grossière pour la météo, grossière pour la roche (voir plus bas).</p>
 
   <h2>Un produit de deux familles de facteurs</h2>
   <p><strong>Indice = habitat × météo.</strong> Un produit et non une moyenne : chaque facteur

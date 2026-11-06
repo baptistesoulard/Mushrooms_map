@@ -3,8 +3,9 @@ espèces, départements. En-tête, pied, dates et listes en français, état de 
 
 Ces pages ne lisent aucune donnée : elles reçoivent les résumés déjà calculés
 (`export_france`) et rendent du HTML lisible sans JavaScript, ce que lisent les moteurs de
-recherche et les aperçus de partage. Aucune ne montre de coin. Non indexées tant que le site ne
-l'est pas : le jour où il le sera, `INDEXER` ouvre les pages et écrit le plan du site.
+recherche et les aperçus de partage. Aucune ne montre de coin. Indexées depuis le 2026-11-06, quand
+la carte publique est passée aux zones de 250 m (`zones.py`) : `INDEXER` ouvre les pages, écrit le
+plan du site et `robots.txt`. Le repasser à faux referme tout.
 """
 from __future__ import annotations
 
@@ -17,7 +18,7 @@ from .config import ADRESSE
 from .depot import decalage_paris
 from .redaction import JOURS, MOIS, NBSP
 
-INDEXER = False
+INDEXER = True
 NOM = "Champimétéo"
 NIVEAUX_COURTS = ["hors saison", "défavorable", "possible", "par endroits", "bon"]
 JOURS_COURTS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
@@ -290,15 +291,19 @@ def ordre_saison(especes: list[dict], nat: dict) -> list[dict]:
 
 
 def ecrire_plan(site: Path, chemins: list[str]) -> None:
-    """`sitemap.xml` quand le site est indexé ; sinon, aucun plan (et l'ancien s'efface)."""
-    plan = site / "sitemap.xml"
+    """`sitemap.xml` et `robots.txt` quand le site est indexé ; sinon, ni plan ni robots.txt (les
+    anciens s'effacent) : les balises `noindex` suffisent. Les couches d'habitat ne s'explorent pas."""
+    plan, robots = site / "sitemap.xml", site / "robots.txt"
     if INDEXER:
         plan.write_text('<?xml version="1.0" encoding="UTF-8"?>\n'
                         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
                         + "".join(f"  <url><loc>{ADRESSE}{c}</loc></url>\n" for c in chemins)
                         + "</urlset>\n", encoding="utf-8")
-    elif plan.exists():
-        plan.unlink()
+        robots.write_text(f"User-agent: *\nDisallow: /habitat/\n\nSitemap: {ADRESSE}sitemap.xml\n", encoding="utf-8")
+    else:
+        for f in (plan, robots):
+            if f.exists():
+                f.unlink()
 
 
 if __name__ == "__main__":

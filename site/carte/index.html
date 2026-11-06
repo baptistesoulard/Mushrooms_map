@@ -6,9 +6,9 @@
      habitat, appli hors ligne) reste à la racine, d'où cette base. -->
 <base href="../">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="index, follow">
 <title>La carte — Champimétéo</title>
-<meta name="description" content="Carte des forêts de France où les conditions sont favorables aux champignons (cèpes, girolles, trompettes, morilles et d'autres), aujourd'hui et pour les sept prochains jours, case par case de 50 m. Météo, essences, roche, altitude et exposition, à partir de données publiques.">
+<meta name="description" content="Carte des forêts de France où les conditions sont favorables aux champignons (cèpes, girolles, trompettes, morilles et d'autres), aujourd'hui et pour les sept prochains jours, par zones de 250 m. Météo, essences, roche, altitude et exposition, à partir de données publiques.">
 <meta property="og:title" content="Champimétéo">
 <meta property="og:description" content="Où les conditions sont favorables aux champignons, forêt par forêt, aujourd'hui et pour les sept prochains jours.">
 <meta property="og:type" content="website">
@@ -145,6 +145,18 @@
     </section>
 
     <section class="onglet" role="tabpanel" id="onglet-outils" aria-labelledby="tab-outils" hidden>
+      <div class="section fine" id="fine" hidden>
+        <h3>Carte fine (cases de 50 m)</h3>
+        <p class="muet" id="fine-etat"></p>
+        <form id="fine-form">
+          <label class="mot-de-passe"><span>Mot de passe</span>
+            <input type="password" id="fine-mot" autocomplete="current-password" required></label>
+          <button type="submit">Déverrouiller</button>
+        </form>
+        <button type="button" class="lien" id="fine-oublier" hidden>Revenir aux zones de 250 m sur cet appareil</button>
+        <p class="muet" id="fine-message" aria-live="polite"></p>
+      </div>
+
       <div class="section coins">
         <h3>Mes coins</h3>
         <p class="muet" id="coins-resume"></p>

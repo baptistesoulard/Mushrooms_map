@@ -8,8 +8,8 @@ const ETAPES = (etroit) => [
     "favorables, du plus clair (faible) au plus foncé (excellent). Il tient compte de la forêt, du sol, " +
     "de la pluie des dernières semaines et de la météo des sept prochains jours."],
   ["Rapprochez-vous, touchez une forêt",
-    "De près, chaque case de 50 m a sa fiche : son indice sur 100, ce qui le limite, la pluie, le sol, " +
-    "le gel, et si la forêt est publique ou privée. « Y aller » ouvre l'itinéraire."],
+    "De près, chaque zone de 250 m a sa fiche : son indice sur 100, ce qui le limite, la pluie, le sol, " +
+    "le gel, et si ses forêts sont surtout publiques ou privées. « Y aller » ouvre l'itinéraire."],
   [etroit ? "Tirez le panneau vers le haut" : "Le panneau, à gauche",
     "En haut, l'espèce (un toucher ouvre la liste illustrée) et le jour. Puis quatre onglets : « Ici » " +
     "classe les espèces pour la zone affichée ; « Département » donne le verdict, la semaine et les " +
