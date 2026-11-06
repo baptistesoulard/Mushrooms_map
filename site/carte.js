@@ -4,6 +4,7 @@
 // (habitat/blocs/*.png, data/meteo/*.bin, modele.js), à la résolution de calcul.
 import { installerAlertes } from "./alertes.js";
 import { installerCoins } from "./coins.js";
+import { installerDemenagement } from "./demenagement.js";
 import { installerFeuille } from "./feuille.js";
 import { installerGuide } from "./guide.js";
 import { niveau as niveauZone, partsZone } from "./ici.js";
@@ -482,6 +483,7 @@ async function demarrer() {
     },
   });
   const alertes = installerAlertes({ carte, etat: () => ({ departement: etat.departement, espece: etat.espece }) });
+  installerDemenagement();
 
   // --- Ma position ------------------------------------------------------------------
   // Demandée à l'ouverture pour choisir le département, puis montrée et suivie tant que la

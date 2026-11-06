@@ -167,6 +167,15 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   départ qui s'arrête n'annule jamais un calcul en attente. Si le retard dépasse encore la nuit,
   le remède est un déclencheur extérieur (`workflow_dispatch` appelé par un service de cron, avec
   un jeton que l'utilisateur crée lui-même).
+- **Domaine `champimeteo.fr` (décision du 2026-11-06)**, servi par GitHub Pages (domaine déclaré dans
+  les réglages Pages, pas de fichier CNAME : le déploiement passe par Actions). Pages fait alors
+  renvoyer l'ancienne adresse `baptistesoulard.github.io/Mushrooms_map/` vers le domaine. Avant la
+  bascule, `site/demenagement.js` (carte et pages) affiche sur l'ancienne adresse seulement un bandeau :
+  sauvegarder ses coins, rouvrir le lien de groupe, retirer ses alertes avant de s'y réabonner (un
+  abonnement reste lié à l'adresse où il a été pris). `SITE_ADRESSE` passe au domaine une fois
+  `https://champimeteo.fr/` servi en HTTPS, jamais avant : site injoignable = alertes comparées à vide,
+  donc tout renvoyé. Le bandeau se retire après la bascule. Un hébergeur en France plus tard ne
+  change que le DNS : l'adresse, donc ce que gardent les navigateurs, reste la même.
 - **Hébergeur à soi** (job `heberger` de `carte.yml`, en plus de GitHub Pages) : `rsync` par SSH du
   site déployé, rien ne tourne tant que la variable `DEPLOI_HOTE` est vide (`DEPLOI_COMPTE`,
   `DEPLOI_DOSSIER`, `DEPLOI_CONNU` = ligne de `ssh-keyscan` ; secret `DEPLOI_CLE`, créé par
