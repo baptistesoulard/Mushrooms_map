@@ -1,6 +1,7 @@
 name: Carte quotidienne
 
-# Chaque nuit : météo du jour (dépôt public d'Open-Meteo) → données du site → GitHub Pages.
+# Chaque nuit : météo du jour (dépôt public d'Open-Meteo) → données du site → GitHub Pages, et chez
+# l'hébergeur à soi si les variables DEPLOI_* sont renseignées (job « heberger »).
 # L'habitat de la France (~250 Mo) vient de la release « habitat » (workflow habitat.yml).
 # Rien n'est commité : les données du jour vivent dans l'artefact déployé, pas dans git.
 on:
@@ -30,6 +31,11 @@ permissions:
   contents: read
   pages: write
   id-token: write
+
+# L'adresse du site publié, pour la garde, les alertes et les aperçus (champi/config.ADRESSE).
+# Vide : GitHub Pages. À renseigner (variable du dépôt) en même temps que DEPLOI_HOTE.
+env:
+  CHAMPI_ADRESSE: ${{ vars.SITE_ADRESSE }}
 
 jobs:
   # Un départ programmé qui trouve la carte du jour en ligne s'arrête ici, en quelques secondes.
@@ -103,3 +109,39 @@ jobs:
     steps:
       - id: deploiement
         uses: actions/deploy-pages@v4
+
+  # Chez un hébergeur à soi (France, SSH) : rsync n'envoie que ce qui a changé. L'habitat garde la
+  # date de son archive et part une fois ; --delay-updates met tout en place à la fin, personne ne
+  # voit un site à moitié à jour. Rien ne tourne tant que la variable DEPLOI_HOTE est vide.
+  # Variables du dépôt : DEPLOI_HOTE (ssh-compte.alwaysdata.net), DEPLOI_COMPTE, DEPLOI_DOSSIER
+  # (www), DEPLOI_CONNU (la ligne de ssh-keyscan de l'hôte, relevée depuis son poste). Secret :
+  # DEPLOI_CLE, la clé privée SSH dont la clé publique est déclarée chez l'hébergeur.
+  heberger:
+    needs: construire
+    if: vars.DEPLOI_HOTE != ''
+    concurrency:
+      group: hebergeur
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/artefact
+      - name: Envoyer le site
+        env:
+          HOTE: ${{ vars.DEPLOI_HOTE }}
+          COMPTE: ${{ vars.DEPLOI_COMPTE }}
+          DOSSIER: ${{ vars.DEPLOI_DOSSIER || 'www' }}
+          CONNU: ${{ vars.DEPLOI_CONNU }}
+          CLE: ${{ secrets.DEPLOI_CLE }}
+        run: |
+          mkdir -p site ~/.ssh
+          tar -xf "$RUNNER_TEMP/artefact/artifact.tar" -C site
+          printf '%s\n' "$CLE" > ~/.ssh/deploi && chmod 600 ~/.ssh/deploi
+          printf '%s\n' "$CONNU" > ~/.ssh/known_hosts
+          rsync -rltz --delete --delay-updates --chmod=D755,F644 \
+            -e "ssh -i ~/.ssh/deploi -o StrictHostKeyChecking=yes" \
+            site/ "$COMPTE@$HOTE:$DOSSIER/"
+          du -sh site

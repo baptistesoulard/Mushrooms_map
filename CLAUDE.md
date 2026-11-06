@@ -14,7 +14,7 @@ chanterelle en tube, oronge et hygrophore de mars le 2026-11-01, avec deux espè
 
 ```
 champi.france (habitat.yml, rarement) → release « habitat » (blocs PNG, échantillon) — jamais dans git
-champi.depot + champi.export_france (carte.yml, chaque nuit) → site/data/ + pages du matin → GitHub Pages
+champi.depot + champi.export_france (carte.yml, chaque nuit) → site/data/ + pages du matin → GitHub Pages (+ hébergeur à soi)
 site/modele.js : le navigateur calcule l'indice des blocs affichés
 champi.validation (à la main, France et trois régions) → data/validation.json (versionné) → copié par l'export
 ```
@@ -167,6 +167,14 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   départ qui s'arrête n'annule jamais un calcul en attente. Si le retard dépasse encore la nuit,
   le remède est un déclencheur extérieur (`workflow_dispatch` appelé par un service de cron, avec
   un jeton que l'utilisateur crée lui-même).
+- **Hébergeur à soi** (job `heberger` de `carte.yml`, en plus de GitHub Pages) : `rsync` par SSH du
+  site déployé, rien ne tourne tant que la variable `DEPLOI_HOTE` est vide (`DEPLOI_COMPTE`,
+  `DEPLOI_DOSSIER`, `DEPLOI_CONNU` = ligne de `ssh-keyscan` ; secret `DEPLOI_CLE`, créé par
+  l'utilisateur). `SITE_ADRESSE` (→ `CHAMPI_ADRESSE` → `config.ADRESSE`) se renseigne en même temps :
+  la garde, les alertes et les aperçus regardent cette adresse. Changer d'adresse remet chaque
+  navigateur à zéro (coins, lien de groupe, alertes : le stockage suit l'adresse du site). Le
+  `noindex` et les 50 m ne changent pas avec l'hébergeur. Mentions légales (`a-propos.html`) : nom
+  et adresse de l'hébergeur effectif.
 - **Une page du jour porte sa date** (`pages.calcule_pour`, sur sa ligne « Calculé le ») : quand
   la mise à jour de la nuit manque, `pages.js` le dit en tête de page, comme `carte.js` sur la carte.
 - **Appli installable et hors ligne** (`manifest.webmanifest`, `sw.js`) : le site et les données
