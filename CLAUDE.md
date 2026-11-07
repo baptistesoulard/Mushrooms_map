@@ -37,8 +37,10 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 - **Classes à seuils fixes** (`modele.CLASSES`), jamais des quantiles : un jour sans pousse
   doit donner une carte pâle. Six classes en marches de 15 points depuis le 2026-11-02
   (« Excellent » dès 0,70) ; une couleur `--classe-k` par classe visible, reprise par
-  `partage.CLASSES` (tests). Le verdict d'un département ne bouge pas : il compte les forêts à
-  0,40 et plus (`redaction.SEUILS_NIVEAU`).
+  `partage.CLASSES` (tests). Le verdict d'un département compte les forêts à 0,40 et plus
+  (`redaction.SEUILS_NIVEAU`) : « bon » dès 30 % de sa forêt depuis le 2026-11-07 (15 % avant ;
+  choix de rédaction, mesuré sur l'export du jour : chanterelle en tube de 66 à 50 départements,
+  pied-de-mouton de 91 à 86, sa forêt dépassant 0,40 aux trois quarts presque partout).
 - **Ce qui est habituel à cette date** (`climatologie.py` → `data/climatologie.json`, versionné,
   recalculé à la main après la validation) : par espèce et par décade, la part des jours où sa
   météo (indice sans l'habitat) atteint 0,5, sur la météo passée de la validation. Affiché à côté

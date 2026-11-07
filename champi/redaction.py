@@ -44,7 +44,11 @@ def libelle_jour(jour: date, aujourdhui: date) -> str:
 
 # Le verdict : parts de la forêt à l'indice « bon » (≥ 0,40) et « moyen » (≥ 0,25). Publiés dans
 # carte.json (« niveaux ») : « Que chercher ici ? » rend le même verdict pour la zone affichée.
-SEUILS_NIVEAU = {"bon": 0.15, "endroits": 0.05, "possible": 0.05}
+# « Bon » dès 30 % de la forêt depuis le 2026-11-07 (15 % avant) : à 15 %, un département ou un
+# carré de l'accueil était « bon » avec quelques massifs (66 départements pour la chanterelle en
+# tube le 7 novembre, 50 à 30 %). Un choix de rédaction, pas une règle d'espèce : il ne change
+# aucun indice, seulement le mot qui les résume.
+SEUILS_NIVEAU = {"bon": 0.30, "endroits": 0.05, "possible": 0.05}
 
 
 def niveau(faits: dict) -> int:

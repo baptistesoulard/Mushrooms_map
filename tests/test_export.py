@@ -139,7 +139,7 @@ def test_verdicts_des_carres_comme_les_departements():
     libre = np.ones(pixel.size, dtype=bool)
     indice = rng.uniform(0, 0.39, pixel.size)
     saison = np.ones(pixel.size)
-    indice[0:100] = 0.5                                      # carré 0 : 25 % bon
+    indice[0:160] = 0.5                                      # carré 0 : 40 % bon
     indice[400:430] = 0.45                                   # carré 1 : 7,5 % bon
     indice[800:1200] = rng.uniform(0, 0.2, 400)              # carré 2 : défavorable
     indice[820:850] = 0.3                                    # … 7,5 % moyen : possible

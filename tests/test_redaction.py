@@ -21,7 +21,8 @@ def esp(code):
 
 def test_niveaux():
     assert R.niveau(_faits(saison=0)) == 0
-    assert R.niveau(_faits(part_bon=0.2)) == 4
+    assert R.niveau(_faits(part_bon=0.35)) == 4
+    assert R.niveau(_faits(part_bon=0.2)) == 3            # « par endroits » jusqu'à 30 % de la forêt
     assert R.niveau(_faits(part_bon=0.06)) == 3
     assert R.niveau(_faits(part_moyen=0.06)) == 2
     assert R.niveau(_faits()) == 1
@@ -73,7 +74,7 @@ def test_sol_qui_freine_sans_contredire_le_verdict():
     """Sous le seuil, le sol freine l'indice sans le fermer : quand le verdict reste bon,
     « trop froid » le contredirait (vu le 2026-10-31 : « Bonnes conditions » puis « trop froid
     presque partout »). Contre-épreuve : verdict défavorable, « trop » reste juste."""
-    bon = R.rediger(esp("trompette"), _faits(part_bon=0.2, limitant="sol_froid"))
+    bon = R.rediger(esp("trompette"), _faits(part_bon=0.35, limitant="sol_froid"))
     assert bon["verdict"] == "Bonnes conditions"
     assert "trop" not in bon["phrases"][-1] and "frais presque partout" in bon["phrases"][-1]
     mauvais = R.rediger(esp("trompette"), _faits(limitant="sol_froid"))
