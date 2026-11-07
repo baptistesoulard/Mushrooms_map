@@ -494,7 +494,8 @@ async function demarrer() {
   const NIVEAU_RVB = [[0xe2, 0xde, 0xd5], [0xef, 0xec, 0xe5], pal.classes[2], pal.classes[3], pal.classes[4]];
   const versLat = (y) => (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * 180 / Math.PI;
   let carres = null;
-  const vueFrance = () => carres !== null && map.getZoom() < SYNTHESE;
+  // Leaflet choisit ses tuiles au zoom arrondi (7,5 → 8) : la vue France s'arrête au même endroit.
+  const vueFrance = () => carres !== null && Math.round(map.getZoom()) < SYNTHESE;
   async function verdictsCarres(code, k) {
     const V = carte.vue, e = V ? V.especes.indexOf(code) : -1;
     if (e < 0 || !V.carre_min_km2) return null;
@@ -536,8 +537,8 @@ async function demarrer() {
       return tuile;
     },
   });
-  const calqueCarres = new Carres({ pane: "overlayPane", maxZoom: SYNTHESE - 0.5, updateWhenZooming: false }).addTo(map);
-  // Passer le seuil sans changer de niveau de tuiles (7,5 → 8) garderait les tuiles d'avant.
+  const calqueCarres = new Carres({ pane: "overlayPane", maxZoom: SYNTHESE - 1, updateWhenZooming: false }).addTo(map);
+  // Passer le seuil sans changer de niveau de tuiles garderait les tuiles d'avant.
   let coteFrance = vueFrance();
   map.on("zoomend", () => {
     if (vueFrance() === coteFrance) return;
@@ -595,7 +596,9 @@ async function demarrer() {
       return tuile;
     },
   });
-  const calqueDetail = new Detail({ pane: "overlayPane", minZoom: DETAIL, updateWhenZooming: false, keepBuffer: 1 }).addTo(map);
+  // minZoom à DETAIL - 0,5 : Leaflet crée les tuiles au zoom arrondi (10,5 → 11) mais les retire au
+  // zoom exact sous minZoom ; à DETAIL, le zoom 10,5 restait vide (ni aperçu, ni détail).
+  const calqueDetail = new Detail({ pane: "overlayPane", minZoom: DETAIL - 0.5, updateWhenZooming: false, keepBuffer: 1 }).addTo(map);
 
   // Indice d'un coin noté par l'utilisateur, pour le jour affiché : moyenne des cases boisées
   // à moins de 75 m (3 × 3 cases), tirée des mêmes codes que la carte.
