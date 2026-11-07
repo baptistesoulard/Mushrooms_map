@@ -553,7 +553,8 @@ def exporter(meteo: Meteo | None = None) -> dict:
         "meteo": {"lat0": float(meteo.lats[0]), "lon0": float(meteo.lons[0]),
                   "pas": float(meteo.lats[1] - meteo.lats[0]), "champs": ordre, "premier_gel": PREMIER_GEL,
                   "modeles": modeles},
-        "departements": departements,
+        # Chaque département avec l'adresse de sa page (carte.js : « La semaine … sur une page à part »).
+        "departements": [dict(d, page=pages.chemin_departement(d["code"], d["nom"])) for d in departements],
         "legendes": {"essences": ESSENCES, "roches": ROCHES, "orientations": ORIENTATIONS},
         "classement": classement,
         "fiabilite": fiabilite,

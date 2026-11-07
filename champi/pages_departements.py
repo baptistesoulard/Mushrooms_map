@@ -14,7 +14,8 @@ from pathlib import Path
 import json
 
 from .carte_departements import charger as charger_contours, voisins as voisins_de
-from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, cle_departement,
+from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, chemin_departement,
+                    chemin_espece, cle_departement, renvoi, slug,
                     dans, date_longue, e, enumerer, faq, fil_ariane, icone, image_partage, instant_paris,
                     meilleur_niveau, national, ordre_saison, page_web, pct, pied, surface_bonne, tete)
 from .redaction import MOIS, NBSP, NIVEAUX, altitude, nombre
@@ -183,18 +184,19 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
     `voisins` : les départements qui le touchent, avec leurs résumés."""
     code, nom = dep["code"], dep["nom"]
     lieu = dans(code, nom)
-    chemin = f"{DOSSIER}/{code}.html"
-    carte = f"../carte/?departement={code}"
+    chemin = chemin_departement(code, nom)
+    R = "../../"                                   # la page est dans departements/<nom>/
+    carte = f"{R}carte/?departement={code}"
     noms = ", ".join(x["nom"].lower() for x in especes[:4])
     jour = f"{'1er' if jours[0].day == 1 else jours[0].day} {MOIS[jours[0].month - 1]}"
     titre = f"Où trouver des champignons {lieu} ({code}) : la semaine du {jour}"
     description = (f"Où chercher les champignons {lieu} cette semaine ({noms}…) : jour par jour, les communes "
                    "les mieux placées, d'après la pluie, la température du sol et la saison. Mis à jour chaque matin.")
     qr = questions(dep, especes, resumes, jours, genere_le)
-    haut = tete(titre, description, "../", chemin, image=image_partage(code, genere_le),
+    haut = tete(titre, description, R, chemin, image=image_partage(code, genere_le),
                 ld=[page_web(titre, chemin, genere_le, description),
                     fil_ariane([("./", NOM), (f"{DOSSIER}/", "Départements"), (chemin, nom)]), faq(qr)])
-    lignes = [f'  <p class="fil"><a href="./">Départements</a> › {e(nom)}</p>',
+    lignes = [f'  <p class="fil"><a href="../">Départements</a> › {e(nom)}</p>',
               f"  <h1>Où trouver des champignons {e(lieu)} cette semaine</h1>",
               f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
               "et les sept jours suivants, sur les forêts du département (sur ses prés, pour les espèces des "
@@ -233,7 +235,7 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
 
     for x in especes:
         jours_x = resumes.get(x["code"]) or []
-        lignes.append(f'  <section class="carte-espece"><h3><a href="../especes/{x["code"]}.html">{e(x["nom"])}</a> '
+        lignes.append(f'  <section class="carte-espece"><h3><a href="{R}{chemin_espece(x["code"])}">{e(x["nom"])}</a> '
                       f'<span class="latin">{e(x["latin"])}</span></h3>')
         if not jours_x:
             lignes.append(f"  <p>Pas de {'pré' if x.get('milieu') == 'pre' else 'forêt'} calculé"
@@ -258,7 +260,7 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
     for q, r in qr:
         lignes += [f"  <h3>{e(q)}</h3>", f"  <p>{e(r)}</p>"]
     lignes += ['  <p class="muet">Les règles de la cueillette, les sosies dangereux et les centres antipoison : '
-               '<a href="../avant-de-partir.html">avant de partir</a>.</p>', "  </section>"]
+               f'<a href="{R}avant-de-partir.html">avant de partir</a>.</p>', "  </section>"]
 
     if voisins:
         lignes += ["  <h2>Les départements voisins</h2>", '  <ul class="voisins">']
@@ -266,9 +268,9 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
             y = meilleure_espece(especes, r)
             n = r[y["code"]][0]["niveau"] if y else 0
             etat = f"{NIVEAUX_COURTS[n]} pour {article(y['de'])}" if n >= 2 else "rien de favorable aujourd'hui"
-            lignes.append(f'    <li><a href="{d["code"]}.html">{e(d["nom"])} ({d["code"]})</a> : {e(etat)}</li>')
+            lignes.append(f'    <li><a href="../{slug(d["nom"])}/">{e(d["nom"])} ({d["code"]})</a> : {e(etat)}</li>')
         lignes.append("  </ul>")
-    return haut + "\n".join(lignes) + "\n" + pied("../")
+    return haut + "\n".join(lignes) + "\n" + pied(R)
 
 
 def page_index(departements: list[dict], especes: list[dict], resumes: dict, jours: list[date],
@@ -305,7 +307,7 @@ def page_index(departements: list[dict], especes: list[dict], resumes: dict, jou
             f'{"Aujourd’hui" if k == 0 else "Demain" if k == 1 else f"{JOURS_COURTS[d.weekday()]} {d.day}"}</button>'
             for k, d in enumerate(jours))
         chemins = "\n".join(
-            f'    <a href="{d["code"]}.html" data-dep="{d["code"]}"><path class="n{niveau(d["code"], defaut["code"], 0)}" '
+            f'    <a href="{slug(d["nom"])}/" data-dep="{d["code"]}"><path class="n{niveau(d["code"], defaut["code"], 0)}" '
             f'd="{contours["traces"][d["code"]]}"><title>{e(d["nom"])} : '
             f'{e(NIVEAUX.get(int(n), "") if (n := niveau(d["code"], defaut["code"], 0)) != "x" else "rien de calculé")}'
             f"</title></path></a>"
@@ -314,6 +316,7 @@ def page_index(departements: list[dict], especes: list[dict], resumes: dict, jou
             "defaut": defaut["code"],
             "ordre": [d["code"] for d in par_numero if d["code"] in contours["traces"]],
             "noms": {d["code"]: d["nom"] for d in par_numero},
+            "pages": {d["code"]: f"{slug(d['nom'])}/" for d in par_numero},
             "especes": {x["code"]: {"nom": x["nom"], "de": x["de"],
                                     "niveaux": ["".join(niveau(c, x["code"], k) for c in
                                                         [d["code"] for d in par_numero if d["code"] in contours["traces"]])
@@ -360,7 +363,7 @@ def page_index(departements: list[dict], especes: list[dict], resumes: dict, jou
             etat = f"{NIVEAUX_COURTS[meilleur]} : {enumerer(quoi)}"
         else:
             etat = "rien de favorable aujourd'hui"
-        lignes.append(f'    <li><a href="{d["code"]}.html">{d["code"]} – {e(d["nom"])}'
+        lignes.append(f'    <li><a href="{slug(d["nom"])}/">{d["code"]} – {e(d["nom"])}'
                       f'<span class="cl">{e(etat)}</span></a></li>')
     lignes += ["  </ul></details>"]
     return haut + "\n".join(lignes) + "\n" + pied("../")
@@ -373,7 +376,7 @@ def _classement(x: dict, jour: dict, noms: dict) -> list[str]:
     for n, quoi in ((4, "Bonnes conditions"), (3, "Par endroits")):
         if jour[n]:
             lignes.append(f"  <p><strong>{quoi}</strong> ({len(jour[n])}) : "
-                          + ", ".join(f'<a href="{c}.html">{e(noms.get(c, c))}</a>' for c in jour[n]) + ".</p>")
+                          + ", ".join(f'<a href="{slug(noms.get(c, c))}/">{e(noms.get(c, c))}</a>' for c in jour[n]) + ".</p>")
     if not jour[4] and not jour[3]:
         lignes.append(f"  <p>Aucun département aux bonnes conditions pour {e(article(x['de']))} ce jour-là.</p>")
     return lignes
@@ -389,8 +392,13 @@ def ecrire(site: Path, departements: list[dict], especes: list[dict], resumes: d
     par_code = {d["code"]: d for d in departements}
     for d in departements:
         proches = [(par_code[c], resumes.get(c, {})) for c in adjacents.get(d["code"], []) if c in par_code]
-        (dossier / f"{d['code']}.html").write_text(
+        chemin = chemin_departement(d["code"], d["nom"])
+        (site / chemin).mkdir(parents=True, exist_ok=True)
+        (site / chemin / "index.html").write_text(
             page_departement(d, especes, resumes.get(d["code"], {}), jours, genere_le, proches), encoding="utf-8")
+        # L'ancienne adresse (avant le 2026-11-07) renvoie à la nouvelle.
+        (dossier / f"{d['code']}.html").write_text(
+            renvoi(f"{slug(d['nom'])}/", chemin, f"Champignons {dans(d['code'], d['nom'])}"), encoding="utf-8")
     (dossier / "index.html").write_text(page_index(departements, especes, resumes, jours, genere_le,
                                                    contours), encoding="utf-8")
-    return [f"{DOSSIER}/"] + [f"{DOSSIER}/{d['code']}.html" for d in departements]
+    return [f"{DOSSIER}/"] + [chemin_departement(d["code"], d["nom"]) for d in departements]

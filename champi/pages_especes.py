@@ -12,7 +12,8 @@ from pathlib import Path
 
 from .pages import (MOIS_COURTS, NIVEAUX_COURTS, PARTAGER, calendrier_mois, credit_photo, date_courte,
                     departements_de, e, habituel, icone, image_partage, instant_paris, meilleur_niveau,
-                    mois_saison, national, noms_especes, ordre_saison, pct, pied, tete, NOM, fil_ariane, page_web)
+                    mois_saison, national, noms_especes, ordre_saison, pct, pied, tete, NOM, fil_ariane, page_web,
+                    chemin_departement, chemin_espece, renvoi)
 from .photos import charger as charger_photos
 from .pages_accueil import etat_espece
 from .prairies import NOMS_MILIEUX
@@ -95,6 +96,7 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
     """`x` : règles de l'espèce (`especes.en_json`) ; `niv` : son état national, jour par jour
     (`pages.national`) ; `noms` : noms des départements ; `validation` : son bloc France."""
     code, nom = x["code"], x["nom"]
+    R = "../../"                                   # la page est dans especes/<nom>/
     il = pronom(x)
     pre = x.get("milieu") == "pre"
     s0, s1, s2, s3 = x["saison"]
@@ -106,13 +108,13 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
     haut = tete(f"{nom} ({x['latin']}) : où et quand le chercher en France",
                 f"{nom} : les forêts, l'altitude, la saison et la météo qui lui conviennent, à quoi "
                 f"{il} ressemble et ses sosies, et les départements où les conditions sont bonnes "
-                "aujourd'hui.", "../", f"{DOSSIER}/{code}.html", image=image_partage("france", genere_le),
-                ld=[page_web(f"{nom} : où et quand le chercher en France", f"{DOSSIER}/{code}.html", genere_le),
-                    fil_ariane([("./", NOM), (f"{DOSSIER}/", "Les espèces"), (f"{DOSSIER}/{code}.html", nom)])])
-    carte = "../carte/" if pre else f"../carte/?espece={code}"
-    lignes = [f'  <p class="fil"><a href="./">Les espèces</a> › {e(nom)}</p>',
+                "aujourd'hui.", R, chemin_espece(code), image=image_partage("france", genere_le),
+                ld=[page_web(f"{nom} : où et quand le chercher en France", chemin_espece(code), genere_le),
+                    fil_ariane([("./", NOM), (f"{DOSSIER}/", "Les espèces"), (chemin_espece(code), nom)])])
+    carte = f"{R}carte/" if pre else f"{R}carte/?espece={code}"
+    lignes = [f'  <p class="fil"><a href="../">Les espèces</a> › {e(nom)}</p>',
               f'  <h1>{e(nom)} <span class="latin">{e(x["latin"])}</span></h1>',
-              f'  <div class="tete-espece">{figure_photo(x, photo, paresseuse=False)}<div>',
+              f'  <div class="tete-espece">{figure_photo(x, photo, racine=R, paresseuse=False)}<div>',
               f'  <p class="chapeau">{e(x["habitat_texte"])}</p>',
               f'  <p class="saison-mois"><strong>Saison</strong> {calendrier_mois(x["saison"], jours[0].month)}</p>',
               '  <p class="muet">Une photo aide à chercher, jamais à identifier.</p></div></div>',
@@ -123,20 +125,20 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
         lignes.append(f"  <p>Hors saison partout aujourd'hui : la saison {e(x['de'])} court en gros du "
                       f"{date_courte(s0)} au {date_courte(s3)}.</p>")
     elif not j0[4] and not j0[3]:
-        t = etat_espece(niv, jours, noms, "../")
+        t = etat_espece(niv, jours, noms, R)
         lignes.append(f"  <p>{t[:1].upper()}{t[1:]}.</p>")
     else:
         for n, quoi in ((4, "Bonnes conditions aujourd'hui"), (3, "Bonnes conditions par endroits")):
             if j0[n]:
                 lignes.append(f"  <p><strong>{quoi}</strong> ({departements_de(len(j0[n]))}, le plus de "
                               f"{'prés favorables' if pre else 'forêt favorable'} d'abord) : "
-                              + ", ".join(f'<a href="../departements/{c}.html">{e(noms.get(c, c))}</a>'
+                              + ", ".join(f'<a href="{R}{chemin_departement(c, noms.get(c, c))}">{e(noms.get(c, c))}</a>'
                                           for c in j0[n]) + ".</p>")
     if meilleur_niveau(j0) not in (0, None) and habituel(x):
         lignes.append(f'  <p class="habituel">{e(habituel(x))}, d\'après trente ans de météo passée : de quoi '
-                      'dire si le jour est ordinaire (<a href="../methode.html#habituel">ce que cela mesure</a>).</p>')
+                      f'dire si le jour est ordinaire (<a href="{R}methode.html#habituel">ce que cela mesure</a>).</p>')
     # Une espèce des champs n'a pas de carte fine : la semaine en France d'abord.
-    semaine = f'<a class="bouton{" principal" if pre else ""}" href="../en-ce-moment.html#{code}">La semaine en France</a>'
+    semaine = f'<a class="bouton{" principal" if pre else ""}" href="{R}en-ce-moment.html#{code}">La semaine en France</a>'
     voir = "" if pre else f'<a class="bouton principal" href="{carte}">Voir la carte {e(x["de"])}</a>'
     lignes += [f'  <p class="actions">{voir}{semaine}{PARTAGER}</p>',
                "  <h2>Où le chercher</h2>",
@@ -187,7 +189,7 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
                "  <h2>À quoi " + il + " ressemble</h2>",
                '  <div class="alerte"><p><strong>Ces lignes aident à chercher, jamais à identifier.</strong> Ne '
                "consommez jamais un champignon sans identification certaine : faites contrôler votre récolte "
-               'par un pharmacien ou une société mycologique. <a href="../avant-de-partir.html">Avant de '
+               f'par un pharmacien ou une société mycologique. <a href="{R}avant-de-partir.html">Avant de '
                "partir</a>.</p></div>",
                f"  <p>{e(x['description'])}</p>"]
     if x.get("confusions"):
@@ -196,9 +198,9 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
         lignes.append(f"  <p><strong>{e(x['avertissement'])}</strong></p>")
     lignes += ["  <h2>Ce que la carte en sait</h2>"] + ce_que_la_carte_en_sait(x, validation)
     lignes += [f'  <p class="muet">Limite : {e(lim)}</p>' for lim in x.get("limites") or []]
-    lignes.append('  <p><a href="../validation.html">Le détail de la vérification</a> · '
-                  '<a href="../methode.html">Toutes les règles du calcul</a></p>')
-    return haut + "\n".join(lignes) + "\n" + pied("../")
+    lignes.append(f'  <p><a href="{R}validation.html">Le détail de la vérification</a> · '
+                  f'<a href="{R}methode.html">Toutes les règles du calcul</a></p>')
+    return haut + "\n".join(lignes) + "\n" + pied(R)
 
 
 def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, genere_le: str,
@@ -229,13 +231,13 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
                    f"  {figure_photo(vedette, photos.get(vedette['code']), classe='photo vedette-photo', paresseuse=False)}",
                    '  <div class="vedette-texte">',
                    f'  <p class="sur-titre">En ce moment · {MOIS_COURTS[mois - 1].rstrip(".")} {jours[0].year}</p>',
-                   f'  <h2><a href="{vedette["code"]}.html">{e(vedette["nom"])}</a> '
+                   f'  <h2><a href="{vedette["code"].replace("_", "-")}/">{e(vedette["nom"])}</a> '
                    f'<span class="latin">{e(vedette["latin"])}</span></h2>',
                    f"  <p>{t[:1].upper()}{t[1:]}.</p>"]
         if habituel(vedette):
             lignes.append(f'  <p class="habituel">{e(habituel(vedette))}.</p>')
         lignes += [f'  <p class="muet">{e(vedette["habitat_texte"])}</p>',
-                   f'  <p class="actions"><a class="bouton principal" href="{vedette["code"]}.html">La fiche</a>'
+                   f'  <p class="actions"><a class="bouton principal" href="{vedette["code"].replace("_", "-")}/">La fiche</a>'
                    f'<a class="bouton" href="../en-ce-moment.html#{vedette["code"]}">La semaine en France</a></p>',
                    "  </div></section>"]
 
@@ -247,7 +249,7 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
         milieu = "Prés" if x.get("milieu") == "pre" else "Forêt"
         h = habituel(x) if n not in (0, None) else ""
         return (f'    <li data-milieu="{x.get("milieu", "foret")}" data-saison="{"non" if n in (0, None) else "oui"}">'
-                f'<a href="{x["code"]}.html">'
+                f'<a href="{x["code"].replace("_", "-")}/">'
                 f'{figure_photo(x, photos.get(x["code"]), classe="photo vignette-espece", credit=False)}'
                 f'<span class="badges"><span class="badge">{milieu}</span>'
                 f'<span class="badge n{n or 0}">{e(etat)}</span></span>'
@@ -276,7 +278,7 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
     for x in sorted(especes, key=lambda x: (x.get("milieu") == "pre", x["saison"][1])):
         cases = "".join(f'<td class="{c}{" actuel" if k + 1 == mois else ""}"></td>'
                         for k, c in enumerate(mois_saison(x["saison"])))
-        rangs.append(f'<tr><th scope="row"><a href="{x["code"]}.html">{icone("../", x["code"], 24)}'
+        rangs.append(f'<tr><th scope="row"><a href="{x["code"].replace("_", "-")}/">{icone("../", x["code"], 24)}'
                      f'{e(x["nom"])}</a></th>{cases}</tr>')
     lignes += ["  <h2>Le calendrier des saisons</h2>",
                '  <p class="muet">Dans l\'ordre où les saisons commencent ; les espèces des prés à la fin. '
@@ -307,8 +309,13 @@ def ecrire(site: Path, departements: list[dict], regles: dict, legendes: dict, r
     dossier = site / DOSSIER
     dossier.mkdir(parents=True, exist_ok=True)
     for x in especes:
-        (dossier / f"{x['code']}.html").write_text(
+        chemin = chemin_espece(x["code"])
+        (site / chemin).mkdir(parents=True, exist_ok=True)
+        (site / chemin / "index.html").write_text(
             page_espece(x, regles["communs"], legendes, nat[x["code"]], jours, noms, par_espece.get(x["code"]),
                         genere_le, photos.get(x["code"])), encoding="utf-8")
+        # L'ancienne adresse (avant le 2026-11-07) renvoie à la nouvelle.
+        (dossier / f"{x['code']}.html").write_text(
+            renvoi(f"{x['code'].replace('_', '-')}/", chemin, x["nom"]), encoding="utf-8")
     (dossier / "index.html").write_text(page_index(especes, nat, jours, noms, genere_le, photos), encoding="utf-8")
-    return [f"{DOSSIER}/"] + [f"{DOSSIER}/{x['code']}.html" for x in especes]
+    return [f"{DOSSIER}/"] + [chemin_espece(x["code"]) for x in especes]

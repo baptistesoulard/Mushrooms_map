@@ -22,7 +22,7 @@ import urllib.request
 from datetime import date
 
 from .config import SITE_DATA, USER_AGENT
-from .pages import ADRESSE, article, date_longue, enumerer
+from .pages import ADRESSE, article, chemin_departement, date_longue, enumerer
 
 FENETRE = 7                      # jours à venir surveillés, aujourd'hui compris
 CONFIRMER_APRES = 3              # au-delà de 3 jours, la prévision se dit « à confirmer »
@@ -187,7 +187,7 @@ def main(argv: list[str]) -> None:
             if not evts:
                 continue
             titre, texte = message(noms[dep], evts, especes, dates[0], resumes[dep], dates, seuil)
-            if not envoyer(a["push"], titre, texte, f"{ADRESSE}departements/{dep}.html", cle, f"alerte-{dep}"):
+            if not envoyer(a["push"], titre, texte, f"{ADRESSE}{chemin_departement(dep, noms[dep])}", cle, f"alerte-{dep}"):
                 expires += 1
                 break
             print(f"Alertes : envoyé à {a.get('nom') or 'un appareil'} pour {noms[dep]} ({len(evts)} espèce(s)).")

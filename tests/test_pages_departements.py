@@ -50,12 +50,12 @@ def test_page_departement():
     assert "<h1>Où trouver des champignons en Vendée cette semaine</h1>" in page
     assert "Calculé le dimanche 1er novembre 2026 à 6 h 20" in page          # heure de Paris, heure d'hiver
     assert len(re.findall(r'<a class="niveau n\w"', page)) == 3 * 8
-    assert 'href="../carte/?departement=85&amp;espece=cepe&amp;jour=2026-11-03"' in page   # la carte, sous /carte/
+    assert 'href="../../carte/?departement=85&amp;espece=cepe&amp;jour=2026-11-03"' in page   # sous /carte/
     assert "Saint-&lt;Mesmin&gt;" in page and "<Mesmin>" not in page        # échappé
     assert "Aucun jour favorable cette semaine." in page                     # la girolle
     girolle = page.split('>Girolle</a> ')[1].split("</section>")[0]
     assert "Communes les mieux placées" not in girolle                       # rien de favorable ce jour-là
-    assert '<h3><a href="../especes/cepe.html">Cèpe</a>' in page             # chaque espèce mène à sa fiche
+    assert '<h3><a href="../../especes/cepe/">Cèpe</a>' in page             # chaque espèce mène à sa fiche
 
 
 def test_donnees_structurees_du_departement():
@@ -69,7 +69,7 @@ def test_donnees_structurees_du_departement():
     types = {g["@type"]: g for g in graphe}
     assert set(types) == {"WebPage", "BreadcrumbList", "FAQPage"}
     assert [x["name"] for x in types["BreadcrumbList"]["itemListElement"]] == [pages.NOM, "Départements", "Landes"]
-    assert types["BreadcrumbList"]["itemListElement"][2]["item"] == f"{pages.ADRESSE}departements/40.html"
+    assert types["BreadcrumbList"]["itemListElement"][2]["item"] == f"{pages.ADRESSE}departements/landes/"
     faq = page.split('<section class="faq">')[1].split("</section>")[0]
     visibles = [(html.unescape(q), html.unescape(rep))
                 for q, rep in re.findall(r"<h3>(.+?)</h3>\n  <p>(.+?)</p>", faq)]
@@ -101,8 +101,8 @@ def test_voisins_et_prepositions():
     voisins = [({"code": "44", "nom": "Loire-Atlantique"}, resumes([1] * 8, [3] * 8, [0] * 8)),
                ({"code": "79", "nom": "Deux-Sèvres"}, resumes([1] * 8, [1] * 8, [0] * 8))]
     page = P.page_departement({"code": "85", "nom": "Vendée"}, ESPECES, r, JOURS, "2026-11-01T05:20+00:00", voisins)
-    assert '<li><a href="44.html">Loire-Atlantique (44)</a> : par endroits pour la girolle</li>' in page
-    assert '<li><a href="79.html">Deux-Sèvres (79)</a> : rien de favorable aujourd&#x27;hui</li>' in page
+    assert '<li><a href="../loire-atlantique/">Loire-Atlantique (44)</a> : par endroits pour la girolle</li>' in page
+    assert '<li><a href="../deux-sevres/">Deux-Sèvres (79)</a> : rien de favorable aujourd&#x27;hui</li>' in page
     assert [pages.dans(c, n) for c, n in (("85", "Vendée"), ("40", "Landes"), ("01", "Ain"), ("75", "Paris"),
                                           ("83", "Var"), ("26", "Drôme"))] == \
         ["en Vendée", "dans les Landes", "dans l'Ain", "à Paris", "dans le Var", "dans la Drôme"]
@@ -120,7 +120,7 @@ def test_index_par_numero():
     deps = [{"code": c, "nom": n} for c, n in (("21", "Côte-d'Or"), ("2A", "Corse-du-Sud"), ("19", "Corrèze"))]
     r = {d["code"]: resumes([4] * 8, [4] * 8, [0] * 8) for d in deps}
     page = P.page_index(deps, ESPECES, r, JOURS, "2026-11-01T05:20+00:00")
-    assert [m for m in re.findall(r'href="(\w+)\.html"', page)] == ["19", "2A", "21"]
+    assert re.findall(r'<li><a href="([\w-]+)/">', page) == ["correze", "corse-du-sud", "cote-d-or"]
     assert "bon : cèpe et girolle" in page
 
 
@@ -134,10 +134,33 @@ def test_carte_des_departements():
     contours = {"largeur": 100, "hauteur": 90, "traces": {"21": "M1 1l1 0 0 1z", "2A": "M5 5l1 0 0 1z",
                                                           "19": "M9 9l1 0 0 1z"}}
     page = P.page_index(deps, ESPECES, r, JOURS, "2026-11-01T05:20+00:00", contours)
-    assert re.findall(r'<a href="(\w+)\.html" data-dep="\1"><path class="n(\w)"', page) == \
+    assert re.findall(r'<a href="[\w-]+/" data-dep="(\w+)"><path class="n(\w)"', page) == \
         [("19", "3"), ("2A", "2"), ("21", "4")]                       # le cèpe, le mieux placé aujourd'hui
+    assert donnees_pages(page)["21"] == "cote-d-or/"                  # pages.js : les liens du classement
     donnees = json.loads(re.search(r'<script type="application/json" id="niveaux-deps">(.+?)</script>', page).group(1))
     assert donnees["defaut"] == "cepe" and donnees["ordre"] == ["19", "2A", "21"]
     assert donnees["especes"]["cepe"]["niveaux"][:2] == ["324", "424"]
     assert donnees["especes"]["girolle"]["niveaux"][0] == "031"
-    assert '<strong>Bonnes conditions</strong> (1) : <a href="21.html">Côte-d&#x27;Or</a>' in page
+    assert '<strong>Bonnes conditions</strong> (1) : <a href="cote-d-or/">Côte-d&#x27;Or</a>' in page
+
+
+def donnees_pages(page: str) -> dict:
+    import json
+    return json.loads(re.search(r'<script type="application/json" id="niveaux-deps">(.+?)</script>', page).group(1))["pages"]
+
+
+def test_adresses_lisibles_et_renvois(tmp_path):
+    """Les pages vivent à une adresse lisible (departements/vendee/) ; l'ancienne (departements/85.html)
+    renvoie aussitôt à la nouvelle, sans être indexée, et dit aux moteurs où est la page."""
+    assert pages.slug("Côte-d'Or") == "cote-d-or" and pages.slug("Territoire de Belfort") == "territoire-de-belfort"
+    assert pages.chemin_departement("85", "Vendée") == "departements/vendee/"
+    assert pages.chemin_espece("pied_de_mouton") == "especes/pied-de-mouton/"
+    deps = [{"code": "85", "nom": "Vendée"}, {"code": "2A", "nom": "Corse-du-Sud"}]
+    r = {d["code"]: resumes([4] * 8, [1] * 8, [0] * 8) for d in deps}
+    chemins = P.ecrire(tmp_path, deps, ESPECES, r, JOURS, "2026-11-01T05:20+00:00")
+    assert chemins == ["departements/", "departements/vendee/", "departements/corse-du-sud/"]
+    assert (tmp_path / "departements" / "vendee" / "index.html").exists()
+    ancien = (tmp_path / "departements" / "85.html").read_text(encoding="utf-8")
+    assert '<meta http-equiv="refresh" content="0; url=vendee/">' in ancien
+    assert f'<link rel="canonical" href="{pages.ADRESSE}departements/vendee/">' in ancien
+    assert '<meta name="robots" content="noindex, follow">' in ancien

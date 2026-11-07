@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import html
 import json
+import re
+import unicodedata
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -109,6 +111,44 @@ _PREPOSITIONS = {"dans le ": "14 15 18 25 29 30 32 39 41 45 46 56 59 62 63 67 68
                  "dans les ": "04 05 06 08 13 22 40 64 65 66 78 79 88 92",
                  "à ": "75"}
 PREPOSITION = {code: p for p, codes in _PREPOSITIONS.items() for code in codes.split()}
+
+
+def slug(texte: str) -> str:
+    """« Côte-d'Or » → « cote-d-or » : minuscules sans accents, mots séparés par des tirets."""
+    t = unicodedata.normalize("NFKD", texte).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", "-", t).strip("-")
+
+
+def chemin_departement(code: str, nom: str) -> str:
+    """L'adresse de la page d'un département, depuis la racine : « departements/vendee/ ». Avant le
+    2026-11-07 : « departements/85.html », qui renvoie depuis (`renvoi`)."""
+    return f"departements/{slug(nom)}/"
+
+
+def chemin_espece(code: str) -> str:
+    """« especes/pied-de-mouton/ » : des tirets, que les moteurs lisent comme des espaces."""
+    return f"especes/{code.replace('_', '-')}/"
+
+
+def renvoi(vers: str, canonique: str, titre: str) -> str:
+    """La page laissée à une ancienne adresse : elle renvoie aussitôt (`vers`, relatif) et dit aux
+    moteurs où est la page (`canonique`, depuis la racine). Les liens déjà partagés, les alertes et
+    les applis installées continuent de marcher."""
+    return f"""<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, follow">
+<title>{e(titre)}</title>
+<link rel="canonical" href="{ADRESSE}{canonique}">
+<meta http-equiv="refresh" content="0; url={vers}">
+<script>location.replace("{vers}" + location.search + location.hash);</script>
+</head>
+<body>
+<p>Cette page a changé d'adresse : <a href="{vers}">{e(titre)}</a>.</p>
+</body>
+</html>
+"""
 
 
 def dans(code: str, nom: str) -> str:

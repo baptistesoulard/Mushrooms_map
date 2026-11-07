@@ -21,7 +21,7 @@ from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, calcul
                     date_courte, date_longue, departements_de, e, enumerer, habituel, icone, image_partage,
                     instant_paris,
                     meilleur_niveau, national, noms_especes, ordre_saison, page_web, pct, pied, site_web, tete,
-                    fil_ariane)
+                    fil_ariane, chemin_departement, chemin_espece)
 from .partage import LARGEUR_UNE
 from .photos import charger as charger_photos
 from .redaction import NBSP, NIVEAUX, nombre
@@ -82,7 +82,7 @@ FONCTIONS = [
 # --- Phrases ----------------------------------------------------------------------------
 
 def _lien_dep(code: str, noms: dict, racine: str) -> str:
-    return f'<a href="{racine}departements/{code}.html">{e(noms.get(code, code))}</a>'
+    return f'<a href="{racine}{chemin_departement(code, noms.get(code, code))}">{e(noms.get(code, code))}</a>'
 
 
 def etat_espece(niv: list[dict], jours: list[date], noms: dict, racine: str = "") -> str:
@@ -157,7 +157,7 @@ def ce_matin(especes: list[dict], nat: dict, phases: dict, jours: list[date], no
             hors.append(article(x["de"]))
             continue
         fin = f" {phases[x['code']]}" if phases.get(x["code"]) else ""
-        lignes.append(f'<a href="{racine}especes/{x["code"]}.html">{e(x["nom"])}</a> : '
+        lignes.append(f'<a href="{racine}{chemin_espece(x["code"])}">{e(x["nom"])}</a> : '
                       f'{etat_espece(nat[x["code"]], jours, noms, racine)}.{fin}')
     if hors:
         lignes.append(f"Hors saison partout : {e(enumerer(hors))}.")
@@ -184,7 +184,7 @@ def tableau_national(especes: list[dict], nat: dict, jours: list[date], racine: 
             contenu = "–" if n in (0, None) else str(compte) if compte else ""
             cases.append(f'<td><a class="niveau n{"x" if n is None else n}" href="{racine}carte/?espece={x["code"]}'
                          f'&amp;jour={d.isoformat()}" title="{e(texte)}" aria-label="{e(texte)}">{contenu}</a></td>')
-        corps.append(f'<tr><th scope="row"><a href="{racine}especes/{x["code"]}.html">{e(x["nom"])}</a></th>'
+        corps.append(f'<tr><th scope="row"><a href="{racine}{chemin_espece(x["code"])}">{e(x["nom"])}</a></th>'
                      f'{"".join(cases)}</tr>')
     return ['  <div class="tableau-semaine"><table class="semaine nationale">',
             f"  <thead><tr><th></th>{colonnes}</tr></thead>",
@@ -220,7 +220,7 @@ def preuve(especes: list[dict], validation: dict | None, racine: str = "") -> li
                    else "pas de carte des prés" if h.get("sans_carte") else "trop peu de cas")
         quand = (f"{pct(m['auc_saison'])} (calendrier seul : {pct(m['auc_calendrier'])})"
                  if "auc_saison" in m else "trop peu de cas")
-        lignes.append(f'  <tr><th scope="row"><a href="{racine}especes/{x["code"]}.html">{e(x["nom"])}</a></th>'
+        lignes.append(f'  <tr><th scope="row"><a href="{racine}{chemin_espece(x["code"])}">{e(x["nom"])}</a></th>'
                       f"<td>{endroit}</td><td>{quand}</td></tr>")
     lignes += ["  </tbody></table></div>",
                '  <p class="muet">Chaque chiffre compte, sur des paires tirées des observations, combien de '
@@ -379,7 +379,8 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
                 "", "", image=image_partage("france", genere_le), plus=APPLI + RENVOI, large=True,
                 ld=[site_web(), page_web(f"{NOM} : où chercher cette semaine", "", genere_le)])
     par_numero = sorted(departements, key=lambda d: cle_departement(d["code"]))
-    choix = "".join(f'<option value="{d["code"]}">{d["code"]} – {e(d["nom"])}</option>' for d in par_numero)
+    choix = "".join(f'<option value="{d["code"]}" data-page="{chemin_departement(d["code"], d["nom"])}">'
+                    f'{d["code"]} – {e(d["nom"])}</option>' for d in par_numero)
 
     # 1. La réponse du jour, la carte de France, et les trois chemins : la carte, autour de soi,
     #    son département (un choix ; sans JavaScript, la liste des départements).
@@ -425,8 +426,8 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
         if phases.get(x["code"]):
             tags.append(f'<span class="badge">{e(phases[x["code"]].rstrip("."))}</span>')
         h = habituel(x)
-        lignes.append(f'    <li><a class="saison-photo" href="especes/{x["code"]}.html" tabindex="-1">{photo}</a>'
-                      f'<div><h3><a href="especes/{x["code"]}.html">{e(x["nom"])}</a></h3>'
+        lignes.append(f'    <li><a class="saison-photo" href="{chemin_espece(x["code"])}" tabindex="-1">{photo}</a>'
+                      f'<div><h3><a href="{chemin_espece(x["code"])}">{e(x["nom"])}</a></h3>'
                       f'<p class="badges">{"".join(tags)}</p>'
                       f'<p class="etat">{t[:1].upper()}{t[1:]}.</p>'
                       + (f'<p class="habituel">{e(h)}.</p>' if h else "") + "</div></li>")
@@ -485,7 +486,7 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
                "  <h2>Par département</h2>",
                f'  <details class="detail"><summary>Les {len(departements)} départements</summary>',
                '  <ul class="liste-departements">']
-    lignes += [f'    <li><a href="departements/{d["code"]}.html" data-departement="{d["code"]}">'
+    lignes += [f'    <li><a href="{chemin_departement(d["code"], d["nom"])}" data-departement="{d["code"]}">'
                f'{d["code"]} {e(d["nom"])}</a></li>' for d in par_numero]
     lignes += ["  </ul></details>",
                "  <h2>Questions fréquentes</h2>"]
@@ -534,7 +535,7 @@ def page_en_ce_moment(departements: list[dict], especes: list[dict], nat: dict, 
                 t = etat_espece(nat[x["code"]], jours, noms)
                 lignes.append(f"  <p>{t[:1].upper()}{t[1:]}.</p>")
         lignes.append(f'  <p><a href="carte/?espece={x["code"]}">{e(x["nom"])} sur la carte</a> · '
-                      f'<a href="especes/{x["code"]}.html">Où et quand le chercher</a></p></section>')
+                      f'<a href="{chemin_espece(x["code"])}">Où et quand le chercher</a></p></section>')
     return haut + "\n".join(lignes) + "\n" + pied("")
 
 

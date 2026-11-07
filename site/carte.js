@@ -1040,7 +1040,7 @@ async function demarrer() {
     photo.addEventListener("error", () => { photo.src = `img/especes/${e.code}.svg`; }, { once: true });
     $("fiche").replaceChildren(
       el("h3", {}, e.nom, " ", el("span", { class: "latin" }, e.latin)), photo, ...corps,
-      el("p", {}, el("a", { href: `especes/${e.code}.html` }, "La fiche complète : saison, milieux, sosies, vérification")));
+      el("p", {}, el("a", { href: `especes/${e.code.replaceAll("_", "-")}/` }, "La fiche complète : saison, milieux, sosies, vérification")));
   }
 
   // La semaine du département : le niveau de chaque espèce, jour par jour (celui du verdict).
@@ -1065,7 +1065,7 @@ async function demarrer() {
       })));
     $("semaine").replaceChildren(el("thead", {}, tete), el("tbody", {}, ...lignes));
     const d = deps[etat.departement];
-    const page = `departements/${etat.departement}.html`;
+    const page = d?.page ?? `departements/${etat.departement}.html`;      // carte.json : l'adresse de sa page
     $("lien-departement").replaceChildren(...(d ? [
       el("a", { href: page }, `La semaine en ${d.nom}, sur une page à part`), " · ",
       el("button", { type: "button", class: "lien", onclick: (ev) => partager(

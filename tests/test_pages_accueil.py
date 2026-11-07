@@ -60,7 +60,7 @@ def test_etat_espece():
     nat = pages.national(ESPECES, DEPS, r, 8)
     cepe = A.etat_espece(nat["cepe"], JOURS, NOMS)
     assert cepe.startswith('bonnes conditions dans 2 départements ('       # « surtout » au-delà de trois
-                           '<a href="departements/85.html">Vendée</a> et <a href="departements/01.html">Ain</a>)')
+                           '<a href="departements/vendee/">Vendée</a> et <a href="departements/ain/">Ain</a>)')
     assert cepe.endswith(", et jusqu'à 3 mercredi 4 novembre")
     girolle = A.etat_espece(nat["girolle"], JOURS, NOMS)
     assert girolle == "conditions défavorables partout aujourd'hui ; bonnes conditions dès mercredi 4 novembre " \
@@ -71,9 +71,9 @@ def test_etat_espece():
 def test_ce_matin_les_mieux_placees_d_abord():
     r = resumes({"85": {"girolle": [3] * 8, "cepe": [4] * 8}, "01": {"trompette": [2] * 8}})
     lignes = A.ce_matin(ESPECES, pages.national(ESPECES, DEPS, r, 8), {"cepe": "Fin de saison."}, JOURS, NOMS)
-    assert lignes[0].startswith('<a href="especes/cepe.html">Cèpe</a> : bonnes conditions dans 1 département')
+    assert lignes[0].startswith('<a href="especes/cepe/">Cèpe</a> : bonnes conditions dans 1 département')
     assert lignes[0].endswith(". Fin de saison.")
-    assert lignes[1].startswith('<a href="especes/girolle.html">Girolle</a> : bonnes conditions par endroits')
+    assert lignes[1].startswith('<a href="especes/girolle/">Girolle</a> : bonnes conditions par endroits')
     assert "pousse possible dans 1 département, sans plus" in lignes[2]
     assert lignes[-1].startswith("Hors saison partout : le bolet bai, ") and "la morille" in lignes[-1]
 
@@ -180,7 +180,7 @@ def test_fiches_especes():
     assert "Ces lignes aident à chercher, jamais à identifier." in page
     assert "pleine du 15 juillet au 20 octobre, possible du 1er juin au 30 novembre" in page
     assert "du 20e au 6e jour avant" in page and "pH de 4 à 6,5 au mieux" in page
-    assert 'href="../carte/?espece=cepe"' in page and 'href="../departements/85.html"' in page
+    assert 'href="../../carte/?espece=cepe"' in page and 'href="../../departements/vendee/"' in page
     trompette = next(x for x in ESPECES if x["code"] == "trompette")
     page = pages_especes.page_espece(trompette, REGLES["communs"], LEGENDES, nat["trompette"], JOURS, NOMS, None,
                                      GENERE_LE)
@@ -204,7 +204,7 @@ def test_ce_qui_est_habituel_a_cote_du_verdict():
     cepe = next(x for x in especes if x["code"] == "cepe")
     fiche = pages_especes.page_espece(cepe, REGLES["communs"], LEGENDES, nat["cepe"], JOURS, NOMS, None, GENERE_LE)
     assert "Météo favorable 1 année sur 10 à cette date, d'après trente ans de météo passée" in fiche
-    assert 'href="../methode.html#habituel"' in fiche
+    assert 'href="../../methode.html#habituel"' in fiche
     assert "habituel" not in pages_especes.page_index(ESPECES, nat, JOURS, NOMS, GENERE_LE)
 
 
@@ -217,7 +217,7 @@ def test_fiche_d_une_espece_des_pres():
     assert "../carte/?espece=rose_pres" not in page and "Forêts favorables" not in page
     assert "Milieux favorables : prairies." in page and "Pas de carte des prés" in page
     assert "le plus de prés favorables d'abord" in page and "demandez son accord" in page
-    assert '<a class="bouton principal" href="../en-ce-moment.html#rose_pres">' in page
+    assert '<a class="bouton principal" href="../../en-ce-moment.html#rose_pres">' in page
     oronge = next(x for x in ESPECES if x["code"] == "oronge")
     assert pages_especes.pronom(oronge) == "elle"
     hygrophore = next(x for x in ESPECES if x["code"] == "hygrophore_mars")
@@ -242,8 +242,14 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
     partage.ecrire(tmp_path / "data" / "partage", DEPS, {d["code"]: k for k, d in enumerate(DEPS)}, ESPECES, r,
                    pages.national(ESPECES, DEPS, r, 8), JOURS, codes, pixel_dep, 200, [s for s, _ in CLASSES],
                    une={x["code"]: niveaux for x in ESPECES}, grille=grille, cadre=cadre)
+    renvois = 0
     for page in tmp_path.rglob("*.html"):
         html = page.read_text(encoding="utf-8")
+        if 'http-equiv="refresh"' in html:          # une ancienne adresse : renvoie à une page écrite
+            cible = re.search(r'content="0; url=([^"]+)"', html).group(1)
+            assert (page.parent / cible / "index.html").exists() and 'content="noindex, follow"' in html, page
+            renvois += 1
+            continue
         assert f'<meta name="robots" content="{ROBOTS}">' in html, page
         assert not re.search(r'<script[^>]+src="https?://', html)
         image = re.search(rf'<meta property="og:image" content="{re.escape(pages.ADRESSE)}([^"?]+)\?v=\d+">', html)
@@ -254,7 +260,8 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
             assert chemin.exists() or (SITE / rel).exists(), f"{page.relative_to(tmp_path)} → {cible}"
         assert not liens_imbriques(html), f"{page.relative_to(tmp_path)} : un lien dans un lien"
     # Les pages du jour se datent : pages.js prévient quand la mise à jour de la nuit manque.
-    for nom in ("index.html", "en-ce-moment.html", "departements/index.html", "departements/85.html"):
+    assert renvois == len(DEPS) + len(ESPECES)                    # chaque ancienne adresse renvoie
+    for nom in ("index.html", "en-ce-moment.html", "departements/index.html", "departements/vendee/index.html"):
         html = (tmp_path / nom).read_text(encoding="utf-8")
         assert html.count(f'data-premier-jour="{JOURS[0].isoformat()}"') == 1, nom
 

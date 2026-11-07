@@ -109,7 +109,12 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   semaine du 7 novembre » (préposition de chaque département : `pages.dans`), chiffres de tête,
   questions fréquentes répondues avec les chiffres du jour (le texte du JSON-LD est celui de la
   page, test), départements voisins (`carte_departements.voisins`, tirés des contours versionnés).
-  Les forêts n'y sont pas nommées (« aucun coin ») : à décider avant de le faire.
+- **Adresses lisibles (2026-11-07)** : `departements/vendee/` (`pages.chemin_departement`, nom sans
+  accents), `especes/pied-de-mouton/` (`pages.chemin_espece`, des tirets). Les anciennes adresses
+  (`departements/85.html`, `especes/pied_de_mouton.html`) restent écrites chaque matin en pages de
+  renvoi (`pages.renvoi` : refresh immédiat, canonical, `noindex, follow`) : liens partagés, alertes
+  et applis installées continuent de marcher. `carte.json` donne la page de chaque département
+  (`page`), l'accueil la met sur ses options (`data-page`) : le JavaScript ne fabrique pas d'adresse.
 - **Images de partage** (`partage.py` → `data/partage/`) : l'aperçu des liens dans les
   messageries (`og:image`, 1200 × 630), la carte du jour (la meilleure espèce de chaque pixel
   de 1,15 km, jamais plus fin) et la semaine. Leur adresse change à chaque export

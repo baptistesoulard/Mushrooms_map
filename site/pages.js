@@ -182,7 +182,11 @@ function monDepartement(bouton) {
 // Accueil : le choix d'un département mène à sa page ; sans choix, à la liste.
 function allerDepartement(formulaire) {
   const choix = formulaire.querySelector("select");
-  const aller = () => { location.href = choix.value ? `departements/${choix.value}.html` : "departements/"; };
+  // Chaque option porte l'adresse de sa page (data-page) ; à défaut, l'ancienne, qui y renvoie.
+  const aller = () => {
+    const o = choix.selectedOptions[0];
+    location.href = !choix.value ? "departements/" : o?.dataset.page || `departements/${choix.value}.html`;
+  };
   choix.addEventListener("change", aller);
   formulaire.addEventListener("submit", (ev) => { ev.preventDefault(); aller(); });
 }
@@ -217,7 +221,7 @@ function carteDepartements(choix) {
     if (vue && d.especes[vue]) espece = vue;
   } catch { /* rien de gardé */ }
   choix.hidden = false;
-  const lien = (c) => el("a", { href: `${c}.html` }, d.noms[c] ?? c);
+  const lien = (c) => el("a", { href: d.pages?.[c] ?? `${c}.html` }, d.noms[c] ?? c);
   function peindre() {
     const x = d.especes[espece];
     const niveaux = x.niveaux[jour];
