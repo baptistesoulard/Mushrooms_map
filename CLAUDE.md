@@ -180,9 +180,11 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   semaine, altitude, communes, France), L'espèce (fiche), Mes outils (coins, alertes, exploration).
   Fonds : plan IGN grisé par défaut (l'indice ressort), relief (estompage IGN), photos ; le choix
   est gardé (`champi-fond`). L'indice a son calque (« indice ») en mode produit sur le plan et le relief
-  (pas sur les photos) ; par-dessus, les noms de lieux de l'IGN (`GEOGRAPHICALNAMES.NAMES`, jeu
-  `PM_6_18`, calque « noms ») sur tous les fonds, puis les marques (position, coins). 2026-11-07 :
-  les noms du plan, sous les couleurs, ne se lisaient plus.
+  (pas sur les photos) ; par-dessus, les contours des départements (calque « contours »,
+  `departements_carte.json` publié par l'export, trait sombre bordé de clair, jusqu'au zoom 11 :
+  simplifiés à ~2 km, ils s'écarteraient des vraies limites de plus près), puis les marques
+  (position, coins). Les noms de lieux de l'IGN (`GEOGRAPHICALNAMES.NAMES`) ont été essayés
+  par-dessus le 2026-11-07, puis retirés : doublés par ceux du plan, peu satisfaisants.
 - **Alertes personnalisées** (`site/alertes.js` → `alertes.json` du dépôt privé du lien de groupe
   → `alertes.py`, étape de `carte.yml` avant le déploiement) : un département, des espèces, un
   seuil (« bon » ou « par endroits ») ; notification Web Push quand une espèce DEVIENT favorable

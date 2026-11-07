@@ -567,6 +567,9 @@ def exporter(meteo: Meteo | None = None) -> dict:
     ecrire_json(SITE_DATA / "especes.json", regles)
     if validation:
         ecrire_json(SITE_DATA / "validation.json", validation)
+    # Les contours des départements, pour la carte (versionnés dans data/, publiés à côté des données).
+    if (contours_deps := carte_departements.charger()):
+        ecrire_json(SITE_DATA / "departements_carte.json", contours_deps)
     jours = [meteo.dates[k0 + k] for k in range(JOURS_FUTURS)]
     # Pour les pages seulement (especes.json reste les règles) : ce qui est habituel aujourd'hui.
     for x in regles["especes"]:

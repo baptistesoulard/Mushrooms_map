@@ -18,6 +18,7 @@ const MONDE = 2 * Math.PI * R;
 const DETAIL = 11;                     // à partir de ce zoom, une case ≈ un pixel d'écran
 const SYNTHESE = 8;                    // en dessous, la vue France : le verdict par carrés de 9,2 km
 const CARRES_FINS = 7;                 // … et dès ce zoom (jusqu'à SYNTHESE), par carrés de 4,6 km
+const CONTOURS_JUSQUA = 11.5;          // les contours des départements, en dessous de ce zoom
 const CLE_ESPECE = "champi-espece";    // gardées dans le navigateur (voir a-propos.html)
 const CLE_DEPARTEMENT = "champi-departement";
 const CLE_FOND = "champi-fond";
@@ -423,13 +424,9 @@ async function demarrer() {
   map.createPane("indice").style.zIndex = 350;
   const marquerFond = () => map.getContainer().classList.toggle("sur-photo", fond === "photo");
   marquerFond();
-  // Les noms de lieux de l'IGN (transparents, zooms 6 à 18) par-dessus l'indice, sur tous les fonds :
-  // ceux du plan restent dessous, fondus dans les couleurs. minZoom à 5,5 : Leaflet crée les tuiles au
-  // zoom arrondi et les retire au zoom exact (voir calqueDetail).
-  map.createPane("noms").style.zIndex = 390;
-  map.getPane("noms").style.pointerEvents = "none";
-  L.tileLayer(wmts("GEOGRAPHICALNAMES.NAMES", "image/png", "normal", "PM_6_18"),
-    { pane: "noms", minZoom: 5.5, maxZoom: 19, minNativeZoom: 6, maxNativeZoom: 18, className: "noms" }).addTo(map);
+  // Les contours des départements, au-dessus de l'indice et sous les marques (installés plus bas).
+  map.createPane("contours").style.zIndex = 390;
+  map.getPane("contours").style.pointerEvents = "none";
   map.attributionControl.addAttribution("Indice : météo Météo-France et ECMWF via Open-Meteo, forêts et relief IGN, roches BRGM");
 
   const ControleFonds = L.Control.extend({
@@ -562,6 +559,45 @@ async function demarrer() {
     },
   });
   const calqueCarres = new Carres({ pane: "indice", maxZoom: SYNTHESE - 1, updateWhenZooming: false }).addTo(map);
+
+  // Les contours des départements (ADMIN EXPRESS simplifié à ~2 km, data/departements_carte.json, ceux
+  // de l'accueil et de la page des départements) : un trait sombre bordé de clair, lisible sur le
+  // foncé comme sur le pâle, jusqu'au zoom 11 ; plus près, la simplification s'écarterait trop des
+  // vraies limites (le plan IGN les montre). Remplace les noms de lieux de l'IGN (2026-11-07).
+  const calqueContours = L.layerGroup();
+  let lisere = null, trait = null;
+  // Plus épais de près : sur la vue France, les départements sont petits et un trait épais boucherait.
+  const epaisseurs = () => (map.getZoom() < CARRES_FINS ? [3, 1.4] : map.getZoom() < SYNTHESE ? [3.5, 1.8] : [4.5, 2.3]);
+  const majContours = () => {
+    const voir = map.getZoom() < CONTOURS_JUSQUA;
+    if (voir !== map.hasLayer(calqueContours)) { if (voir) calqueContours.addTo(map); else map.removeLayer(calqueContours); }
+    if (voir && trait) {
+      const [l, t] = epaisseurs();
+      lisere.setStyle({ weight: l });
+      trait.setStyle({ weight: t });
+    }
+  };
+  fetch("data/departements_carte.json").then((r) => (r.ok ? r.json() : null)).then((c) => {
+    if (!c?.cadre) return;
+    const [x0, y0, x1, y1] = c.cadre, kx = (x1 - x0) / c.largeur, ky = (y1 - y0) / c.hauteur;
+    const versLL = (u, v) => [versLat(y1 - v * ky), ((x0 + u * kx) / R) * 180 / Math.PI];
+    const anneaux = [];
+    for (const d of Object.values(c.traces)) {
+      for (const sous of d.split("M").filter(Boolean)) {   // « x y l dx dy dx dy … z », au dixième
+        const n = sous.match(/-?\d+(?:\.\d+)?/g).map(Number);
+        let u = n[0], v = n[1];
+        const points = [versLL(u, v)];
+        for (let i = 2; i + 1 < n.length; i += 2) { u += n[i]; v += n[i + 1]; points.push(versLL(u, v)); }
+        points.push(points[0]);
+        anneaux.push(points);
+      }
+    }
+    const rendu = L.canvas({ pane: "contours", padding: 0.3 });
+    lisere = L.polyline(anneaux, { renderer: rendu, interactive: false, color: "#ffffff", opacity: 0.85 }).addTo(calqueContours);
+    trait = L.polyline(anneaux, { renderer: rendu, interactive: false, color: "#1d1b17", opacity: 1 }).addTo(calqueContours);
+    majContours();
+  }).catch((err) => console.error(err));
+  map.on("zoomend", majContours);
   // Passer le seuil sans changer de niveau de tuiles garderait les tuiles d'avant.
   let coteFrance = vueFrance(), grilleVue = grilleCarres();
   map.on("zoomend", () => {
