@@ -22,7 +22,8 @@ l'habitat (release « habitat », copié dans `site/habitat/`) et de la météo 
 Puis les pages lisibles sans JavaScript, à côté de la carte (`site/carte/`) : l'accueil et « en
 ce moment » (`pages_accueil`), les fiches espèces (`pages_especes`), les départements
 (`pages_departements`) ; et leurs images de partage, `partage/<département>.png`, `france.png`
-`carte-france.png` et `carte-france-<espèce>.png`, les cartes de l'accueil (`partage`).
+`carte-france.png` et `carte-france-<espèce>.png`, les cartes de l'accueil (`partage`) : le
+verdict des départements sur chaque carré de 9,2 km (`verdicts_carres`).
 
 Les calculs de ce job (aperçu, résumés) se font sur l'échantillon de l'habitat (une case sur
 16), avec les MÊMES champs arrondis que le navigateur : le panneau et la carte disent la même chose.
@@ -66,6 +67,7 @@ VUE = 8                              # pixels d'aperçu par pixel de « Que cher
 PRES_COMMUNE_KM2 = 0.25              # en dessous (une ou deux parcelles de Corine), pas d'indice de commune
 LARGEUR_TABLE = 256                  # valeurs par ligne de la table des communes
 KM2_PAR, PARTS_PAR = 3, 250          # un octet : la forêt en km² × 3, les parts × 250
+CARRE_MIN_KM2 = 2.0                  # carte de l'accueil : moins de forêt (de prés) dans un carré, pas de verdict
 
 
 # --- Habitat ------------------------------------------------------------------------
@@ -303,6 +305,37 @@ class Vue:
         return np.concatenate([c.reshape(self.ny, self.nx) for c in self.couches]).astype(np.uint8)
 
 
+def pixels_vue(grille: Grille, lat: np.ndarray, lon: np.ndarray) -> tuple[np.ndarray, int, int]:
+    """Le carré de la grille de « Que chercher ici ? » (VUE pixels d'aperçu de `grille`) de chaque
+    point, et la taille de cette grille (nx, ny)."""
+    x, y = lonlat_vers_merc(lon, lat)
+    pas = grille.pas * VUE
+    nx, ny = -(-grille.nx // VUE), -(-grille.ny // VUE)
+    col = np.clip(np.floor((x - grille.x0) / pas).astype(np.int64), 0, nx - 1)
+    lig = np.clip(np.floor((grille.y1 - y) / pas).astype(np.int64), 0, ny - 1)
+    return lig * nx + col, nx, ny
+
+
+def verdicts_carres(pixel: np.ndarray, nx: int, ny: int, km2: np.ndarray, libre: np.ndarray,
+                    indice: np.ndarray, saison: np.ndarray) -> np.ndarray:
+    """Le verdict des départements (`redaction.niveau`, mêmes seuils) sur chaque carré de 9,2 km,
+    pour la carte de l'accueil : 0 hors saison, 1 défavorable, 2 possible, 3 par endroits, 4 bon ;
+    -1 sous CARRE_MIN_KM2 de forêt (de prés) hors zones protégées, pour qu'un bosquet ne colore
+    pas un carré. Les parts : la forêt à 0,40 et plus (« bon »), à 0,25 et plus (« moyen »)."""
+    n = nx * ny
+    p, k = pixel[libre], km2[libre]
+    surface = np.bincount(p, weights=k, minlength=n)
+    part = {nom: np.divide(np.bincount(p, weights=k * (indice[libre] >= seuil), minlength=n), surface,
+                           out=np.zeros(n), where=surface > 0)
+            for nom, seuil in (("bon", M.CLASSES[2][0]), ("moyen", M.CLASSES[1][0]))}
+    en_saison = np.bincount(p, weights=(saison[libre] > 0).astype(np.float64), minlength=n) > 0
+    s = redaction.SEUILS_NIVEAU
+    niv = np.where(part["bon"] >= s["bon"], 4, np.where(part["bon"] >= s["endroits"], 3,
+                   np.where(part["moyen"] >= s["possible"], 2, 1)))
+    niv = np.where(en_saison, niv, 0)
+    return np.where(surface >= CARRE_MIN_KM2, niv, -1).astype(np.int8).reshape(ny, nx)
+
+
 # --- Faits du panneau, par département ------------------------------------------------
 
 def faits(esp: E.Espece, jour: date, sel: np.ndarray, ech: Echantillon, km2: np.ndarray,
@@ -406,12 +439,14 @@ def exporter(meteo: Meteo | None = None) -> dict:
     resumes = {d["code"]: {} for d in departements}
     classement = {}
     meilleure = None
-    une = {}                         # l'aperçu du jour de chaque espèce : les cartes de l'accueil
+    une = {}                         # le verdict de chaque carré aujourd'hui : les cartes de l'accueil
+    carres, nx_c, ny_c = pixels_vue(g_apercu, ech.lat, ech.lon)
     vues = [Vue(apercu, km2) for _ in range(JOURS_FUTURS)]
     # Les prés (espèces des champs) : leur propre échantillon, jamais publié point par point.
     lus = charger_pres(communes, departements)
     if lus:
         pres, milieux = lus
+        carres_pres = pixels_vue(g_apercu, pres.lat, pres.lon)[0]
         calcul_pres = CalculChamps(champs, meteo.lats, meteo.lons, pres.lat, pres.lon, pres.altitude,
                                    pres.ensoleillement)
         km2_pres = (prairies.PAS * np.cos(np.radians(pres.lat))) ** 2 / 1e6
@@ -445,13 +480,13 @@ def exporter(meteo: Meteo | None = None) -> dict:
                 vues[k].ajouter(ind)
                 if k == 0:   # l'image de partage : la meilleure espèce de chaque pixel, aujourd'hui
                     meilleure = image if meilleure is None else np.maximum(meilleure, image)
-                    une[esp.code] = image
+                    une[esp.code] = verdicts_carres(carres, nx_c, ny_c, km2, ~ech.protege, ind, saison)
             else:            # les prés, commune par commune : jamais point par point
                 codes = indices_communes(pres.commune, km2_pres, ind, len(communes))
                 ecrire_png(SITE_DATA / "communes" / f"{esp.code}_{k}.png", table_communes(codes))
                 ecrire_png(SITE_DATA / "apercu" / f"{esp.code}_{k}.png", codes[communes_px])
-                if k == 0:
-                    une[esp.code] = codes[communes_px]
+                if k == 0:   # des carrés de 9,2 km : jamais un pré
+                    une[esp.code] = verdicts_carres(carres_pres, nx_c, ny_c, km2_pres, ~pres.protege, ind, saison)
             jour_classement = []
             for dep, sel in zip(departements, selections):
                 if not sel.any():
@@ -537,7 +572,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
     partage.ecrire(SITE_DATA / "partage", departements, rang, regles["especes"], resumes,
                    pages.national(regles["especes"], departements, resumes, len(jours)), jours,
                    meilleure, pixel_dep, ECHELLE, [s for s, _ in M.CLASSES],
-                   par_espece=une, grille=g_apercu,
+                   une=une, grille=Grille(g_apercu.x0, g_apercu.y1, g_apercu.pas * VUE, nx_c, ny_c),
                    cadre=carte_departements.cadre_une(contours)[1] if "cadre" in contours else None)
     print(f"Écrit site/data/ et {len(chemins)} pages en {time.time() - t0:.0f} s")
     return carte

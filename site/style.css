@@ -18,7 +18,6 @@
   --classe-3: #d9662b;
   --classe-4: #9c3510;
   --classe-5: #5e1b13;
-  --foret-pale: #dfe6d3;   /* forêt à l'indice très faible, sur les images de partage (partage.FORET) */
   --pastille-trait: rgba(0, 0, 0, .12);   /* le tour d'une pastille de légende */
   --hachure: #6b6b6b;
   /* Mode exploration : une teinte hors de la gamme de l'indice et du vert des forêts IGN. */
@@ -719,17 +718,7 @@ a.bouton.principal:hover { filter: brightness(1.08); }
   fill: rgb(255 255 255 / .22); stroke: #1d1b17; stroke-width: 2px;
 }
 .une-carte-cadre a:focus-visible { outline: none; }
-.une-legende { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .78rem; color: var(--texte-3); }
-.une-legende .echelle { display: inline-flex; }
-.une-legende i { width: 22px; height: 10px; box-shadow: inset 0 0 0 1px var(--pastille-trait); }
-.une-legende i:first-child { border-radius: 3px 0 0 3px; }
-.une-legende i:last-child { border-radius: 0 3px 3px 0; }
-.une-legende .c0 { background: var(--foret-pale); }
-.une-legende .c1 { background: var(--classe-1); }
-.une-legende .c2 { background: var(--classe-2); }
-.une-legende .c3 { background: var(--classe-3); }
-.une-legende .c4 { background: var(--classe-4); }
-.une-legende .c5 { background: var(--classe-5); }
+.une-legende { margin: 8px 0 0; font-size: .78rem; }
 .une-carte figcaption { font-size: .8rem; color: var(--texte-3); margin-top: 4px; }
 @media (max-width: 760px) {
   .une { grid-template-columns: 1fr; padding: 20px 18px; }

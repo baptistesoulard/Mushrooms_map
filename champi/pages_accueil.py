@@ -16,7 +16,7 @@ from math import cos, radians
 from pathlib import Path
 
 from .carte_departements import cadre_une, charger as charger_contours
-from .modele import CLASSES
+from .config import PAS_FIN
 from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, cle_departement,
                     date_courte, date_longue, departements_de, e, enumerer, habituel, icone, image_partage,
                     instant_paris,
@@ -280,13 +280,14 @@ def niveaux_du_jour(nat_espece: list[dict]) -> dict[str, int]:
     return {c: n for n, codes in nat_espece[0].items() for c in codes}
 
 
-def carre_km(contours: dict | None) -> int:
-    """Le côté au sol, en km arrondi, d'un pixel de la carte de la une (à la latitude du milieu de
-    la France) ; 1 km sans cadre (l'aperçu)."""
-    if not contours or "cadre" not in contours:
-        return 1
-    x0, _, x1, _ = cadre_une(contours)[1]
-    return max(1, round((x1 - x0) / LARGEUR_UNE * cos(radians(46.5)) / 1000))
+# Le côté d'un carré de la carte de la une, m Mercator : celui de « Que chercher ici ? »
+# (`export_france`, APERCU × VUE cases de 50 m ; test).
+CARRE_UNE_M = PAS_FIN * 16 * 8
+
+
+def carre_km() -> int:
+    """Le côté au sol d'un carré de la carte de la une, en km arrondi, au milieu de la France."""
+    return round(CARRE_UNE_M * cos(radians(46.5)) / 1000)
 
 
 def une_carte(especes: list[dict], nat: dict, departements: list[dict], genere_le: str,
@@ -295,7 +296,7 @@ def une_carte(especes: list[dict], nat: dict, departements: list[dict], genere_l
     des boutons pour en voir une autre ou toutes, et les contours des départements par-dessus,
     chacun menant à la carte de l'espèce sur ce département. Les images : `partage.carte_cadre`."""
     choix = especes_de_la_une(especes, nat)
-    km = carre_km(contours)
+    km = f"{carre_km()}{NBSP}km"
     avec_contours = bool(contours and "cadre" in contours)
     clic = " Un clic sur un département l'ouvre sur la carte." if avec_contours else ""
     par_numero = sorted(departements, key=lambda d: cle_departement(d["code"]))
@@ -309,19 +310,18 @@ def une_carte(especes: list[dict], nat: dict, departements: list[dict], genere_l
                 for c, n in niveaux_du_jour(nat[y["code"]]).items():
                     niv[c] = max(n, niv.get(c, 0))
             return {"espece": "", "image": image_partage("carte-france", genere_le),
-                    "alt": "Carte de France du jour, toutes espèces : les forêts aux meilleures conditions en "
-                           "brun foncé",
-                    "legende": f"Aujourd'hui, toutes espèces : la meilleure de chaque forêt, par carrés de "
-                               f"{km}{NBSP}km.{clic}",
+                    "alt": f"Carte de France du jour, toutes espèces : chaque carré de {km} au meilleur verdict "
+                           "de ses espèces, de « hors saison » à « bon »",
+                    "legende": f"Aujourd'hui, toutes espèces : le meilleur verdict de chaque carré de {km}.{clic}",
                     "niveaux": "".join(str(niv[c]) if c in niv else "x" for c in ordre)}
         niv = niveaux_du_jour(nat[x["code"]])
         pre = x.get("milieu") == "pre"
         return {"espece": x["code"], "image": image_partage(f"carte-france-{x['code']}", genere_le),
-                "alt": f"Carte de France du jour pour {article(x['de'])} : "
-                       + ("les communes aux prés les plus favorables" if pre else "les forêts aux meilleures conditions")
-                       + " en brun foncé",
-                "legende": (f"Aujourd'hui, {article(x['de'])} : les prés de chaque commune, jamais un pré." if pre else
-                            f"Aujourd'hui, {article(x['de'])} : chaque forêt, par carrés de {km}{NBSP}km.") + clic,
+                "alt": f"Carte de France du jour pour {article(x['de'])} : chaque carré de {km} au verdict de ses "
+                       f"{'prés' if pre else 'forêts'}, de « hors saison » à « bon »",
+                "legende": (f"Aujourd'hui, {article(x['de'])} : le verdict des {'prés' if pre else 'forêts'} de chaque "
+                            f"carré de {km}, comme pour les départements"
+                            + (", jamais un pré." if pre else ".") + clic),
                 "niveaux": "".join(str(niv[c]) if c in niv else "x" for c in ordre)}
 
     vues = {x["code"]: vue(x) for x in choix}
@@ -353,10 +353,11 @@ def une_carte(especes: list[dict], nat: dict, departements: list[dict], genere_l
         lignes.append(f'  <svg viewBox="{" ".join(f"{v:g}" for v in vue_box)}" role="group" '
                       f'aria-label="Départements">{chemins}</svg>')
     lignes.append("  </div>")
-    noms_classes = [CLASSES[0][1].lower(), CLASSES[-1][1].lower()]
-    lignes += ['  <div class="une-legende"><span>' + e(noms_classes[0]) + '</span><span class="echelle" aria-hidden="true">'
-               + "".join(f'<i class="c{k}"></i>' for k in range(len(CLASSES))) + "</span><span>"
-               + e(noms_classes[1]) + "</span></div>",
+    # Les verdicts, comme la carte des départements ; un carré blanc n'a pas assez de forêt.
+    lignes += ['  <div class="legende-semaine une-legende">'
+               + "".join(f'<span><span class="pastille n{n}"></span>{mot}</span>' for n, mot in
+                         ((4, "bon"), (3, "par endroits"), (2, "possible"), (1, "défavorable"), (0, "hors saison")))
+               + "</div>",
                f"  <figcaption>{e(v['legende'])}</figcaption>",
                "  </figure>"]
     if choix:

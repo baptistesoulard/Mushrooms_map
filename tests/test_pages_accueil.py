@@ -13,6 +13,7 @@ from champi import carte_departements, pages_departements, pages_especes, partag
 from champi.grille import Grille
 from champi.habitat import ESSENCES, ROCHES
 from champi.modele import CLASSES
+from champi.redaction import NBSP
 
 ROBOTS = "index, follow" if pages.INDEXER else "noindex, nofollow"
 
@@ -127,6 +128,9 @@ def test_carte_de_la_une():
     assert [x["code"] for x in A.especes_de_la_une(ESPECES, nat)] == ["cepe", "girolle"]
     contours = carte_departements.charger()
     page = A.page_accueil(DEPS, ESPECES, nat, {}, JOURS, None, GENERE_LE, contours=contours)
+    assert A.carre_km() == 6
+    assert f"le verdict des forêts de chaque carré de 6{NBSP}km, comme pour les départements." in page
+    assert re.findall(r'<span class="pastille n(\d)"></span>', page.split('class="une-carte"')[1])[:5] == list("43210")
     une = page.split('<figure class="une-carte">')[1].split("</figure>")[0]
     assert re.findall(r'data-une="(\w+)" aria-pressed="(\w+)"', une) == [
         ("cepe", "true"), ("girolle", "false"), ("toutes", "false")]
@@ -234,9 +238,10 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
     pixel_dep = np.repeat(np.arange(3, dtype=np.int16), 300)
     cadre = carte_departements.charger()["cadre"]
     grille = Grille(cadre[0], cadre[3], (cadre[2] - cadre[0]) / 30, 30, 30)
+    niveaux = np.full((30, 30), 3, dtype=np.int8)
     partage.ecrire(tmp_path / "data" / "partage", DEPS, {d["code"]: k for k, d in enumerate(DEPS)}, ESPECES, r,
                    pages.national(ESPECES, DEPS, r, 8), JOURS, codes, pixel_dep, 200, [s for s, _ in CLASSES],
-                   par_espece={x["code"]: codes for x in ESPECES}, grille=grille, cadre=cadre)
+                   une={x["code"]: niveaux for x in ESPECES}, grille=grille, cadre=cadre)
     for page in tmp_path.rglob("*.html"):
         html = page.read_text(encoding="utf-8")
         assert f'<meta name="robots" content="{ROBOTS}">' in html, page

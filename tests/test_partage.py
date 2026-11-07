@@ -23,7 +23,10 @@ def test_couleurs_du_site():
     jetons = dict(re.findall(r"--([\w-]+):\s*(#[0-9a-f]{6});", racine))
     assert partage.CLASSES == [jetons[f"classe-{k}"] for k in range(1, len(CLASSES))]
     assert (partage.FOND, partage.TRAIT, partage.TEXTE) == (jetons["fond"], jetons["trait"], jetons["texte"])
-    assert partage.FORET == jetons["foret-pale"]             # la légende de la carte de l'accueil
+    # La carte de l'accueil : les couleurs des verdicts de la carte des départements.
+    for n, c in enumerate(partage.NIVEAUX_COULEURS):
+        attendu = re.search(rf"\.carte-deps path\.n{n}[^{{]*\{{\s*fill:\s*([^;]+);", css).group(1).strip()
+        assert c == (jetons[attendu[6:-1]] if attendu.startswith("var(") else attendu), n
 
 
 def test_classes_comme_le_modele():
@@ -63,28 +66,32 @@ def test_carte_departement_agrandie_d_un_nombre_entier():
 
 def test_cartes_de_l_accueil_sur_le_cadre_des_contours(tmp_path):
     """Les cartes de l'accueil (toutes espèces, puis chaque espèce) couvrent exactement le cadre
-    des contours : un pixel de l'aperçu tombe dans le pixel de l'image qui couvre sa position."""
-    cadre = [0.0, 0.0, 1000.0, 500.0]                       # 1 000 × 500 m : des pixels de 50 m
-    grille = Grille(-100.0, 600.0, 10.0, 120, 70)           # l'aperçu déborde du cadre, pas de 10 m
-    codes = np.full((grille.ny, grille.nx), 251, dtype=np.uint8)
-    codes[30, 40] = 150                                      # centre (305, 295) : classe 5
-    cepe = np.full_like(codes, 251)
-    cepe[1, 1] = 150                                         # centre (-85, 585) : hors du cadre
+    des contours : chaque pixel prend la couleur du verdict du carré où tombe son centre ;
+    « toutes » prend le meilleur verdict du carré."""
+    cadre = [0.0, 0.0, 1000.0, 500.0]
+    grille = Grille(-100.0, 600.0, 100.0, 12, 7)            # des carrés de 100 m, qui débordent du cadre
+    cepe = np.full((7, 12), -1, dtype=np.int8)
+    cepe[4, 5] = 4                                           # x 400-500, y 100-200 : bon
+    girolle = np.full_like(cepe, -1)
+    girolle[4, 5], girolle[1, 2] = 2, 0                      # possible ; hors saison en x 100-200, y 400-500
     deps = [{"code": "01", "nom": "Ain"}]
     especes = E.en_json()["especes"]
-    nat = pages.national(especes, deps, {}, 8)
-    partage.ecrire(tmp_path, deps, {"01": 0}, especes, {}, nat, JOURS, codes,
-                   np.full(codes.size, -1, dtype=np.int16), 200, SEUILS, par_espece={"cepe": cepe},
-                   grille=grille, cadre=cadre)
-    for nom in ("carte-france.png", "carte-france-cepe.png"):
-        img = Image.open(tmp_path / nom).convert("RGB")
-        assert img.size == (partage.LARGEUR_UNE, partage.LARGEUR_UNE // 2)
-    toutes = np.asarray(Image.open(tmp_path / "carte-france.png").convert("RGB"))
-    i, j = int(np.floor((500 - 295) / 500 * 280)), int(np.floor(305 / 1000 * 560))
-    fonce = np.all(toutes == partage._rgb(partage.CLASSES[-1]), axis=-1)
-    assert fonce[i, j] and fonce.sum() == 1
-    assert not np.all(np.asarray(Image.open(tmp_path / "carte-france-cepe.png").convert("RGB"))
-                      == partage._rgb(partage.CLASSES[-1]), axis=-1).any()
+    partage.ecrire(tmp_path, deps, {"01": 0}, especes, {}, pages.national(especes, deps, {}, 8), JOURS,
+                   np.full((7, 12), 251, dtype=np.uint8), np.full(84, -1, dtype=np.int16), 200, SEUILS,
+                   une={"cepe": cepe, "girolle": girolle}, grille=grille, cadre=cadre)
+    largeur = partage.LARGEUR_UNE * partage.NETTETE_UNE
+    images = {n: np.asarray(Image.open(tmp_path / f"carte-france{n}.png").convert("RGB"))
+              for n in ("", "-cepe", "-girolle")}
+    assert all(im.shape == (largeur // 2, largeur, 3) for im in images.values())
+
+    def couleur(im, x, y):                                   # le pixel qui couvre (x, y) m Mercator
+        return tuple(im[int((500 - y) / 500 * im.shape[0]), int(x / 1000 * im.shape[1])])
+
+    rgb = [partage._rgb(c) for c in partage.NIVEAUX_COULEURS]
+    assert couleur(images["-cepe"], 450, 150) == rgb[4] and couleur(images["-girolle"], 450, 150) == rgb[2]
+    assert couleur(images[""], 450, 150) == rgb[4] and couleur(images[""], 150, 450) == rgb[0]
+    assert couleur(images["-cepe"], 150, 450) == partage._rgb(partage.FOND)     # pas de verdict : le fond
+    assert couleur(images[""], 650, 150) == partage._rgb(partage.FOND)
 
 
 def test_cadre_des_contours():

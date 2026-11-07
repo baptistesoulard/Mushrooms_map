@@ -3,10 +3,13 @@ messageries et les réseaux quand on y colle le lien d'une page (`og:image`, 120
 
 `data/partage/<département>.png` et `france.png` : à gauche la carte du jour (pour chaque
 pixel de 1,15 km, la meilleure des espèces), à droite la semaine espèce par espèce, aux
-couleurs du site (`style.css`, vérifié par les tests). Pour l'accueil, la carte seule :
-`carte-france.png` (toutes espèces) et `carte-france-<espèce>.png`, peintes sur le cadre des
-contours des départements (`carte_departements`), que la page pose par-dessus. Aucun coin : des
-pixels de 1,15 km au plus fin, comme la vue large de la carte.
+couleurs du site (`style.css`, vérifié par les tests). Aucun coin : des pixels de 1,15 km au plus
+fin, comme la vue large de la carte.
+
+Pour l'accueil, `carte-france.png` (toutes espèces) et `carte-france-<espèce>.png` : le verdict des
+départements sur chaque carré de 9,2 km (`export_france.verdicts_carres`), aux couleurs de la carte
+des départements, peint sur le cadre des contours (`carte_departements.cadre_une`) que la page pose
+par-dessus.
 
 Ne lit aucune donnée : reçoit l'aperçu du jour et les niveaux, rend des PNG.
 """
@@ -25,9 +28,12 @@ LARGEUR, HAUTEUR = 1200, 630
 CARTE = (560, 430)                           # la place de la carte, à gauche, sous le titre
 VIGNETTE = (560, 560)                        # la carte seule, sans cadre de contours
 LARGEUR_UNE = 560                            # la carte de l'accueil, sur le cadre des contours
+NETTETE_UNE = 2                              # ses images, à deux pixels par pixel affiché (écrans denses)
 # Les couleurs du site (style.css) : la classe 0 de l'indice n'en a pas (transparente sur la carte).
 FOND, TRAIT, TEXTE, TEXTE_2, TEXTE_3 = "#fbfaf7", "#e2ded5", "#1d1b17", "#57534a", "#7a756a"
 CLASSES = ["#f9d7a6", "#f2a65a", "#d9662b", "#9c3510", "#5e1b13"]   # --classe-1 à --classe-5
+# Les verdicts (0 hors saison à 4 bon), comme `.carte-deps path.n0` à `.n4` dans style.css.
+NIVEAUX_COULEURS = ["#e2ded5", "#efece5", CLASSES[1], CLASSES[2], CLASSES[3]]
 FORET = "#dfe6d3"                 # forêt à l'indice très faible : la forme des massifs
 VOISINS = "#e6e3dc"               # la forêt des départements voisins, pour situer
 POLICES = {
@@ -80,6 +86,26 @@ def carte_france(cl: np.ndarray, place: tuple[int, int] = CARTE) -> Image.Image:
     img = _peindre(reduite)
     s = min(place[0] / img.width, place[1] / img.height)
     return img.resize((round(img.width * s), round(img.height * s)), Image.Resampling.NEAREST)
+
+
+def carte_niveaux(niv: np.ndarray, grille, cadre: list[float], largeur: int = LARGEUR_UNE * NETTETE_UNE
+                  ) -> Image.Image:
+    """La carte de l'accueil : chaque carré de `grille` à la couleur de son verdict (`niv`, -1 sans
+    verdict : le fond), peinte sur `cadre` (ouest, sud, est, nord, m Mercator) ; chaque pixel prend
+    le carré où tombe son centre."""
+    x0, y0, x1, y1 = cadre
+    hauteur = round(largeur * (y1 - y0) / (x1 - x0))
+    x = x0 + (np.arange(largeur) + 0.5) * (x1 - x0) / largeur
+    y = y1 - (np.arange(hauteur) + 0.5) * (y1 - y0) / hauteur
+    j = np.floor((x - grille.x0) / grille.pas).astype(np.int64)
+    i = np.floor((grille.y1 - y) / grille.pas).astype(np.int64)
+    dedans = ((i >= 0) & (i < grille.ny))[:, None] & ((j >= 0) & (j < grille.nx))[None, :]
+    v = np.where(dedans, niv[np.clip(i, 0, grille.ny - 1)][:, np.clip(j, 0, grille.nx - 1)], -1)
+    rgb = np.empty((hauteur, largeur, 3), dtype=np.uint8)
+    rgb[:] = _rgb(FOND)
+    for n, c in enumerate(NIVEAUX_COULEURS):
+        rgb[v == n] = _rgb(c)
+    return Image.fromarray(rgb, "RGB")
 
 
 def carte_cadre(cl: np.ndarray, grille, cadre: list[float], largeur: int = LARGEUR_UNE) -> Image.Image:
@@ -171,19 +197,19 @@ def en_saison(lignes: list) -> list:
 
 def ecrire(dossier: Path, departements: list[dict], rang: dict, especes: list[dict], resumes: dict,
            nat: dict, jours: list[date], codes: np.ndarray, pixel_dep: np.ndarray, echelle: int,
-           seuils: list[float], par_espece: dict | None = None, grille=None, cadre: list[float] | None = None) -> None:
+           seuils: list[float], une: dict | None = None, grille=None, cadre: list[float] | None = None) -> None:
     """`codes` : l'aperçu du jour, la meilleure espèce de chaque pixel ; `pixel_dep` : le rang du
     département de chaque pixel (-1 hors forêt), `rang` celui de chaque code de département.
-    `par_espece` : l'aperçu du jour de chaque espèce ; avec `grille` (celle de l'aperçu) et `cadre`
-    (celui des contours), les cartes de l'accueil se posent sous les contours des départements."""
+    `une` : le verdict de chaque carré aujourd'hui, par espèce, sur `grille` (9,2 km) ; avec `cadre`
+    (celui des contours), les cartes de l'accueil, « toutes » prenant le meilleur verdict du carré."""
     dossier.mkdir(parents=True, exist_ok=True)
     cl = classes(codes, echelle, seuils)
     sous_titre = f"La semaine à partir du {date_longue(jours[0])}"
-    if grille is not None and cadre:
-        carte_cadre(cl, grille, cadre).save(dossier / "carte-france.png", optimize=True)
-        for code, image_espece in (par_espece or {}).items():
-            carte_cadre(classes(image_espece, echelle, seuils), grille, cadre).save(
-                dossier / f"carte-france-{code}.png", optimize=True)
+    if une and grille is not None and cadre:
+        carte_niveaux(np.maximum.reduce(list(une.values())), grille, cadre).save(
+            dossier / "carte-france.png", optimize=True)
+        for code, niv in une.items():
+            carte_niveaux(niv, grille, cadre).save(dossier / f"carte-france-{code}.png", optimize=True)
     else:
         carte_france(cl, VIGNETTE).save(dossier / "carte-france.png", optimize=True)
     france = carte_france(cl)

@@ -121,3 +121,39 @@ def test_valeurs_sans_foret_codees_255():
     assert Agregat(grille, h, cases, 1).valeurs(np.array([12.4]))[2, 2] == 12
     assert Agregat(grille, h, cases, 1).valeurs(np.array([12.4]))[0, 0] == 255
     assert Agregat(grille, h, cases, 5).valeurs(np.array([12.4]))[0, 0] == 12
+
+
+def test_verdicts_des_carres_comme_les_departements():
+    """La carte de l'accueil : le verdict de chaque carré est celui qu'un département aurait avec la
+    même forêt (`redaction.niveau`) ; pas de verdict sous CARRE_MIN_KM2 de forêt hors zones
+    protégées, ni pour un carré sans forêt."""
+    from champi import export_france as X
+    from champi import pages_accueil, redaction
+    from champi.config import PAS_FIN
+
+    assert pages_accueil.CARRE_UNE_M == PAS_FIN * X.APERCU * X.VUE
+    rng = np.random.default_rng(3)
+    n_carres, par = 6, 400
+    pixel = np.repeat(np.arange(n_carres), par)
+    km2 = np.full(pixel.size, 0.01)                          # 4 km² par carré
+    libre = np.ones(pixel.size, dtype=bool)
+    indice = rng.uniform(0, 0.39, pixel.size)
+    saison = np.ones(pixel.size)
+    indice[0:100] = 0.5                                      # carré 0 : 25 % bon
+    indice[400:430] = 0.45                                   # carré 1 : 7,5 % bon
+    indice[800:1200] = rng.uniform(0, 0.2, 400)              # carré 2 : défavorable
+    indice[820:850] = 0.3                                    # … 7,5 % moyen : possible
+    saison[1200:1600] = 0                                    # carré 3 : hors saison
+    libre[1600:1990] = False                                 # carré 4 : presque tout protégé
+    indice[2000:2400] = rng.uniform(0, 0.2, 400)             # carré 5 : défavorable
+    niv = X.verdicts_carres(pixel, 3, 3, km2, libre, indice, saison).ravel()
+    for c in range(n_carres):
+        if c == 4:
+            continue
+        s = slice(c * par, (c + 1) * par)
+        bon = float((km2[s] * (indice[s] >= 0.40)).sum() / km2[s].sum())
+        moyen = float((km2[s] * (indice[s] >= 0.25)).sum() / km2[s].sum())
+        attendu = redaction.niveau({"saison": float(saison[s].max()), "part_bon": bon, "part_moyen": moyen})
+        assert niv[c] == attendu, c
+    assert niv[:4].tolist() == [4, 3, 2, 0]
+    assert niv[4] == -1 and niv[6:].tolist() == [-1, -1, -1]
