@@ -414,6 +414,12 @@ async function demarrer() {
   };
   let fond = fonds[lire(CLE_FOND)] ? lire(CLE_FOND) : "plan";
   for (const c of fonds[fond]) c.addTo(map);
+  // L'indice dans son calque, entre le fond et les marques (position, coins) : en mode « produit »
+  // sur le plan et le relief, les noms et les routes du plan restent lisibles sous les couleurs
+  // (style.css) ; pas sur les photos, qu'il assombrirait.
+  map.createPane("indice").style.zIndex = 350;
+  const marquerFond = () => map.getContainer().classList.toggle("sur-photo", fond === "photo");
+  marquerFond();
   map.attributionControl.addAttribution("Indice : météo Météo-France et ECMWF via Open-Meteo, forêts et relief IGN, roches BRGM");
 
   const ControleFonds = L.Control.extend({
@@ -426,6 +432,7 @@ async function demarrer() {
           for (const c of fonds[fond]) map.removeLayer(c);
           fond = cle;
           ecrire(CLE_FOND, cle);
+          marquerFond();
           for (const c of fonds[cle]) c.addTo(map);
           div.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === bt)));
         });
@@ -486,7 +493,7 @@ async function demarrer() {
       return tuile;
     },
   });
-  const calqueApercu = new Apercu({ pane: "overlayPane", maxZoom: DETAIL - 0.5, updateWhenZooming: false }).addTo(map);
+  const calqueApercu = new Apercu({ pane: "indice", maxZoom: DETAIL - 0.5, updateWhenZooming: false }).addTo(map);
 
   // Vue France (zoom sous SYNTHESE) : chaque carré de 9,2 km au verdict des départements, comme la
   // carte de l'accueil (export_france.verdicts_carres) et « Que chercher ici ? » (mêmes données,
@@ -537,7 +544,7 @@ async function demarrer() {
       return tuile;
     },
   });
-  const calqueCarres = new Carres({ pane: "overlayPane", maxZoom: SYNTHESE - 1, updateWhenZooming: false }).addTo(map);
+  const calqueCarres = new Carres({ pane: "indice", maxZoom: SYNTHESE - 1, updateWhenZooming: false }).addTo(map);
   // Passer le seuil sans changer de niveau de tuiles garderait les tuiles d'avant.
   let coteFrance = vueFrance();
   map.on("zoomend", () => {
@@ -598,7 +605,7 @@ async function demarrer() {
   });
   // minZoom à DETAIL - 0,5 : Leaflet crée les tuiles au zoom arrondi (10,5 → 11) mais les retire au
   // zoom exact sous minZoom ; à DETAIL, le zoom 10,5 restait vide (ni aperçu, ni détail).
-  const calqueDetail = new Detail({ pane: "overlayPane", minZoom: DETAIL - 0.5, updateWhenZooming: false, keepBuffer: 1 }).addTo(map);
+  const calqueDetail = new Detail({ pane: "indice", minZoom: DETAIL - 0.5, updateWhenZooming: false, keepBuffer: 1 }).addTo(map);
 
   // Indice d'un coin noté par l'utilisateur, pour le jour affiché : moyenne des cases boisées
   // à moins de 75 m (3 × 3 cases), tirée des mêmes codes que la carte.

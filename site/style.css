@@ -269,6 +269,10 @@ legend { font-weight: 600; font-size: .85rem; color: var(--texte-2); padding: 0;
 /* Les fonds : le plan grisé fait ressortir l'indice ; l'estompage s'y multiplie. */
 .leaflet-layer.fond-gris { filter: grayscale(.85) brightness(1.04) contrast(.95); }
 .leaflet-layer.estompage { mix-blend-mode: multiply; opacity: .5; }
+/* L'indice (calque « indice », carte.js) en mode produit : le texte et les routes du plan, sombres,
+   restent lisibles sous ses couleurs, comme sous un surligneur. Pas sur les photos aériennes. */
+.leaflet-indice-pane { mix-blend-mode: multiply; }
+.sur-photo .leaflet-indice-pane { mix-blend-mode: normal; }
 /* Une espèce des prés : pas de carte fine, le bandeau le dit par-dessus la carte. */
 .bandeau-pres {
   position: fixed; z-index: 900; top: 12px; left: calc(380px + 60px); right: 200px; margin: 0;
