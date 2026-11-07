@@ -672,6 +672,8 @@ code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-
 .chiffre strong { display: block; font-size: 1.15rem; line-height: 1.25; margin: 2px 0; color: var(--texte); }
 .faq h3 { font-size: 1rem; margin: 1.1em 0 .25em; }
 .faq p { margin-top: 0; }
+.page table.forets th[scope="row"] { color: var(--texte); }
+.page table.forets .cl { display: block; color: var(--texte-3); font-weight: 400; font-size: .82rem; }
 .voisins { padding-left: 1.2em; }
 .voisins li { margin: 3px 0; }
 

@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 
 import json
+import re
 
 from .carte_departements import charger as charger_contours, voisins as voisins_de
 from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, chemin_departement,
@@ -121,7 +122,87 @@ def chiffres(especes: list[dict], resumes: dict, jours: list[date]) -> list[tupl
     return sortie
 
 
-def questions(dep: dict, especes: list[dict], resumes: dict, jours: list[date], genere_le: str) -> list[tuple[str, str]]:
+# --- Les forêts publiques nommées (décision du 2026-11-07, `forets.py`) --------------------
+
+FORETS_MAX = 10           # les forêts montrées sur la page d'un département
+
+
+def _avec_article(nom: str) -> str:
+    """« Forêt domaniale de Mervent » au milieu d'une phrase : « la forêt domaniale de Mervent »."""
+    if nom.startswith("Forêt"):
+        return "la f" + nom[1:]
+    if nom.startswith("Bois "):
+        return "le b" + nom[1:]
+    return nom
+
+
+def _statut(f: dict) -> str:
+    """« domaniale » ou « publique », quand le nom de la forêt ne le dit pas déjà."""
+    nom = f["nom"].lower()
+    if f["nature"] == "domaniale":
+        return "" if "domaniale" in nom else "domaniale"
+    return "" if re.search(r"communale|départementale|sectionale|indivise|régionale|syndicale", nom) else "publique"
+
+
+def nom_court(nom: str) -> str:
+    """« Forêt domaniale des Pays de Monts » → « des Pays de Monts » (pour « les forêts de Mervent,
+    des Pays de Monts… ») ; un nom sans « Forêt … de » reste entier."""
+    m = re.match(r"^(?:Forêt|Bois)(?: [a-zéèê]+)? ((?:de la |de l'|des |du |de |d')\S.*)$", nom)
+    return m.group(1) if m else nom
+
+
+def classer_forets(forets: list[dict], especes: list[dict]) -> list[tuple[dict, dict | None, int]]:
+    """Les forêts du département, (forêt, espèce la mieux placée aujourd'hui, niveau), les mieux
+    placées d'abord : le niveau, puis la surface aux bonnes conditions, puis la surface."""
+    sortie = []
+    for f in forets:
+        meilleure, cle_m = None, (0, 0.0)
+        for x in especes:
+            j = (f.get("especes", {}).get(x["code"]) or [None])[0]
+            if j and (j["niveau"], j["part_bon"]) > cle_m:
+                meilleure, cle_m = x, (j["niveau"], j["part_bon"])
+        sortie.append((f, meilleure, cle_m[0]))
+    sortie.sort(key=lambda t: (-t[2], -(t[0]["especes"][t[1]["code"]][0]["part_bon"] * t[0]["ha"] if t[1] else 0),
+                               -t[0]["ha"]))
+    return sortie
+
+
+def section_forets(forets: list[dict], especes: list[dict], jours: list[date], lieu: str) -> list[str]:
+    """« Où chercher : les forêts publiques » : un tableau des plus grandes forêts publiques du
+    département, chacune avec son espèce la mieux placée aujourd'hui et son meilleur jour."""
+    classees = classer_forets(forets, especes)[:FORETS_MAX]
+    if not classees:
+        return []
+    lignes = [f"  <h2>Où chercher {e(lieu)} : les forêts publiques</h2>",
+              f"  <p>Les {len(classees)} forêts publiques les mieux placées aujourd'hui parmi celles de plus de "
+              "100 ha (domaniales, communales, départementales), où une cueillette familiale est en général "
+              "tolérée, dans la limite des règles locales. Chaque forêt est jugée sur l'ensemble de ses bois, "
+              "hors zones protégées.</p>",
+              '  <div class="tableau"><table class="forets">',
+              "  <thead><tr><th scope=\"col\">Forêt</th><th scope=\"col\">Aujourd'hui</th>"
+              "<th scope=\"col\">Meilleur jour</th></tr></thead>",
+              "  <tbody>"]
+    for f, x, n in classees:
+        auj = f"{x['nom']} : {NIVEAUX_COURTS[n]}" if x and n >= 2 else (
+            "hors saison" if n == 0 else "rien de favorable")
+        cands = [(j["niveau"], j["part_bon"], -k, z, k) for z in especes
+                 for k, j in enumerate((f.get("especes", {}).get(z["code"]) or [])[:len(jours)])]
+        semaine = "—"
+        if cands and (b := max(cands, key=lambda c: c[:3]))[0] >= 2:
+            d = jours[b[4]]
+            semaine = f"{JOURS_COURTS[d.weekday()]} {d.day} : {b[3]['nom'].lower()}, {NIVEAUX_COURTS[b[0]]}"
+        statut = f" · {_statut(f)}" if _statut(f) else ""
+        lignes.append(f'    <tr><th scope="row">{e(f["nom"])}<span class="cl">{nombre(f["ha"])} ha{statut}</span></th>'
+                      f"<td>{e(auj)}</td><td>{e(semaine)}</td></tr>")
+    lignes += ["  </tbody></table></div>",
+               '  <p class="muet">Une forêt publique peut abriter une réserve ou relever d\'un arrêté local : la '
+               "carte hachure les zones protégées, sans indice ; renseignez-vous auprès de l'ONF ou de la mairie. "
+               "Forêts : IGN, BD TOPO (d'après l'ONF).</p>"]
+    return lignes
+
+
+def questions(dep: dict, especes: list[dict], resumes: dict, jours: list[date], genere_le: str,
+              forets: list[dict] | None = None) -> list[tuple[str, str]]:
     """Les questions fréquentes du département, répondues avec les chiffres du jour, en texte brut :
     écrites dans la page et reprises telles quelles dans ses données structurées (FAQPage)."""
     lieu = dans(dep["code"], dep["nom"])
@@ -134,6 +215,11 @@ def questions(dep: dict, especes: list[dict], resumes: dict, jours: list[date], 
 
     carte = (f"La carte montre chaque zone de 250{NBSP}m de forêt ; son filtre « Forêts publiques seulement » "
              "garde les forêts domaniales et communales, où une cueillette familiale est en général tolérée.")
+    bonnes = [(f, z, n) for f, z, n in classer_forets(forets or [], especes) if n >= 2][:3]
+    if bonnes:
+        carte = ("Parmi les forêts publiques, les mieux placées aujourd'hui sont "
+                 + enumerer([f"{_avec_article(f['nom'])} ({z['nom'].lower()}, {NIVEAUX_COURTS[n]})"
+                             for f, z, n in bonnes]) + ". " + carte)
     if r0 and r0["niveau"] >= 2:
         ou = []
         if r0.get("communes"):
@@ -178,10 +264,11 @@ def questions(dep: dict, especes: list[dict], resumes: dict, jours: list[date], 
 
 
 def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[date], genere_le: str,
-                     voisins: list[tuple[dict, dict]] | None = None) -> str:
+                     voisins: list[tuple[dict, dict]] | None = None, forets: list[dict] | None = None) -> str:
     """`dep` : {code, nom} ; `especes` : règles (code, nom, de, latin, habituel) ; `resumes` : par
     espèce, un résumé par jour (`export_france.faits` + `redaction.rediger`) ; `jours` : les dates ;
-    `voisins` : les départements qui le touchent, avec leurs résumés."""
+    `voisins` : les départements qui le touchent, avec leurs résumés ; `forets` : ses forêts
+    publiques nommées, avec leur verdict par espèce et par jour (`export_france.verdict_foret`)."""
     code, nom = dep["code"], dep["nom"]
     lieu = dans(code, nom)
     chemin = chemin_departement(code, nom)
@@ -190,12 +277,20 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
     noms = ", ".join(x["nom"].lower() for x in especes[:4])
     jour = f"{'1er' if jours[0].day == 1 else jours[0].day} {MOIS[jours[0].month - 1]}"
     titre = f"Où trouver des champignons {lieu} ({code}) : la semaine du {jour}"
-    description = (f"Où chercher les champignons {lieu} cette semaine ({noms}…) : jour par jour, les communes "
-                   "les mieux placées, d'après la pluie, la température du sol et la saison. Mis à jour chaque matin.")
-    qr = questions(dep, especes, resumes, jours, genere_le)
+    grandes = sorted(forets or [], key=lambda f: -f["ha"])
+    if grandes:     # les plus grandes forêts publiques : ce que l'on tape (« forêt de Mervent champignons »)
+        quoi = "les forêts " + enumerer([nom_court(f["nom"]) for f in grandes[:3]]) + ("…" if len(grandes) > 3 else "")
+        description = (f"Où chercher les champignons {lieu} cette semaine : {quoi} ({noms}…), jour par jour, "
+                       "d'après la pluie, la température du sol et la saison. Mis à jour chaque matin.")
+    else:
+        description = (f"Où chercher les champignons {lieu} cette semaine ({noms}…) : jour par jour, les communes "
+                       "les mieux placées, d'après la pluie, la température du sol et la saison. Mis à jour chaque matin.")
+    qr = questions(dep, especes, resumes, jours, genere_le, forets)
+    web = page_web(titre, chemin, genere_le, description)
+    if grandes:
+        web["mentions"] = [{"@type": "Place", "name": f["nom"]} for f in grandes[:FORETS_MAX]]
     haut = tete(titre, description, R, chemin, image=image_partage(code, genere_le),
-                ld=[page_web(titre, chemin, genere_le, description),
-                    fil_ariane([("./", NOM), (f"{DOSSIER}/", "Départements"), (chemin, nom)]), faq(qr)])
+                ld=[web, fil_ariane([("./", NOM), (f"{DOSSIER}/", "Départements"), (chemin, nom)]), faq(qr)])
     lignes = [f'  <p class="fil"><a href="../">Départements</a> › {e(nom)}</p>',
               f"  <h1>Où trouver des champignons {e(lieu)} cette semaine</h1>",
               f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
@@ -207,6 +302,7 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
             f'<div class="chiffre"><span>{e(t)}</span><strong>{e(v)}</strong><span>{e(p)}</span></div>'
             for t, v, p in cles) + "</div>")
     lignes.append(f'  <p class="actions"><a class="bouton principal" href="{carte}">Voir sur la carte</a>{PARTAGER}</p>')
+    lignes += section_forets(forets or [], especes, jours, lieu)
 
     actuel = ' class="actuel"'
     colonnes = "".join(f'<th scope="col"{actuel if k == 0 else ""}>{JOURS_COURTS[d.weekday()]}<br>{d.day}</th>'
@@ -383,7 +479,7 @@ def _classement(x: dict, jour: dict, noms: dict) -> list[str]:
 
 
 def ecrire(site: Path, departements: list[dict], especes: list[dict], resumes: dict,
-           jours: list[date], genere_le: str) -> list[str]:
+           jours: list[date], genere_le: str, forets: dict[str, list[dict]] | None = None) -> list[str]:
     """Écrit les pages ; rend leurs chemins depuis la racine, pour le plan du site."""
     dossier = site / DOSSIER
     dossier.mkdir(parents=True, exist_ok=True)
@@ -395,7 +491,8 @@ def ecrire(site: Path, departements: list[dict], especes: list[dict], resumes: d
         chemin = chemin_departement(d["code"], d["nom"])
         (site / chemin).mkdir(parents=True, exist_ok=True)
         (site / chemin / "index.html").write_text(
-            page_departement(d, especes, resumes.get(d["code"], {}), jours, genere_le, proches), encoding="utf-8")
+            page_departement(d, especes, resumes.get(d["code"], {}), jours, genere_le, proches,
+                             (forets or {}).get(d["code"])), encoding="utf-8")
         # L'ancienne adresse (avant le 2026-11-07) renvoie à la nouvelle.
         (dossier / f"{d['code']}.html").write_text(
             renvoi(f"{slug(d['nom'])}/", chemin, f"Champignons {dans(d['code'], d['nom'])}"), encoding="utf-8")

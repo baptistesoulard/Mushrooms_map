@@ -109,6 +109,14 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   semaine du 7 novembre » (préposition de chaque département : `pages.dans`), chiffres de tête,
   questions fréquentes répondues avec les chiffres du jour (le texte du JSON-LD est celui de la
   page, test), départements voisins (`carte_departements.voisins`, tirés des contours versionnés).
+- **Forêts publiques nommées (décision du 2026-11-07)** : la page d'un département nomme ses forêts
+  publiques d'au moins 100 ha (`forets.py` → `data/forets_publiques.json.gz`, versionné, refait par
+  `python -m champi.forets` : BD TOPO `foret_publique`, d'après l'ONF, contours simplifiés à 100 m),
+  chacune jugée chaque nuit sur ses cases libres de l'échantillon comme un département
+  (`export_france.verdict_foret`, `redaction.niveau`) : tableau « Où chercher : les forêts
+  publiques », questions fréquentes, description. Toujours la forêt entière, jamais une parcelle ;
+  jamais une forêt privée ; les zones protégées restent hors calcul, et la page rappelle qu'une
+  forêt publique peut avoir sa réserve ou son arrêté. Remplace « aucun coin » pour ces seules forêts.
 - **Adresses lisibles (2026-11-07)** : `departements/vendee/` (`pages.chemin_departement`, nom sans
   accents), `especes/pied-de-mouton/` (`pages.chemin_espece`, des tirets). Les anciennes adresses
   (`departements/85.html`, `especes/pied_de_mouton.html`) restent écrites chaque matin en pages de
@@ -351,6 +359,7 @@ python -m champi.validation             # réseau (~1 h la 1re fois) ; demande s
 python -m champi.climatologie           # après la validation, ~5 min : data/climatologie.json (ce qui est habituel)
 python -m champi.prairies               # réseau, ~10 min : data/prairies.npz (les prés), à refaire avec l'habitat
 python -m champi.carte_departements     # réseau, quelques secondes : data/departements_carte.json (contours)
+python -m champi.forets                 # réseau, quelques minutes : data/forets_publiques.json.gz (forêts publiques nommées)
 python -m champi.carte_departements fin # demande site/habitat/, ~30 s : data/departements_fin.json (contours fins)
 python -m champi.photos                 # réseau : les photos des espèces (Wikimedia Commons), avec leurs crédits
 python -m http.server 8765 --directory site   # la carte : /carte/ ; les pages du matin demandent l'export

@@ -43,6 +43,7 @@ from PIL import Image
 
 from . import carte_departements
 from . import climatologie
+from . import forets as forets_publiques
 from . import depot
 from . import especes as E
 from . import modele as M
@@ -412,6 +413,20 @@ def faits(esp: E.Espece, jour: date, sel: np.ndarray, ech: Echantillon, km2: np.
     }
 
 
+SEUILS_CLASSES = np.array([s for s, _ in M.CLASSES])
+
+
+def verdict_foret(esp: E.Espece, jour: date, lat_moy: float, ind: np.ndarray, km2: np.ndarray) -> dict:
+    """Le verdict d'une forêt publique nommée (`forets.py`) sur ses cases libres, compté comme celui
+    d'un département (`faits`, `redaction.niveau`) : la part de sa surface aux bonnes conditions."""
+    k = np.minimum(np.searchsorted(SEUILS_CLASSES, ind, side="right"), len(SEUILS_CLASSES) - 1)
+    parts = np.bincount(k, weights=km2, minlength=len(SEUILS_CLASSES)) / max(float(km2.sum()), 1e-9)
+    f = {"saison": float(M.facteur_saison(esp, jour, lat_moy)), "part_bon": float(parts[3:].sum()),
+         "part_moyen": float(parts[2:].sum())}
+    return {"niveau": redaction.niveau(f), "part_bon": round(f["part_bon"], 4),
+            "indice_moyen": round(float(ind.mean()), 4)}
+
+
 # --- Orchestration ------------------------------------------------------------------
 
 def exporter(meteo: Meteo | None = None) -> dict:
@@ -461,6 +476,12 @@ def exporter(meteo: Meteo | None = None) -> dict:
         communes_px = communes_apercu(g_apercu, noms_blocs)
         print(f"  communes de l'aperçu ({time.time() - t0:.0f} s)")
     regles["especes"] = [x for x in regles["especes"] if x["code"] in {e.code for e in especes}]
+    # Les forêts publiques nommées (data/forets_publiques.json.gz) : leurs cases d'échantillon.
+    fp = forets_publiques.charger()
+    nommees = forets_publiques.affecter(fp["forets"], ech.lat, ech.lon, ech.departement, ~ech.protege) if fp else []
+    for f in nommees:
+        f["lat"] = float(ech.lat[f["points"]].mean())
+    print(f"  {len(nommees)} forêts publiques nommées ({time.time() - t0:.0f} s)")
     for esp in especes:
         foret = esp.milieu == "foret"
         if foret:
@@ -486,6 +507,10 @@ def exporter(meteo: Meteo | None = None) -> dict:
                 if k == 0:   # l'image de partage : la meilleure espèce de chaque pixel, aujourd'hui
                     meilleure = image if meilleure is None else np.maximum(meilleure, image)
                     une[esp.code] = verdicts_carres(carres, nx_c, ny_c, km2, ~ech.protege, ind, saison)
+                for f in nommees:
+                    p = f["points"]
+                    f.setdefault("especes", {}).setdefault(esp.code, []).append(
+                        verdict_foret(esp, jour, f["lat"], ind[p], km2[p]))
             else:            # les prés, commune par commune : jamais point par point
                 codes = indices_communes(pres.commune, km2_pres, ind, len(communes))
                 ecrire_png(SITE_DATA / "communes" / f"{esp.code}_{k}.png", table_communes(codes))
@@ -507,6 +532,11 @@ def exporter(meteo: Meteo | None = None) -> dict:
     for k, v in enumerate(vues):
         ecrire_png(SITE_DATA / "vue" / f"{k}.png", v.image())
 
+    # Les forêts nommées, par département (celui de la plupart de leurs cases), sans leurs cases.
+    forets_dep: dict[str, list[dict]] = {}
+    for f in nommees:
+        forets_dep.setdefault(departements[f["departement"]]["code"], []).append(
+            {k_: v for k_, v in f.items() if k_ not in ("points", "departement", "lat")})
     noms_dep = json.loads((DATA / "departements.json").read_text(encoding="utf-8"))
     for dep in departements:
         sel = ech.departement == departements.index(dep)
@@ -582,7 +612,8 @@ def exporter(meteo: Meteo | None = None) -> dict:
     # Pour les pages seulement (especes.json reste les règles) : ce qui est habituel aujourd'hui.
     for x in regles["especes"]:
         x["habituel"] = climatologie.frequence(clim, x["code"], jours[0])
-    chemins = pages_departements.ecrire(SITE, departements, regles["especes"], resumes, jours, carte["genere_le"])
+    chemins = pages_departements.ecrire(SITE, departements, regles["especes"], resumes, jours, carte["genere_le"],
+                                        forets_dep)
     chemins += pages_accueil.ecrire(SITE, departements, regles["especes"], resumes, jours, carte["genere_le"],
                                     validation)
     chemins += pages_especes.ecrire(SITE, departements, regles, carte["legendes"], resumes, jours,
