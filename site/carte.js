@@ -583,8 +583,8 @@ async function demarrer() {
   const calqueCarres = new Carres({ pane: "indice", maxZoom: SYNTHESE - 1, updateWhenZooming: false }).addTo(map);
 
   // Les contours des départements (ADMIN EXPRESS simplifié à ~2 km, data/departements_carte.json, ceux
-  // de l'accueil et de la page des départements) : un trait sombre bordé de clair, lisible sur le
-  // foncé comme sur le pâle, jusqu'au zoom 11 ; plus près, la simplification s'écarterait trop des
+  // de l'accueil et de la page des départements) : blanc bordé de sombre sur les carrés de la vue
+  // France, sombre bordé de blanc sur les pixels de la vue régionale (2026-11-07), jusqu'au zoom 11 ; plus près, la simplification s'écarterait trop des
   // vraies limites (le plan IGN les montre). Remplace les noms de lieux de l'IGN (2026-11-07).
   const calqueContours = L.layerGroup();
   let lisere = null, trait = null;
@@ -595,8 +595,11 @@ async function demarrer() {
     if (voir !== map.hasLayer(calqueContours)) { if (voir) calqueContours.addTo(map); else map.removeLayer(calqueContours); }
     if (voir && trait) {
       const [l, t] = epaisseurs();
-      lisere.setStyle({ weight: l });
-      trait.setStyle({ weight: t });
+      // Blanc sur les aplats des carrés (vue France) ; sombre sur le moucheté des pixels (vue
+      // régionale), où le blanc se perdait.
+      const blanc = Math.round(map.getZoom()) < SYNTHESE;
+      lisere.setStyle({ weight: l, color: blanc ? "#1d1b17" : "#ffffff", opacity: blanc ? 0.35 : 0.85 });
+      trait.setStyle({ weight: t, color: blanc ? "#ffffff" : "#1d1b17" });
     }
   };
   fetch("data/departements_carte.json").then((r) => (r.ok ? r.json() : null)).then((c) => {
@@ -615,8 +618,8 @@ async function demarrer() {
       }
     }
     const rendu = L.canvas({ pane: "contours", padding: 0.3 });
-    lisere = L.polyline(anneaux, { renderer: rendu, interactive: false, color: "#ffffff", opacity: 0.85 }).addTo(calqueContours);
-    trait = L.polyline(anneaux, { renderer: rendu, interactive: false, color: "#1d1b17", opacity: 1 }).addTo(calqueContours);
+    lisere = L.polyline(anneaux, { renderer: rendu, interactive: false, color: "#1d1b17", opacity: 0.35 }).addTo(calqueContours);
+    trait = L.polyline(anneaux, { renderer: rendu, interactive: false, color: "#ffffff", opacity: 1 }).addTo(calqueContours);
     majContours();
   }).catch((err) => console.error(err));
   map.on("zoomend", majContours);
