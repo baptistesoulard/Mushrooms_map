@@ -168,8 +168,12 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   (`favicon.svg`, `favicon.ico`, icônes de l'appli) refaits par `python -m champi.icones` (test). Plus de
   champignon rouge à pois : il évoquait l'amanite tue-mouches. Le nom s'écrit « Champi » + « météo » à
   l'accent. Titres en garalde des systèmes (`--police-titre` : Palatino, Iowan, Noto Serif), aucune
-  police téléchargée ni tierce. Sous la une, un sous-bois dessiné (`pages_accueil.SOUS_BOIS`, jetons
-  `--decor-*`). La hauteur de la barre est `--hauteur-barre` ; `--barre` est la couleur des tranches
+  police téléchargée ni tierce. La direction de la une vaut pour toutes les pages : un bandeau
+  d'en-tête (`pages.bandeau` : fond chaud, sur-titre de rubrique, grand titre, phrase du jour) sur les
+  pages du matin comme sur celles écrites à la main, et un pied commun (`pages.pied_site`, entre
+  `<!-- pied -->` et `<!-- /pied -->` sur les pages écrites à la main, sauf la carte ; même commande que
+  la barre, test). Le sous-bois dessiné est en fichiers (`img/sous-bois[-sombre].svg`, `icones.py`),
+  posé en fond par le jeton `--sous-bois` des deux thèmes. Un trait à l'accent devant les titres de section. La hauteur de la barre est `--hauteur-barre` ; `--barre` est la couleur des tranches
   d'altitude (le même nom pour les deux vidait la carte sur téléphone en mode sombre).
 - **Barre du haut, sur toutes les pages** (`pages.barre`, rubriques `pages.BARRE`) : les pages du
   matin l'écrivent ; celles écrites à la main (`pages.STATIQUES`, la carte comprise) la portent

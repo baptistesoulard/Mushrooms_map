@@ -135,7 +135,10 @@ def test_barre_des_pages_ecrites_a_la_main_a_jour():
     `python -m champi.pages barre` la réécrit."""
     from champi import pages
     for chemin in pages.STATIQUES:
-        assert pages.barre("", chemin) in (SITE / chemin).read_text(encoding="utf-8"), chemin
+        html = (SITE / chemin).read_text(encoding="utf-8")
+        assert pages.barre("", chemin) in html, chemin
+        if chemin not in pages.SANS_PIED:          # le pied commun aussi, et le bandeau d'en-tête
+            assert pages.pied_site("") in html and '<header class="bandeau">' in html, chemin
 
 
 def test_saison_mois_par_mois():

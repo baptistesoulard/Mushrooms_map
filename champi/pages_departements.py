@@ -15,7 +15,7 @@ import json
 import re
 
 from .carte_departements import charger as charger_contours, voisins as voisins_de
-from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, chemin_departement,
+from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, NOM, PARTAGER, article, bandeau, calcule_pour, chemin_departement,
                     chemin_espece, cle_departement, renvoi, slug,
                     dans, date_longue, e, enumerer, faq, fil_ariane, icone, image_partage, instant_paris,
                     meilleur_niveau, national, ordre_saison, page_web, pct, pied, surface_bonne, tete)
@@ -291,17 +291,20 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
         web["mentions"] = [{"@type": "Place", "name": f["nom"]} for f in grandes[:FORETS_MAX]]
     haut = tete(titre, description, R, chemin, image=image_partage(code, genere_le),
                 ld=[web, fil_ariane([("./", NOM), (f"{DOSSIER}/", "Départements"), (chemin, nom)]), faq(qr)])
-    lignes = [f'  <p class="fil"><a href="../">Départements</a> › {e(nom)}</p>',
-              f"  <h1>Où trouver des champignons {e(lieu)} cette semaine</h1>",
-              f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
-              "et les sept jours suivants, sur les forêts du département (sur ses prés, pour les espèces des "
-              "champs).</p>"]
-    lignes += [f"  <p>{e(p)}</p>" for p in synthese(especes, resumes, jours)]
+    phrases = synthese(especes, resumes, jours)
+    lignes = bandeau(
+        f"Département · {code}", f"Où trouver des champignons {e(lieu)} cette semaine",
+        [f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
+         "et les sept jours suivants, sur les forêts du département (sur ses prés, pour les espèces des "
+         "champs).</p>",
+         f'  <p class="en-bref">{e(phrases[0])}</p>']
+        + [f"  <p>{e(p)}</p>" for p in phrases[1:]]
+        + [f'  <p class="actions"><a class="bouton principal" href="{carte}">Voir sur la carte</a>{PARTAGER}</p>'],
+        fil=f'<p class="fil"><a href="../">Départements</a> › {e(nom)}</p>')
     if (cles := chiffres(especes, resumes, jours)):
         lignes.append('  <div class="chiffres">' + "".join(
             f'<div class="chiffre"><span>{e(t)}</span><strong>{e(v)}</strong><span>{e(p)}</span></div>'
             for t, v, p in cles) + "</div>")
-    lignes.append(f'  <p class="actions"><a class="bouton principal" href="{carte}">Voir sur la carte</a>{PARTAGER}</p>')
     lignes += section_forets(forets or [], especes, jours, lieu)
 
     actuel = ' class="actuel"'
@@ -387,11 +390,11 @@ def page_index(departements: list[dict], especes: list[dict], resumes: dict, jou
         n = _niveau(resumes.get(code, {}), esp, k)
         return "x" if n is None else str(n)
 
-    lignes = ["  <h1>Champignons par département</h1>",
-              f'  <p class="chapeau">Choisissez une espèce et un jour : chaque département prend la couleur de '
-              "ses conditions, d'après ses forêts (ses prés pour les espèces des champs). Un clic ouvre sa "
-              "page, avec la semaine de chaque espèce.</p>",
-              f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}.</p>']
+    lignes = bandeau("Départements", "Champignons par département", [
+        '  <p class="chapeau">Choisissez une espèce et un jour : chaque département prend la couleur de '
+        "ses conditions, d'après ses forêts (ses prés pour les espèces des champs). Un clic ouvre sa "
+        "page, avec la semaine de chaque espèce.</p>",
+        f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}.</p>'])
     if contours:
         # Les choix (cachés sans JavaScript : la carte montre alors l'espèce du moment, aujourd'hui).
         boutons = "".join(

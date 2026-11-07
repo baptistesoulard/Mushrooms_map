@@ -12,6 +12,8 @@ SITE = Path(__file__).resolve().parent.parent / "site"
 def test_favicon_et_icones_a_jour():
     """`python -m champi.icones` a été relancé après le dernier changement du logo."""
     assert (SITE / "favicon.svg").read_text(encoding="utf-8") == I.svg_marque(page=False)
+    for nom, couleurs in I.SOUS_BOIS_COULEURS.items():
+        assert (SITE / "img" / nom).read_text(encoding="utf-8") == I.sous_bois(*couleurs), nom
     for nom, taille in (("icone-180.png", 180), ("icone-192.png", 192), ("icone-512.png", 512),
                         ("icone-masquable-512.png", 512)):
         assert Image.open(SITE / nom).size == (taille, taille), nom

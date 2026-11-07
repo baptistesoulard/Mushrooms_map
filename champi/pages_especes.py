@@ -13,7 +13,7 @@ from pathlib import Path
 from .pages import (MOIS_COURTS, NIVEAUX_COURTS, PARTAGER, calendrier_mois, credit_photo, date_courte,
                     departements_de, e, habituel, icone, image_partage, instant_paris, meilleur_niveau,
                     mois_saison, national, noms_especes, ordre_saison, pct, pied, tete, NOM, fil_ariane, page_web,
-                    chemin_departement, chemin_espece, renvoi)
+                    chemin_departement, chemin_espece, renvoi, bandeau)
 from .photos import charger as charger_photos
 from .pages_accueil import etat_espece
 from .prairies import NOMS_MILIEUX
@@ -112,13 +112,14 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
                 ld=[page_web(f"{nom} : où et quand le chercher en France", chemin_espece(code), genere_le),
                     fil_ariane([("./", NOM), (f"{DOSSIER}/", "Les espèces"), (chemin_espece(code), nom)])])
     carte = f"{R}carte/" if pre else f"{R}carte/?espece={code}"
-    lignes = [f'  <p class="fil"><a href="../">Les espèces</a> › {e(nom)}</p>',
-              f'  <h1>{e(nom)} <span class="latin">{e(x["latin"])}</span></h1>',
-              f'  <div class="tete-espece">{figure_photo(x, photo, racine=R, paresseuse=False)}<div>',
-              f'  <p class="chapeau">{e(x["habitat_texte"])}</p>',
-              f'  <p class="saison-mois"><strong>Saison</strong> {calendrier_mois(x["saison"], jours[0].month)}</p>',
-              '  <p class="muet">Une photo aide à chercher, jamais à identifier.</p></div></div>',
-              "  <h2>En ce moment</h2>",
+    lignes = bandeau(
+        "Espèce des prés" if pre else "Espèce de forêt", f'{e(nom)} <span class="latin">{e(x["latin"])}</span>',
+        [f'  <div class="tete-espece">{figure_photo(x, photo, racine=R, paresseuse=False)}<div>',
+         f'  <p class="chapeau">{e(x["habitat_texte"])}</p>',
+         f'  <p class="saison-mois"><strong>Saison</strong> {calendrier_mois(x["saison"], jours[0].month)}</p>',
+         '  <p class="muet">Une photo aide à chercher, jamais à identifier.</p></div></div>'],
+        fil=f'<p class="fil"><a href="../">Les espèces</a> › {e(nom)}</p>')
+    lignes += ["  <h2>En ce moment</h2>",
               f'  <p class="muet">Calculé le {instant_paris(genere_le)}, sur {lieux(x)} de chaque département.</p>']
     j0 = niv[0]
     if meilleur_niveau(j0) in (0, None):
@@ -217,10 +218,10 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
                 ld=[fil_ariane([("./", NOM), (f"{DOSSIER}/", "Les espèces")])])
     mois = jours[0].month
     ordre = ordre_saison(especes, nat)
-    lignes = ["  <h1>Les champignons de la carte</h1>",
-              f'  <p class="chapeau">{len(foret)} espèces de forêt, sur la carte case par case, et {len(pres)} '
-              "des prés, commune par commune : leur saison mois par mois, leurs milieux, à quoi elles "
-              "ressemblent, et où les conditions sont bonnes aujourd'hui.</p>"]
+    lignes = bandeau("Les espèces", "Les champignons de la carte", [
+        f'  <p class="chapeau">{len(foret)} espèces de forêt, sur la carte case par case, et {len(pres)} '
+        "des prés, commune par commune : leur saison mois par mois, leurs milieux, à quoi elles "
+        "ressemblent, et où les conditions sont bonnes aujourd'hui.</p>"])
 
     # L'espèce du moment : la mieux placée aujourd'hui en France.
     vedette = ordre[0]

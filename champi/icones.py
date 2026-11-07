@@ -38,6 +38,36 @@ def svg_marque(taille: int = 30, page: bool = True) -> str:
             f'<path d="{PIED}" fill="{PIED_C}"/></svg>\n')
 
 
+# --- Le sous-bois : le décor du bas des bandeaux et du pied de page -------------------------
+
+# Collines, arbres, sol, champignons : clair, puis sombre (accordés à --surface et --accent-doux).
+SOUS_BOIS_COULEURS = {"sous-bois.svg": ("#f1e6d8", "#e8d6c1", "#dcc3a6", "#9c3510"),
+                      "sous-bois-sombre.svg": ("#221f1b", "#2a2520", "#332b23", "#f2a65a")}
+
+
+def sous_bois(colline: str, arbre: str, sol: str, champi: str) -> str:
+    """Une bande de 1200 × 74 : collines, sapins et feuillus, sol, quelques champignons. Posée en
+    fond par style.css (`--sous-bois`), répétée en largeur ; toujours le même dessin, décoratif."""
+    sapins, feuillus, champis = [], [], []
+    for x, h in ((60, 30), (92, 24), (182, 34), (318, 28), (350, 22), (522, 32), (700, 26), (732, 34),
+                 (884, 28), (1012, 32), (1044, 24), (1152, 30)):
+        b, w = 52, h * .32
+        sapins.append(f"M{x} {b - h}L{x - w:g} {b - h * .45:g}L{x + w:g} {b - h * .45:g}Z"
+                      f"M{x} {b - h * .75:g}L{x - w * 1.35:g} {b}L{x + w * 1.35:g} {b}Z")
+    for x, r in ((132, 12), (252, 14), (440, 11), (604, 13), (806, 12), (962, 14), (1100, 11)):
+        feuillus.append(f'<circle cx="{x}" cy="{50 - r * 1.6:g}" r="{r}"/><rect x="{x - 1.5}" y="{50 - r:g}" '
+                        f'width="3" height="{r + 4}"/>')
+    for x, t in ((226, 1), (240, .7), (642, .9), (982, 1.1), (996, .75)):
+        champis.append(f'<path d="M{x - 6 * t:g} {61 - 4 * t:g}C{x - 6 * t:g} {61 - 9 * t:g} {x + 6 * t:g} {61 - 9 * t:g} '
+                       f'{x + 6 * t:g} {61 - 4 * t:g}Z"/><rect x="{x - 1.6 * t:g}" y="{61 - 4.5 * t:g}" '
+                       f'width="{3.2 * t:g}" height="{5 * t:g}" rx="{t:g}"/>')
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 74" width="1200" height="74">'
+            f'<path fill="{colline}" d="M0 44C140 30 260 40 400 34C540 28 660 42 800 34C940 26 1060 38 1200 30L1200 74L0 74Z"/>'
+            f'<g fill="{arbre}"><path d="{"".join(sapins)}"/>{"".join(feuillus)}</g>'
+            f'<path fill="{sol}" d="M0 62C200 54 380 60 600 57C820 54 1000 62 1200 55L1200 74L0 74Z"/>'
+            f'<g fill="{champi}" fill-opacity=".5">{"".join(champis)}</g></svg>\n')
+
+
 # --- Les icônes PNG, dessinées par Pillow ----------------------------------------------
 
 def points(chemin: str, pas: int = 24) -> list[tuple[float, float]]:
@@ -89,9 +119,12 @@ def dessiner(taille: int, part: float = .8, arrondi: float = .0):
 
 
 def ecrire() -> list[str]:
-    """`favicon.svg`, `favicon.ico` et les icônes de l'appli, dans site/."""
+    """`favicon.svg`, `favicon.ico`, les icônes de l'appli et le sous-bois, dans site/."""
     (SITE / "favicon.svg").write_text(svg_marque(page=False), encoding="utf-8")
     ecrits = ["favicon.svg"]
+    for nom, couleurs in SOUS_BOIS_COULEURS.items():
+        (SITE / "img" / nom).write_text(sous_bois(*couleurs), encoding="utf-8")
+        ecrits.append(f"img/{nom}")
     for nom, taille, part in (("icone-180.png", 180, .78), ("icone-192.png", 192, .78), ("icone-512.png", 512, .78),
                               ("icone-masquable-512.png", 512, .6)):
         dessiner(taille, part).convert("RGB").save(SITE / nom, optimize=True)

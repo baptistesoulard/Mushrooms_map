@@ -48,6 +48,9 @@ def test_page_departement():
     assert f'<meta name="robots" content="{"index, follow" if pages.INDEXER else "noindex, nofollow"}">' in page
     assert "<title>Où trouver des champignons en Vendée (85) : la semaine du 1er novembre</title>" in page
     assert "<h1>Où trouver des champignons en Vendée cette semaine</h1>" in page
+    assert '<header class="bandeau">' in page and '<p class="sur-titre">Département · 85</p>' in page
+    assert '<p class="en-bref">Aujourd&#x27;hui, bonnes conditions pour le cèpe.</p>' in page
+    assert '<footer class="pied-site">' in page                              # le pied commun
     assert "Calculé le dimanche 1er novembre 2026 à 6 h 20" in page          # heure de Paris, heure d'hiver
     assert len(re.findall(r'<a class="niveau n\w"', page)) == 3 * 8
     assert 'href="../../carte/?departement=85&amp;espece=cepe&amp;jour=2026-11-03"' in page   # sous /carte/

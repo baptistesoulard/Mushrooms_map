@@ -29,9 +29,7 @@
   --police-titre: "Iowan Old Style", "Palatino Linotype", Palatino, "URW Palladio L", P052, "Book Antiqua", Georgia, serif;
   --marque-chapeau: #f3dcbc; /* le cèpe du logo, en réserve dans la goutte */
   --marque-pied: #fbf3e6;
-  --decor-1: #f1e6d8;        /* le sous-bois de la une : collines, arbres, sol */
-  --decor-2: #e8d6c1;
-  --decor-3: #dcc3a6;
+  --sous-bois: url("img/sous-bois.svg");   /* le décor des bandeaux et du pied (champi/icones.py) */
   --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -53,9 +51,7 @@
     --pastille-trait: rgba(255, 255, 255, .35);   /* « excellent », presque noir, reste lisible */
     --marque-chapeau: var(--surface);
     --marque-pied: var(--surface);
-    --decor-1: #221f1b;
-    --decor-2: #2a2520;
-    --decor-3: #332b23;
+    --sous-bois: url("img/sous-bois-sombre.svg");
   }
 }
 :root[data-theme="dark"] {
@@ -75,9 +71,7 @@
   --pastille-trait: rgba(255, 255, 255, .35);
   --marque-chapeau: var(--surface);
   --marque-pied: var(--surface);
-  --decor-1: #221f1b;
-  --decor-2: #2a2520;
-  --decor-3: #332b23;
+  --sous-bois: url("img/sous-bois-sombre.svg");
 }
 
 * { box-sizing: border-box; }
@@ -683,7 +677,7 @@ figure.dessin { display: grid; place-items: center; background: var(--surface-2)
 .page .departements .cl { color: var(--texte-3); font-size: .85rem; text-align: right; }
 .page .departements a { flex-wrap: wrap; }
 .tableau { overflow-x: auto; }
-.carte-espece { border: 1px solid var(--trait); border-radius: var(--rayon); padding: 12px 14px; margin: 12px 0; background: var(--surface); }
+.carte-espece { border: 1px solid var(--trait); border-radius: 14px; padding: 12px 14px; margin: 12px 0; background: var(--surface); }
 .carte-espece h3 { font-size: 1.05rem; }
 .carte-espece .latin { font-style: italic; color: var(--texte-3); font-weight: 400; }
 code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-size: .9em; }
@@ -693,7 +687,7 @@ code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-
 
 /* Pages des départements : les chiffres de tête, les questions, les voisins. */
 .chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 14px 0; }
-.chiffre { border: 1px solid var(--trait); border-radius: var(--rayon); background: var(--surface); padding: 10px 12px; }
+.chiffre { border: 1px solid var(--trait); border-radius: 14px; background: var(--surface); padding: 10px 12px; }
 .chiffre span { display: block; font-size: .8rem; color: var(--texte-3); }
 .chiffre strong { display: block; font-size: 1.2rem; line-height: 1.25; margin: 2px 0; color: var(--texte); font-family: var(--police-titre); }
 .faq h3 { font-size: 1rem; margin: 1.1em 0 .25em; }
@@ -721,20 +715,50 @@ a.bouton.principal:hover, button.bouton.principal:hover { background: var(--acce
 }
 :root[data-theme="dark"] a.bouton.principal, :root[data-theme="dark"] button.bouton.principal { color: #1d1b17; }
 
+/* La direction artistique, sur toutes les pages : un fond chaud et le sous-bois dessiné
+   (img/sous-bois[-sombre].svg, champi/icones.py) sous la une de l'accueil, sous le bandeau
+   d'en-tête des autres pages (pages.bandeau) et au pied de chaque page (pages.pied_site). */
+.une, .bandeau {
+  position: relative; border-radius: 18px; border: 1px solid var(--trait);
+  background: var(--sous-bois) center bottom / auto 74px repeat-x,
+              linear-gradient(165deg, var(--surface) 50%, var(--accent-doux));
+}
+.bandeau { margin: 6px 0 22px; padding: 22px 26px 66px; background-size: auto 56px, auto; }
+.bandeau .fil { margin-bottom: 8px; }
+.bandeau h1, .page .bandeau h1 { font-size: clamp(1.65rem, 3.2vw, 2.25rem); line-height: 1.12; margin: 4px 0 10px; }
+.bandeau h1 .latin { font-size: .62em; font-weight: 400; color: var(--texte-3); font-style: italic; }
+.bandeau > p:last-child { margin-bottom: 0; }
+.bandeau .actions { margin-bottom: 0; }
+.bandeau .tete-espece { margin-bottom: 0; }
+@media (max-width: 600px) { .bandeau { padding: 18px 16px 60px; margin-left: -4px; margin-right: -4px; } }
+
+.pied-site {
+  margin-top: 48px; padding: 30px 16px 92px; border-top: 1px solid var(--trait);
+  background: var(--sous-bois) center bottom / auto 74px repeat-x, var(--surface);
+}
+.pied-contenu { max-width: 1040px; margin: 0 auto; display: grid; gap: 10px 32px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: start; }
+.pied-site .marque { display: inline-flex; align-items: center; gap: 10px; color: var(--texte); text-decoration: none; }
+.pied-site .marque-nom { font-size: 1.45rem; }
+.pied-devise { grid-column: 1; color: var(--texte-2); font-size: .9rem; max-width: 42ch; margin: 0; }
+.pied-plan { grid-column: 2; grid-row: 1 / span 2; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 4px 18px; font-size: .9rem; }
+.pied-plan a { color: var(--texte-2); text-decoration: none; padding: 2px 0; }
+.pied-plan a:hover { color: var(--accent); text-decoration: underline; }
+@media (max-width: 700px) {
+  .pied-contenu { grid-template-columns: 1fr; }
+  .pied-devise, .pied-plan { grid-column: 1; grid-row: auto; }
+}
+
+/* Les titres de section : un trait à l'accent, comme une marque de rubrique. */
+.page > h2, .page > section > h2, .bloc > h2 { display: flex; align-items: center; gap: 10px; }
+.page > h2::before, .page > section > h2::before, .bloc > h2::before {
+  content: ""; flex: none; width: 18px; height: 3px; border-radius: 2px; background: var(--accent);
+}
+
 /* Accueil : la une (la réponse du jour et la carte de France), puis des blocs. */
 .une {
-  position: relative; overflow: hidden;
   display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 20px 32px; align-items: center;
-  margin: 4px 0 8px; padding: 30px 28px 78px; border-radius: 18px;
-  background: linear-gradient(165deg, var(--surface) 50%, var(--accent-doux));
-  border: 1px solid var(--trait);
+  margin: 4px 0 8px; padding: 30px 28px 78px;
 }
-.une > :not(.une-decor) { position: relative; z-index: 1; }
-.une-decor { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 74px; z-index: 0; pointer-events: none; }
-.une-decor .colline { fill: var(--decor-1); }
-.une-decor .arbre { fill: var(--decor-2); }
-.une-decor .sol { fill: var(--decor-3); }
-.une-decor .champi { fill: var(--accent); opacity: .5; }
 .une h1 { font-size: clamp(1.9rem, 3.8vw, 2.7rem); margin: 4px 0 12px; line-height: 1.1; }
 .une .chapeau { margin-bottom: 12px; }
 .en-bref {

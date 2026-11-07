@@ -44,6 +44,9 @@ STATIQUES = ["a-propos.html", "avant-de-partir.html", "methode.html", "validatio
              "404.html"]
 INTROUVABLE = "404.html"
 DEBUT_BARRE, FIN_BARRE = "<!-- barre -->", "<!-- /barre -->"
+# Le pied de page commun, réécrit de même entre ses marqueurs, sauf sur la carte (plein écran).
+DEBUT_PIED, FIN_PIED = "<!-- pied -->", "<!-- /pied -->"
+SANS_PIED = {"carte/index.html"}
 
 # Le bouton Partager : caché sans JavaScript (pages.js le montre), la page reste lisible.
 PARTAGER = '<button type="button" class="bouton" data-partager hidden>Partager</button>'
@@ -271,14 +274,17 @@ def barre(racine: str, chemin: str) -> str:
 
 
 def ecrire_barres_statiques(site: Path) -> list[str]:
-    """Réécrit la barre des pages écrites à la main (entre ses marqueurs) ; rend celles qui ont
-    changé. La carte a `<base href="../">` : ses liens partent de la racine, comme ceux d'ici."""
+    """Réécrit la barre et le pied des pages écrites à la main (entre leurs marqueurs) ; rend celles
+    qui ont changé. La carte a `<base href="../">` : ses liens partent de la racine, comme ceux d'ici."""
     changees = []
     for chemin in STATIQUES:
         p = site / chemin
         s = p.read_text(encoding="utf-8")
         debut, fin = s.index(DEBUT_BARRE), s.index(FIN_BARRE) + len(FIN_BARRE)
         nouveau = s[:debut] + barre("", chemin) + s[fin:]
+        if chemin not in SANS_PIED:
+            debut, fin = nouveau.index(DEBUT_PIED), nouveau.index(FIN_PIED) + len(FIN_PIED)
+            nouveau = nouveau[:debut] + pied_site("") + nouveau[fin:]
         if nouveau != s:
             p.write_text(nouveau, encoding="utf-8")
             changees.append(chemin)
@@ -322,16 +328,41 @@ def credit_photo(c: dict) -> str:
     return f'Photo : {e(c["auteur"])}, {licence}, <a href="{e(c["source"])}">Wikimedia Commons</a>'
 
 
+def bandeau(sur_titre: str, titre: str, contenu: list[str] | None = None, fil: str = "") -> list[str]:
+    """L'en-tête d'une page, dans la direction artistique de la une : fond chaud, sous-bois dessiné
+    (style.css), sur-titre de rubrique, grand titre (`titre` : du HTML déjà échappé), puis
+    `contenu` (lignes HTML : chapeau, date du calcul, phrase du jour, boutons)."""
+    return (['  <header class="bandeau">'] + ([f"  {fil}"] if fil else [])
+            + [f'  <p class="sur-titre">{e(sur_titre)}</p>', f"  <h1>{titre}</h1>"] + (contenu or [])
+            + ["  </header>"])
+
+
+def pied_site(racine: str) -> str:
+    """Le pied de page commun à toutes les pages sauf la carte : le logo, ce que fait le site, le
+    plan ; le sous-bois en fond (style.css). Entre marqueurs : les pages écrites à la main le
+    reçoivent de `python -m champi.pages barre`."""
+    plan = "\n".join(f'      <a href="{lien(racine, c)}">{t}</a>' for c, t in PLAN)
+    return f"""{DEBUT_PIED}
+<footer class="pied-site">
+  <div class="pied-contenu">
+    <a class="marque" href="{lien(racine, "./")}" aria-label="{NOM}, l'accueil">{svg_marque(34)}<span class="marque-nom">Champi<span>météo</span></span></a>
+    <p class="pied-devise">Où les conditions sont réunies pour les champignons, forêt par forêt, d'après la
+    pluie, le sol et la saison. Le site dit où chercher, jamais quoi manger.</p>
+    <nav class="pied-plan" aria-label="Plan du site">
+{plan}
+    </nav>
+  </div>
+</footer>
+{FIN_PIED}"""
+
+
 def pied(racine: str) -> str:
-    """Avertissement, plan du site, et `pages.js` (bouton Partager, département mémorisé)."""
-    plan = "\n".join(f'    <a href="{lien(racine, c)}">{t}</a>' for c, t in PLAN)
+    """Avertissement, pied de page commun, et `pages.js` (bouton Partager, département mémorisé)."""
     return f"""  <p class="alerte">Ne consommez jamais un champignon sans identification certaine : faites
   contrôler votre récolte par un pharmacien ou une société mycologique.
   <a href="{racine}avant-de-partir.html">Avant de partir</a>.</p>
-  <nav class="pied">
-{plan}
-  </nav>
 </div>
+{pied_site(racine)}
 <script type="module" src="{racine}pages.js"></script>
 </body>
 </html>
