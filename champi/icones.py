@@ -1,9 +1,11 @@
-"""Le logo de Champimétéo (2026-11-07) : un cèpe sous trois gouttes de pluie, « champi » et « météo ».
+"""Le logo de Champimétéo (2026-11-07) : un cèpe en réserve dans une goutte de pluie, « champi » et
+« météo » d'un seul coup d'œil.
 
 Une seule géométrie, sur une grille de 64, d'où sortent le logo des pages (`svg_marque`, en ligne
-dans la barre du haut, aux couleurs du thème), `site/favicon.svg` et les icônes de l'appli
-(`python -m champi.icones` : PNG dessinés par Pillow, sans convertisseur SVG). Il remplace le
-champignon rouge à pois d'avant, qui faisait penser à une amanite tue-mouches.
+dans la barre du haut : la goutte à l'accent du thème, le cèpe aux couleurs du creux, celles du fond
+en mode sombre), `site/favicon.svg` et les icônes de l'appli (`python -m champi.icones` : PNG
+dessinés par Pillow, sans convertisseur SVG). Il remplace le champignon rouge à pois d'avant, qui
+faisait penser à une amanite tue-mouches, puis un cèpe sous trois gouttes, trop « image clipart ».
 """
 from __future__ import annotations
 
@@ -13,44 +15,27 @@ import sys
 from .config import SITE
 
 # Les formes, en commandes SVG absolues (M, C, L, Z) sur une grille de 64.
-CHAPEAU = "M7 34C7 20 18 11 32 11C46 11 57 20 57 34C57 36.5 55.5 38 53 38L11 38C8.5 38 7 36.5 7 34Z"
-PIED = "M22 38C19.5 45 20.5 53 25 58C27.5 60.5 36.5 60.5 39 58C43.5 53 44.5 45 42 38Z"
-REFLET = "M15 28C18 21.5 23.5 17 30 15.8"               # un trait clair sur le chapeau
+GOUTTE = "M32 2.5C25 13 11 26 11 40.5C11 52 20.5 61.5 32 61.5C43.5 61.5 53 52 53 40.5C53 26 39 13 32 2.5Z"
+CHAPEAU = "M15.5 38C15.5 29.5 23 24 32 24C41 24 48.5 29.5 48.5 38C48.5 39.6 47.5 40.4 46 40.4L18 40.4C16.5 40.4 15.5 39.6 15.5 38Z"
+PIED = "M27.2 42.4C24 46.2 22.6 51.6 25.4 55.4C27.4 58.1 36.6 58.1 38.6 55.4C41.4 51.6 40 46.2 36.8 42.4Z"   # renflé, comme un cèpe
 
-
-def goutte(cx: float, cy: float, r: float) -> str:
-    """Une goutte, pointe en haut : un demi-cercle en bas, deux courbes vers la pointe."""
-    h = 2.2 * r
-    return (f"M{cx:g} {cy - h:g}C{cx + .25 * r:g} {cy - 1.4 * r:g} {cx + r:g} {cy - .7 * r:g} {cx + r:g} {cy:g}"
-            f"C{cx + r:g} {cy + .55 * r:g} {cx + .55 * r:g} {cy + r:g} {cx:g} {cy + r:g}"
-            f"C{cx - .55 * r:g} {cy + r:g} {cx - r:g} {cy + .55 * r:g} {cx - r:g} {cy:g}"
-            f"C{cx - r:g} {cy - .7 * r:g} {cx - .25 * r:g} {cy - 1.4 * r:g} {cx:g} {cy - h:g}Z")
-
-
-GOUTTES = [goutte(18, 6.8, 2.6), goutte(32, 5.4, 2.6), goutte(46, 6.8, 2.6)]
-
-# Les couleurs fixes (favicon, icônes) ; dans les pages, chapeau et gouttes suivent le thème.
-BRUN = "#9c3510"           # --accent du thème clair
-REFLET_C = "#d9662b"       # --classe-3
-PIED_C = "#f2e3c9"
-TRAIT = "#5a4130"          # le trait des dessins d'espèces
-PLUIE = "#4f7ea8"
+# Les couleurs fixes (favicon, icônes) ; dans les pages, elles suivent le thème (style.css).
+BRUN = "#9c3510"           # --accent du thème clair : la goutte
+CHAPEAU_C = "#f3dcbc"
+PIED_C = "#fbf3e6"
 FOND = "#fbfaf7"           # --fond du thème clair, fond des icônes
 
 
-def svg_marque(taille: int = 26, page: bool = True) -> str:
-    """Le logo en SVG. `page` : en ligne dans une page, chapeau et gouttes aux couleurs du thème
-    (classes `marque-*`, style.css) ; sinon couleurs fixes, pour un fichier."""
+def svg_marque(taille: int = 30, page: bool = True) -> str:
+    """Le logo en SVG. `page` : en ligne dans une page, aux couleurs du thème (classes `marque-*`,
+    style.css) ; sinon couleurs fixes, pour un fichier."""
     if page:
         return (f'<svg class="marque-logo" viewBox="0 0 64 64" width="{taille}" height="{taille}" aria-hidden="true">'
-                f'<path class="marque-pied" d="{PIED}"/><path class="marque-chapeau" d="{CHAPEAU}"/>'
-                f'<path class="marque-reflet" d="{REFLET}"/>'
-                + "".join(f'<path class="marque-goutte" d="{g}"/>' for g in GOUTTES) + "</svg>")
+                f'<path class="marque-goutte" d="{GOUTTE}"/><path class="marque-chapeau" d="{CHAPEAU}"/>'
+                f'<path class="marque-pied" d="{PIED}"/></svg>')
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
-            f'<path d="{PIED}" fill="{PIED_C}" stroke="{TRAIT}" stroke-width="2" stroke-linejoin="round"/>'
-            f'<path d="{CHAPEAU}" fill="{BRUN}" stroke="{TRAIT}" stroke-width="2" stroke-linejoin="round"/>'
-            f'<path d="{REFLET}" fill="none" stroke="{REFLET_C}" stroke-width="3" stroke-linecap="round"/>'
-            + "".join(f'<path d="{g}" fill="{PLUIE}"/>' for g in GOUTTES) + "</svg>\n")
+            f'<path d="{GOUTTE}" fill="{BRUN}"/><path d="{CHAPEAU}" fill="{CHAPEAU_C}"/>'
+            f'<path d="{PIED}" fill="{PIED_C}"/></svg>\n')
 
 
 # --- Les icônes PNG, dessinées par Pillow ----------------------------------------------
@@ -98,18 +83,8 @@ def dessiner(taille: int, part: float = .8, arrondi: float = .0):
     def p(chemin):
         return [(decal + x * echelle, decal + y * echelle) for x, y in points(chemin)]
 
-    epais = max(1, round(2 * echelle))
-    for chemin, couleur in ((PIED, PIED_C), (CHAPEAU, BRUN)):
-        pts = p(chemin)
-        d.polygon(pts, fill=couleur)
-        d.line(pts + [pts[0]], fill=TRAIT, width=epais, joint="curve")
-    reflet = p(REFLET)
-    w = max(1, round(3 * echelle))
-    d.line(reflet, fill=REFLET_C, width=w, joint="curve")
-    for x, y in (reflet[0], reflet[-1]):
-        d.ellipse([x - w / 2, y - w / 2, x + w / 2, y + w / 2], fill=REFLET_C)
-    for g in GOUTTES:
-        d.polygon(p(g), fill=PLUIE)
+    for chemin, couleur in ((GOUTTE, BRUN), (CHAPEAU, CHAPEAU_C), (PIED, PIED_C)):
+        d.polygon(p(chemin), fill=couleur)
     return im.resize((taille, taille), Image.LANCZOS)
 
 

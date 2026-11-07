@@ -27,7 +27,8 @@
   /* Les titres : une garalde des systèmes (Palatino sur Windows, Iowan sur Apple, Noto Serif sur
      Android), sans police téléchargée. */
   --police-titre: "Iowan Old Style", "Palatino Linotype", Palatino, "URW Palladio L", P052, "Book Antiqua", Georgia, serif;
-  --pluie: #4f7ea8;          /* les gouttes du logo */
+  --marque-chapeau: #f3dcbc; /* le cèpe du logo, en réserve dans la goutte */
+  --marque-pied: #fbf3e6;
   --decor-1: #f1e6d8;        /* le sous-bois de la une : collines, arbres, sol */
   --decor-2: #e8d6c1;
   --decor-3: #dcc3a6;
@@ -50,7 +51,8 @@
     --alerte-trait: #9a7429;
     --barre: #f2a65a;
     --pastille-trait: rgba(255, 255, 255, .35);   /* « excellent », presque noir, reste lisible */
-    --pluie: #8db6dd;
+    --marque-chapeau: var(--surface);
+    --marque-pied: var(--surface);
     --decor-1: #221f1b;
     --decor-2: #2a2520;
     --decor-3: #332b23;
@@ -71,7 +73,8 @@
   --alerte-trait: #9a7429;
   --barre: #f2a65a;
   --pastille-trait: rgba(255, 255, 255, .35);
-  --pluie: #8db6dd;
+  --marque-chapeau: var(--surface);
+  --marque-pied: var(--surface);
   --decor-1: #221f1b;
   --decor-2: #2a2520;
   --decor-3: #332b23;
@@ -106,12 +109,11 @@ p { margin: 0 0 .7em; }
   display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--texte);
   text-decoration: none; white-space: nowrap;
 }
-/* Le logo (champi/icones.py) : le chapeau à l'accent du thème, les gouttes de pluie, le pied clair. */
+/* Le logo (champi/icones.py) : une goutte à l'accent du thème, un cèpe en réserve dedans. */
 .marque-logo { flex: none; }
-.marque-chapeau { fill: var(--accent); stroke: #5a4130; stroke-width: 2; stroke-linejoin: round; }
-.marque-pied { fill: #f2e3c9; stroke: #5a4130; stroke-width: 2; stroke-linejoin: round; }
-.marque-reflet { fill: none; stroke: #d9662b; stroke-width: 3; stroke-linecap: round; }
-.marque-goutte { fill: var(--pluie); }
+.marque-goutte { fill: var(--accent); }
+.marque-chapeau { fill: var(--marque-chapeau); }
+.marque-pied { fill: var(--marque-pied); }
 .marque-nom { font-family: var(--police-titre); font-size: 1.2rem; letter-spacing: .01em; }
 .marque-nom span { color: var(--accent); }
 .barre-liens { display: flex; gap: 2px; margin-left: auto; overflow-x: auto; }

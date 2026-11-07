@@ -162,8 +162,9 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   de 9,2 km, `ici.js` : test Python/JS). Sur téléphone, la carte plein écran et le panneau en feuille
   qui glisse du bas (`feuille.js`), une case touchée s'y ouvre. Présentation de première visite
   (`guide.js`, `champi-guide`).
-- **Identité visuelle (2026-11-07)** : le logo est un cèpe sous trois gouttes de pluie (`icones.py`, une
-  seule géométrie) : en ligne dans la barre, aux couleurs du thème (classes `marque-*`), et en fichiers
+- **Identité visuelle (2026-11-07)** : le logo est un cèpe en réserve dans une goutte de pluie (`icones.py`,
+  une seule géométrie) : en ligne dans la barre, la goutte à l'accent et le cèpe aux couleurs du creux
+  (le fond de la barre en mode sombre, classes `marque-*`), et en fichiers
   (`favicon.svg`, `favicon.ico`, icônes de l'appli) refaits par `python -m champi.icones` (test). Plus de
   champignon rouge à pois : il évoquait l'amanite tue-mouches. Le nom s'écrit « Champi » + « météo » à
   l'accent. Titres en garalde des systèmes (`--police-titre` : Palatino, Iowan, Noto Serif), aucune

@@ -25,8 +25,12 @@ def test_logo_de_la_barre_aux_couleurs_du_theme():
 
 
 def test_chemins_echantillonnes():
-    pts = I.points(I.CHAPEAU, pas=8)
-    assert pts[0] == (7.0, 34.0) and len(pts) == 1 + 3 * 8 + 1 + 8
+    pts = I.points(I.GOUTTE, pas=8)
+    assert pts[0] == (32.0, 2.5) and len(pts) == 1 + 4 * 8
     assert all(0 <= x <= 64 and 0 <= y <= 64 for x, y in pts)
-    im = I.dessiner(64)
-    assert im.size == (64, 64) and im.getpixel((32, 24))[:3] == tuple(int(I.BRUN[k:k + 2], 16) for k in (1, 3, 5))
+    im = I.dessiner(64, part=1)
+    couleur = lambda c: tuple(int(c[k:k + 2], 16) for k in (1, 3, 5))     # noqa: E731
+    assert im.size == (64, 64)
+    assert im.getpixel((32, 16))[:3] == couleur(I.BRUN)                  # la goutte
+    assert im.getpixel((32, 32))[:3] == couleur(I.CHAPEAU_C)             # le chapeau, en réserve
+    assert im.getpixel((32, 50))[:3] == couleur(I.PIED_C)                # le pied
