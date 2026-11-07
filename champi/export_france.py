@@ -12,7 +12,8 @@ l'habitat (release « habitat », copié dans `site/habitat/`) et de la météo 
 - `apercu/<espèce>_<k>.png` : l'indice de toute la France par pixels de 1,15 km (vue régionale de la
   carte) : la meilleure forêt de chaque pixel, comme les zones de 250 m de plus près ;
 - `vue/<k>.png` : « Que chercher ici ? », les parts de forêt aux bonnes conditions par pixel de
-  9,2 km et par espèce (`Vue`) ;
+  9,2 km et par espèce (`Vue`) ; la vue France de la carte en tire le verdict de chaque carré ;
+- `vue_fine/<k>.png` : le même par carré de 4,6 km, pour le niveau intermédiaire de la carte ;
 - pour une espèce des prés, ni case ni point : l'indice moyen des prés de chaque COMMUNE,
   `communes/<espèce>_<k>.png` (une valeur par numéro de commune, 256 par ligne, 255 sans prés
   assez étendus) que le navigateur peint avec la couche « c » des blocs, et le même indice en
@@ -65,6 +66,7 @@ APERCU = 16                          # cases de 50 m par pixel d'aperçu (1 152 
 HORS_FRANCE = 255
 PREMIER_GEL = -6                     # le gel compte sur les 7 jours finissant au jour affiché
 VUE = 8                              # pixels d'aperçu par pixel de « Que chercher ici ? » (9,2 km)
+VUE_FINE = 4                         # … par carré du niveau intermédiaire de la carte (4,6 km, zoom 7)
 PRES_COMMUNE_KM2 = 0.25              # en dessous (une ou deux parcelles de Corine), pas d'indice de commune
 LARGEUR_TABLE = 256                  # valeurs par ligne de la table des communes
 KM2_PAR, PARTS_PAR = 3, 250          # un octet : la forêt en km² × 3, les parts × 250
@@ -281,13 +283,14 @@ class Vue:
     protégées (km²) et, pour chaque espèce, sa part à l'indice « bon » (≥ 0,40) et « moyen »
     (≥ 0,25) : les parts du verdict des départements (`redaction.niveau`), qui s'additionnent sur
     la zone affichée. Une image par jour, `vue/<k>.png` : les couches empilées en hauteur (la
-    forêt, puis bon et moyen de chaque espèce), un octet par pixel."""
+    forêt, puis bon et moyen de chaque espèce), un octet par pixel. `facteur` : pixels d'aperçu par
+    pixel (VUE ; VUE_FINE pour le niveau intermédiaire de la carte, `vue_fine/<k>.png`)."""
 
-    def __init__(self, apercu: Apercu, km2: np.ndarray):
+    def __init__(self, apercu: Apercu, km2: np.ndarray, facteur: int = VUE):
         g = apercu.grille
-        self.nx, self.ny = -(-g.nx // VUE), -(-g.ny // VUE)
+        self.nx, self.ny = -(-g.nx // facteur), -(-g.ny // facteur)
         lig, col = np.divmod(apercu.pixel, g.nx)
-        self.pixel = (lig // VUE) * self.nx + col // VUE
+        self.pixel = (lig // facteur) * self.nx + col // facteur
         self.libre, self.km2 = apercu.libre, km2
         self.surface = self._somme(self.libre)
         self.couches = [np.clip(np.round(self.surface * KM2_PAR), 0, 255)]
@@ -442,6 +445,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
     une = {}                         # le verdict de chaque carré aujourd'hui : les cartes de l'accueil
     carres, nx_c, ny_c = pixels_vue(g_apercu, ech.lat, ech.lon)
     vues = [Vue(apercu, km2) for _ in range(JOURS_FUTURS)]
+    vues_fines = [Vue(apercu, km2, VUE_FINE) for _ in range(JOURS_FUTURS)]
     # Les prés (espèces des champs) : leur propre échantillon, jamais publié point par point.
     lus = charger_pres(communes, departements)
     if lus:
@@ -478,6 +482,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
                 image = apercu.image(ind)
                 ecrire_png(SITE_DATA / "apercu" / f"{esp.code}_{k}.png", image)
                 vues[k].ajouter(ind)
+                vues_fines[k].ajouter(ind)
                 if k == 0:   # l'image de partage : la meilleure espèce de chaque pixel, aujourd'hui
                     meilleure = image if meilleure is None else np.maximum(meilleure, image)
                     une[esp.code] = verdicts_carres(carres, nx_c, ny_c, km2, ~ech.protege, ind, saison)
@@ -497,6 +502,8 @@ def exporter(meteo: Meteo | None = None) -> dict:
             jour_classement.sort(key=lambda t: -t[1])
             classement[esp.code].append([{"dep": d, "indice": i, "part_bon": p} for d, i, p in jour_classement[:12]])
         print(f"  {esp.nom} ({time.time() - t0:.0f} s)")
+    for k, v in enumerate(vues_fines):
+        ecrire_png(SITE_DATA / "vue_fine" / f"{k}.png", v.image())
     for k, v in enumerate(vues):
         ecrire_png(SITE_DATA / "vue" / f"{k}.png", v.image())
 
@@ -536,6 +543,10 @@ def exporter(meteo: Meteo | None = None) -> dict:
         "communes_table": LARGEUR_TABLE,
         "vue": {"facteur": VUE, "nx": vues[0].nx, "ny": vues[0].ny, "especes": [e.code for e in E.DE_FORET],
                 "km2_par": KM2_PAR, "parts_par": PARTS_PAR, "carre_min_km2": CARRE_MIN_KM2},
+        # Le niveau intermédiaire de la carte : la même chose par carré de 4,6 km ; le minimum de forêt
+        # garde la même part du carré (5 %).
+        "vue_fine": {"facteur": VUE_FINE, "nx": vues_fines[0].nx, "ny": vues_fines[0].ny,
+                     "carre_min_km2": CARRE_MIN_KM2 * (VUE_FINE / VUE) ** 2},
         "niveaux": redaction.SEUILS_NIVEAU,
         "blocs": {"cote": COTE, "taille": BLOC, "pas": PAS_FIN, "altitude_decalage": index["altitude_decalage"],
                   "liste": noms_blocs},

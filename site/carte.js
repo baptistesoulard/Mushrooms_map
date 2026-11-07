@@ -17,6 +17,7 @@ const R = 6378137;
 const MONDE = 2 * Math.PI * R;
 const DETAIL = 11;                     // à partir de ce zoom, une case ≈ un pixel d'écran
 const SYNTHESE = 8;                    // en dessous, la vue France : le verdict par carrés de 9,2 km
+const CARRES_FINS = 7;                 // … et dès ce zoom (jusqu'à SYNTHESE), par carrés de 4,6 km
 const CLE_ESPECE = "champi-espece";    // gardées dans le navigateur (voir a-propos.html)
 const CLE_DEPARTEMENT = "champi-departement";
 const CLE_FOND = "champi-fond";
@@ -158,12 +159,14 @@ async function demarrer() {
 
   // --- Données à la demande --------------------------------------------------------
   const resumes = memoire(8, (dep) => fetch(`data/resumes/${dep}.json`).then((r) => r.json()));
-  const vues = memoire(3, async (k) => {
-    const px = await pixels(`data/vue/${k}.png`);
+  const octets = async (chemin) => {
+    const px = await pixels(chemin);
     const v = new Uint8Array(px.l * px.h);
     for (let i = 0; i < v.length; i++) v[i] = px.d[i * 4];
     return v;
-  });
+  };
+  const vues = memoire(3, (k) => octets(`data/vue/${k}.png`));
+  const vuesFines = memoire(3, (k) => octets(`data/vue_fine/${k}.png`));
   const apercus = memoire(6, async (cle) => {
     const px = await pixels(`data/apercu/${cle}.png`);
     const v = new Uint8Array(px.l * px.h);
@@ -507,13 +510,20 @@ async function demarrer() {
   // data/vue) ; rien sous carre_min_km2 de forêt. Les espèces des prés gardent leurs communes.
   const NIVEAU_RVB = [[0xe2, 0xde, 0xd5], [0xef, 0xec, 0xe5], pal.classes[2], pal.classes[3], pal.classes[4]];
   const versLat = (y) => (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * 180 / Math.PI;
-  let carres = null;
+  // Deux grilles : 9,2 km jusqu'au zoom 6,5, 4,6 km au zoom 7 (une case garde à peu près la même
+  // taille à l'écran) ; sans vue_fine (export d'avant), la grande partout.
+  const GRILLES = [carte.vue && { ...carte.vue, lire: vues },
+                   carte.vue?.carre_min_km2 && carte.vue_fine && { ...carte.vue, ...carte.vue_fine, lire: vuesFines }]
+    .filter(Boolean);
+  let carres = null;                   // les verdicts de chaque grille, pour l'espèce et le jour affichés
   // Leaflet choisit ses tuiles au zoom arrondi (7,5 → 8) : la vue France s'arrête au même endroit.
   const vueFrance = () => carres !== null && Math.round(map.getZoom()) < SYNTHESE;
-  async function verdictsCarres(code, k) {
-    const V = carte.vue, e = V ? V.especes.indexOf(code) : -1;
+  const grilleCarres = () => (GRILLES.length > 1 && Math.round(map.getZoom()) >= CARRES_FINS ? 1 : 0);
+  const kmCarre = (G) => Math.round(g.pas * G.facteur * Math.cos(46.5 * Math.PI / 180) / 1000);
+  async function verdictsCarres(code, k, V) {
+    const e = V ? V.especes.indexOf(code) : -1;
     if (e < 0 || !V.carre_min_km2) return null;
-    const v = await vues(k);
+    const v = await V.lire(k);
     const n = V.nx * V.ny, pas = g.pas * V.facteur, jour = jourDe(k), sortie = new Int8Array(n);
     for (let l = 0; l < V.ny; l++) {
       const saison = facteurSaison(especes[code], jour, versLat(g.y1 - (l + 0.5) * pas), communs);
@@ -530,7 +540,7 @@ async function demarrer() {
       const tuile = document.createElement("canvas");
       tuile.width = tuile.height = 256;
       if (!carres || etat.filtre) return tuile;
-      const V = carte.vue, pas = g.pas * V.facteur;
+      const G = grilleCarres(), V = GRILLES[G], niveaux = carres[G], pas = g.pas * V.facteur;
       const { xs, ys } = axes(coords);
       const ctx = tuile.getContext("2d");
       const img = ctx.createImageData(256, 256);
@@ -540,7 +550,7 @@ async function demarrer() {
         for (let i = 0; i < 256; i++) {
           const c = Math.floor((xs[i] - g.x0) / pas);
           if (c < 0 || c >= V.nx) continue;
-          const niv = carres[l * V.nx + c];
+          const niv = niveaux[l * V.nx + c];
           if (niv < 0) continue;
           const p = (j * 256 + i) * 4;
           img.data.set(NIVEAU_RVB[niv], p);
@@ -553,12 +563,10 @@ async function demarrer() {
   });
   const calqueCarres = new Carres({ pane: "indice", maxZoom: SYNTHESE - 1, updateWhenZooming: false }).addTo(map);
   // Passer le seuil sans changer de niveau de tuiles garderait les tuiles d'avant.
-  let coteFrance = vueFrance();
+  let coteFrance = vueFrance(), grilleVue = grilleCarres();
   map.on("zoomend", () => {
-    if (vueFrance() === coteFrance) return;
-    coteFrance = vueFrance();
-    calqueApercu.redraw();
-    legende();
+    if (vueFrance() !== coteFrance) { coteFrance = vueFrance(); calqueApercu.redraw(); legende(); }
+    if (grilleCarres() !== grilleVue) { grilleVue = grilleCarres(); legende(); }   // ses tuiles changent de niveau
   });
 
   // Vue rapprochée : chaque tuile réunit les blocs qu'elle touche, calculés à la demande.
@@ -777,7 +785,9 @@ async function demarrer() {
     }
     const demande = `${etat.espece}_${etat.jour}`;
     const [a, c] = await Promise.all([apercus(demande),
-      verdictsCarres(etat.espece, etat.jour).catch((err) => { console.error(err); return null; })]);
+      Promise.all(GRILLES.map((G) => verdictsCarres(etat.espece, etat.jour, G)))
+        .then((l) => (l.length && l.every(Boolean) ? l : null))
+        .catch((err) => { console.error(err); return null; })]);
     if (demande !== `${etat.espece}_${etat.jour}`) return;   // l'utilisateur a déjà changé d'avis
     apercu = a;
     carres = c;
@@ -1038,7 +1048,7 @@ async function demarrer() {
         z.append(el("div", {}, el("span", { class: `pastille n${n}` }), NIVEAU_COURT[n][0].toUpperCase() + NIVEAU_COURT[n].slice(1)));
       }
       z.append(el("div", {}, el("span", { class: "pastille vide" }), "Sans couleur : trop peu de forêt dans le carré"));
-      z.append(el("p", { class: "muet" }, "Vue France : chaque carré d'environ 6 km au verdict des départements " +
+      z.append(el("p", { class: "muet" }, `Vue France : chaque carré d'environ ${kmCarre(GRILLES[grilleCarres()])} km au verdict des départements ` +
         `(« bon » dès ${Math.round(carte.niveaux.bon * 100)} % de sa forêt à l'indice bon). Zoomez pour l'indice, forêt par forêt.`));
       return;
     }

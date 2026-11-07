@@ -177,3 +177,26 @@ def test_apercu_la_meilleure_foret_du_pixel():
     assert image[0, 0] == round(0.6 * ECHELLE)               # la meilleure des deux libres, pas 0,4
     assert image[0, 1] == HORS_FORET                          # seule une case protégée
     assert image[1, 1] == round(0.3 * ECHELLE) and image[1, 0] == HORS_FORET
+
+
+def test_vue_fine_meme_calcul_sur_des_carres_plus_petits():
+    """Le niveau intermédiaire de la carte (VUE_FINE) : les mêmes parts que « Que chercher ici ? »,
+    sur des carrés deux fois plus petits ; chaque carré de 9,2 km regroupe quatre carrés fins."""
+    from types import SimpleNamespace
+    from champi import export_france as X
+    from champi.grille import merc_vers_lonlat
+
+    g = Grille(0.0, 8000.0, 1000.0, 8, 8)                    # 8 × 8 pixels d'aperçu de 1 km
+    xs, ys = np.meshgrid(np.arange(8) * 1000.0 + 500, 8000.0 - np.arange(8) * 1000.0 - 500)
+    lon, lat = merc_vers_lonlat(xs.ravel(), ys.ravel())
+    ech = SimpleNamespace(lon=lon, lat=lat, protege=np.zeros(64, dtype=bool))
+    ap = X.Apercu(g, ech)
+    km2 = np.ones(64)
+    indice = np.where(xs.ravel() < 4000, 0.5, 0.1)           # la moitié ouest « bonne »
+    grosse, fine = X.Vue(ap, km2, 8), X.Vue(ap, km2, 4)
+    grosse.ajouter(indice)
+    fine.ajouter(indice)
+    assert (grosse.nx, grosse.ny, fine.nx, fine.ny) == (1, 1, 2, 2)
+    assert fine.couches[0].tolist() == [16 * X.KM2_PAR] * 4       # 16 km² par carré fin
+    assert fine.couches[1].tolist() == [X.PARTS_PAR, 0, X.PARTS_PAR, 0]
+    assert grosse.couches[1].tolist() == [X.PARTS_PAR / 2]
