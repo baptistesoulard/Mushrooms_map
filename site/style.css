@@ -24,6 +24,13 @@
   --exploration: #6a3d9a;
   --barre: #d9662b;
   --rayon: 10px;
+  /* Les titres : une garalde des systèmes (Palatino sur Windows, Iowan sur Apple, Noto Serif sur
+     Android), sans police téléchargée. */
+  --police-titre: "Iowan Old Style", "Palatino Linotype", Palatino, "URW Palladio L", P052, "Book Antiqua", Georgia, serif;
+  --pluie: #4f7ea8;          /* les gouttes du logo */
+  --decor-1: #f1e6d8;        /* le sous-bois de la une : collines, arbres, sol */
+  --decor-2: #e8d6c1;
+  --decor-3: #dcc3a6;
   --police: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -43,6 +50,10 @@
     --alerte-trait: #9a7429;
     --barre: #f2a65a;
     --pastille-trait: rgba(255, 255, 255, .35);   /* « excellent », presque noir, reste lisible */
+    --pluie: #8db6dd;
+    --decor-1: #221f1b;
+    --decor-2: #2a2520;
+    --decor-3: #332b23;
   }
 }
 :root[data-theme="dark"] {
@@ -60,6 +71,10 @@
   --alerte-trait: #9a7429;
   --barre: #f2a65a;
   --pastille-trait: rgba(255, 255, 255, .35);
+  --pluie: #8db6dd;
+  --decor-1: #221f1b;
+  --decor-2: #2a2520;
+  --decor-3: #332b23;
 }
 
 * { box-sizing: border-box; }
@@ -73,6 +88,7 @@ body {
 }
 a { color: var(--accent); }
 h1, h2, h3 { line-height: 1.25; margin: 0 0 .4em; }
+h1, h2 { font-family: var(--police-titre); letter-spacing: .005em; }
 h1 { font-size: 1.35rem; }
 h2 { font-size: 1.05rem; }
 h3 { font-size: .95rem; }
@@ -80,9 +96,9 @@ p { margin: 0 0 .7em; }
 .muet { color: var(--texte-3); font-size: .85rem; }
 
 /* --- La barre du haut, sur toutes les pages ----------------------------------- */
-:root { --barre: 52px; }
+:root { --hauteur-barre: 52px; }
 .barre {
-  position: sticky; top: 0; z-index: 1100; height: var(--barre);
+  position: sticky; top: 0; z-index: 1100; height: var(--hauteur-barre);
   display: flex; align-items: center; gap: 18px; padding: 0 16px;
   background: var(--surface); border-bottom: 1px solid var(--trait);
 }
@@ -90,6 +106,14 @@ p { margin: 0 0 .7em; }
   display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--texte);
   text-decoration: none; white-space: nowrap;
 }
+/* Le logo (champi/icones.py) : le chapeau à l'accent du thème, les gouttes de pluie, le pied clair. */
+.marque-logo { flex: none; }
+.marque-chapeau { fill: var(--accent); stroke: #5a4130; stroke-width: 2; stroke-linejoin: round; }
+.marque-pied { fill: #f2e3c9; stroke: #5a4130; stroke-width: 2; stroke-linejoin: round; }
+.marque-reflet { fill: none; stroke: #d9662b; stroke-width: 3; stroke-linecap: round; }
+.marque-goutte { fill: var(--pluie); }
+.marque-nom { font-family: var(--police-titre); font-size: 1.2rem; letter-spacing: .01em; }
+.marque-nom span { color: var(--accent); }
 .barre-liens { display: flex; gap: 2px; margin-left: auto; overflow-x: auto; }
 .barre-liens a, .barre-menu nav a {
   padding: 6px 10px; border-radius: 8px; color: var(--texte-2); text-decoration: none; font-size: .92rem;
@@ -121,8 +145,8 @@ p { margin: 0 0 .7em; }
 .appli {
   display: grid;
   grid-template-columns: 380px 1fr;
-  height: calc(100vh - var(--barre));
-  height: calc(100dvh - var(--barre));
+  height: calc(100vh - var(--hauteur-barre));
+  height: calc(100dvh - var(--hauteur-barre));
 }
 .panneau {
   overflow-y: auto;
@@ -140,8 +164,8 @@ p { margin: 0 0 .7em; }
 .lecteur { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 820px) {
   body.page-carte { overflow: hidden; overscroll-behavior: none; }
-  .appli { display: block; height: calc(100dvh - var(--barre)); }
-  #carte { position: fixed; inset: var(--barre) 0 0 0; height: auto; }
+  .appli { display: block; height: calc(100dvh - var(--hauteur-barre)); }
+  #carte { position: fixed; inset: var(--hauteur-barre) 0 0 0; height: auto; }
   .panneau {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; height: 132px;
     display: flex; flex-direction: column;
@@ -279,8 +303,8 @@ legend { font-weight: 600; font-size: .85rem; color: var(--texte-2); padding: 0;
   padding: 8px 12px; border-radius: var(--rayon); background: var(--surface); color: var(--texte);
   box-shadow: 0 1px 6px rgb(0 0 0 / .25); font-size: .88rem;
 }
-.bandeau-pres { top: calc(var(--barre) + 12px); }
-@media (max-width: 820px) { .bandeau-pres { left: 56px; right: 12px; top: calc(var(--barre) + 64px); } }
+.bandeau-pres { top: calc(var(--hauteur-barre) + 12px); }
+@media (max-width: 820px) { .bandeau-pres { left: 56px; right: 12px; top: calc(var(--hauteur-barre) + 64px); } }
 
 label.case.publiques { margin-top: 10px; }
 .departement { display: grid; gap: 4px; margin-top: 16px; font-size: .85rem; font-weight: 600; color: var(--texte-2); }
@@ -669,7 +693,7 @@ code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-
 .chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 14px 0; }
 .chiffre { border: 1px solid var(--trait); border-radius: var(--rayon); background: var(--surface); padding: 10px 12px; }
 .chiffre span { display: block; font-size: .8rem; color: var(--texte-3); }
-.chiffre strong { display: block; font-size: 1.15rem; line-height: 1.25; margin: 2px 0; color: var(--texte); }
+.chiffre strong { display: block; font-size: 1.2rem; line-height: 1.25; margin: 2px 0; color: var(--texte); font-family: var(--police-titre); }
 .faq h3 { font-size: 1rem; margin: 1.1em 0 .25em; }
 .faq p { margin-top: 0; }
 .page table.forets th[scope="row"] { color: var(--texte); }
@@ -697,11 +721,19 @@ a.bouton.principal:hover, button.bouton.principal:hover { background: var(--acce
 
 /* Accueil : la une (la réponse du jour et la carte de France), puis des blocs. */
 .une {
+  position: relative; overflow: hidden;
   display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 20px 32px; align-items: center;
-  margin: 4px 0 8px; padding: 26px 28px; border-radius: 18px; background: var(--surface);
+  margin: 4px 0 8px; padding: 30px 28px 78px; border-radius: 18px;
+  background: linear-gradient(165deg, var(--surface) 50%, var(--accent-doux));
   border: 1px solid var(--trait);
 }
-.une h1 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); margin: 4px 0 10px; line-height: 1.15; }
+.une > :not(.une-decor) { position: relative; z-index: 1; }
+.une-decor { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 74px; z-index: 0; pointer-events: none; }
+.une-decor .colline { fill: var(--decor-1); }
+.une-decor .arbre { fill: var(--decor-2); }
+.une-decor .sol { fill: var(--decor-3); }
+.une-decor .champi { fill: var(--accent); opacity: .5; }
+.une h1 { font-size: clamp(1.9rem, 3.8vw, 2.7rem); margin: 4px 0 12px; line-height: 1.1; }
 .une .chapeau { margin-bottom: 12px; }
 .en-bref {
   font-size: 1.05rem; font-weight: 600; color: var(--texte); background: var(--accent-doux);
@@ -740,7 +772,7 @@ a.bouton.principal:hover, button.bouton.principal:hover { background: var(--acce
 .une-legende { margin: 8px 0 0; font-size: .78rem; }
 .une-carte figcaption { font-size: .8rem; color: var(--texte-3); margin-top: 4px; }
 @media (max-width: 760px) {
-  .une { grid-template-columns: 1fr; padding: 20px 18px; }
+  .une { grid-template-columns: 1fr; padding: 22px 18px 70px; }
   .une-carte { max-width: 420px; }
 }
 .bloc { margin-top: 40px; }
@@ -754,7 +786,7 @@ a.bouton.principal:hover, button.bouton.principal:hover { background: var(--acce
 .saison-photo img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
 .saison-photo img.icone { width: 96px; height: 96px; aspect-ratio: auto; margin: 36px auto; object-fit: contain; }
 .saison-cartes li > div { padding: 10px 14px 14px; }
-.saison-cartes h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.saison-cartes h3 { margin: 0 0 6px; font-size: 1.2rem; font-family: var(--police-titre); }
 .saison-cartes h3 a { color: var(--texte); text-decoration: none; }
 .saison-cartes h3 a:hover { color: var(--accent); }
 .saison-cartes .badges { margin: 0 0 6px !important; }

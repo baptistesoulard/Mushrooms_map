@@ -162,6 +162,14 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   de 9,2 km, `ici.js` : test Python/JS). Sur téléphone, la carte plein écran et le panneau en feuille
   qui glisse du bas (`feuille.js`), une case touchée s'y ouvre. Présentation de première visite
   (`guide.js`, `champi-guide`).
+- **Identité visuelle (2026-11-07)** : le logo est un cèpe sous trois gouttes de pluie (`icones.py`, une
+  seule géométrie) : en ligne dans la barre, aux couleurs du thème (classes `marque-*`), et en fichiers
+  (`favicon.svg`, `favicon.ico`, icônes de l'appli) refaits par `python -m champi.icones` (test). Plus de
+  champignon rouge à pois : il évoquait l'amanite tue-mouches. Le nom s'écrit « Champi » + « météo » à
+  l'accent. Titres en garalde des systèmes (`--police-titre` : Palatino, Iowan, Noto Serif), aucune
+  police téléchargée ni tierce. Sous la une, un sous-bois dessiné (`pages_accueil.SOUS_BOIS`, jetons
+  `--decor-*`). La hauteur de la barre est `--hauteur-barre` ; `--barre` est la couleur des tranches
+  d'altitude (le même nom pour les deux vidait la carte sur téléphone en mode sombre).
 - **Barre du haut, sur toutes les pages** (`pages.barre`, rubriques `pages.BARRE`) : les pages du
   matin l'écrivent ; celles écrites à la main (`pages.STATIQUES`, la carte comprise) la portent
   entre `<!-- barre -->` et `<!-- /barre -->`, réécrite par `python -m champi.pages barre` (test).
@@ -362,6 +370,7 @@ python -m champi.carte_departements     # réseau, quelques secondes : data/depa
 python -m champi.forets                 # réseau, quelques minutes : data/forets_publiques.json.gz (forêts publiques nommées)
 python -m champi.carte_departements fin # demande site/habitat/, ~30 s : data/departements_fin.json (contours fins)
 python -m champi.photos                 # réseau : les photos des espèces (Wikimedia Commons), avec leurs crédits
+python -m champi.icones                 # le logo : favicon.svg, favicon.ico, icônes de l'appli
 python -m http.server 8765 --directory site   # la carte : /carte/ ; les pages du matin demandent l'export
 ```
 

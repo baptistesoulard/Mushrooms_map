@@ -43,6 +43,32 @@ APPLI = """
 <link rel="apple-touch-icon" href="icone-180.png">
 <meta name="theme-color" content="#9c3510">"""
 
+
+def _sous_bois() -> str:
+    """Le décor du bas de la une : collines, sapins et feuillus, sol, quelques champignons, aux
+    couleurs du thème (`--decor-*`, style.css). Dessiné une fois, toujours le même ; décoratif."""
+    sapins, feuillus, champis = [], [], []
+    for x, h in ((60, 30), (92, 24), (182, 34), (318, 28), (350, 22), (522, 32), (700, 26), (732, 34),
+                 (884, 28), (1012, 32), (1044, 24), (1152, 30)):
+        b, w = 52, h * .32
+        sapins.append(f"M{x} {b - h}L{x - w:g} {b - h * .45:g}L{x + w:g} {b - h * .45:g}Z"
+                      f"M{x} {b - h * .75:g}L{x - w * 1.35:g} {b}L{x + w * 1.35:g} {b}Z")
+    for x, r in ((132, 12), (252, 14), (440, 11), (604, 13), (806, 12), (962, 14), (1100, 11)):
+        feuillus.append(f'<circle cx="{x}" cy="{50 - r * 1.6:g}" r="{r}"/><rect x="{x - 1.5}" y="{50 - r:g}" '
+                        f'width="3" height="{r + 4}"/>')
+    for x, s in ((226, 1), (240, .7), (642, .9), (982, 1.1), (996, .75)):
+        champis.append(f'<path d="M{x - 6 * s:g} {61 - 4 * s:g}C{x - 6 * s:g} {61 - 9 * s:g} {x + 6 * s:g} {61 - 9 * s:g} '
+                       f'{x + 6 * s:g} {61 - 4 * s:g}Z"/><rect x="{x - 1.6 * s:g}" y="{61 - 4.5 * s:g}" '
+                       f'width="{3.2 * s:g}" height="{5 * s:g}" rx="{s:g}"/>')
+    return ('<svg class="une-decor" viewBox="0 0 1200 74" preserveAspectRatio="xMidYMax slice" aria-hidden="true">'
+            '<path class="colline" d="M0 44C140 30 260 40 400 34C540 28 660 42 800 34C940 26 1060 38 1200 30L1200 74L0 74Z"/>'
+            f'<g class="arbre"><path d="{"".join(sapins)}"/>{"".join(feuillus)}</g>'
+            '<path class="sol" d="M0 62C200 54 380 60 600 57C820 54 1000 62 1200 55L1200 74L0 74Z"/>'
+            f'<g class="champi">{"".join(champis)}</g></svg>')
+
+
+SOUS_BOIS = _sous_bois()
+
 # Petits dessins au trait (24 × 24, couleur du texte) des fonctions et des étapes.
 TRAITS = {
     "carte": '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
@@ -402,7 +428,7 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
               "  </form>",
               "  </div>"]
     lignes += une_carte(especes, nat, departements, genere_le, contours)
-    lignes.append("  </section>")
+    lignes += [f"  {SOUS_BOIS}", "  </section>"]
 
     # 2. Les espèces en saison, illustrées : leur état aujourd'hui, ce que la semaine change.
     en_saison = [x for x in ordre_saison(especes, nat) if meilleur_niveau(nat[x["code"]][0]) not in (0, None)]

@@ -18,6 +18,7 @@ from pathlib import Path
 
 from .climatologie import en_mots
 from .config import ADRESSE
+from .icones import svg_marque
 from .depot import decalage_paris
 from .redaction import JOURS, MOIS, NBSP
 
@@ -255,7 +256,7 @@ def barre(racine: str, chemin: str) -> str:
             for c, t in liste)
     return f"""{DEBUT_BARRE}
 <header class="barre">
-  <a class="marque" href="{lien(racine, "./")}"><img src="{racine}favicon.svg" alt="" width="22" height="22">{NOM}</a>
+  <a class="marque" href="{lien(racine, "./")}" aria-label="{NOM}, l'accueil">{svg_marque(30)}<span class="marque-nom">Champi<span>météo</span></span></a>
   <nav class="barre-liens" aria-label="Rubriques">
 {liens(BARRE, "    ")}
   </nav>
