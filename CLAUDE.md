@@ -167,8 +167,9 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   crédit à côté (`figure_photo(..., credit=False)`), il est en bas de page ; le test d'intégration
   des pages générées le contrôle.
 - **Les niveaux de la carte (2026-11-07)**, chacun avec son rôle : sous le zoom 8 (`SYNTHESE`),
-  la vue France, chaque carré au verdict des départements, de 9,2 km jusqu'au zoom 6,5 (`data/vue`,
-  comme la carte de l'accueil et « Que chercher ici ? ») puis de 4,6 km au zoom 7 (`CARRES_FINS`,
+  la vue France, chaque carré au verdict des départements, de 18,4 km au zoom 5 (`CARRES_GROS` :
+  quatre carrés de 9,2 km regroupés dans le navigateur, pondérés par leur forêt), de 9,2 km au zoom 6
+  (`data/vue`, comme la carte de l'accueil et « Que chercher ici ? ») puis de 4,6 km au zoom 7 (`CARRES_FINS`,
   `data/vue_fine`, `export_france.VUE_FINE`), rien sous `carre_min_km2` de forêt (5 % du carré) ;
   les espèces des prés gardent leurs communes ; Leaflet choisit ses tuiles au zoom ARRONDI et les
   retire au zoom exact : les seuils suivent le zoom arrondi ; du zoom 8 à 10,5, l'aperçu de 1,15 km, la MEILLEURE case de chaque

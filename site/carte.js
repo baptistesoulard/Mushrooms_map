@@ -18,6 +18,7 @@ const MONDE = 2 * Math.PI * R;
 const DETAIL = 11;                     // à partir de ce zoom, une case ≈ un pixel d'écran
 const SYNTHESE = 8;                    // en dessous, la vue France : le verdict par carrés de 9,2 km
 const CARRES_FINS = 7;                 // … et dès ce zoom (jusqu'à SYNTHESE), par carrés de 4,6 km
+const CARRES_GROS = 5;                 // … et jusqu'à ce zoom, par carrés de 18,4 km
 const CONTOURS_JUSQUA = 11.5;          // les contours des départements, en dessous de ce zoom
 const CLE_ESPECE = "champi-espece";    // gardées dans le navigateur (voir a-propos.html)
 const CLE_DEPARTEMENT = "champi-departement";
@@ -507,27 +508,48 @@ async function demarrer() {
   // data/vue) ; rien sous carre_min_km2 de forêt. Les espèces des prés gardent leurs communes.
   const NIVEAU_RVB = [[0xe2, 0xde, 0xd5], [0xef, 0xec, 0xe5], pal.classes[2], pal.classes[3], pal.classes[4]];
   const versLat = (y) => (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * 180 / Math.PI;
-  // Deux grilles : 9,2 km jusqu'au zoom 6,5, 4,6 km au zoom 7 (une case garde à peu près la même
-  // taille à l'écran) ; sans vue_fine (export d'avant), la grande partout.
-  const GRILLES = [carte.vue && { ...carte.vue, lire: vues },
-                   carte.vue?.carre_min_km2 && carte.vue_fine && { ...carte.vue, ...carte.vue_fine, lire: vuesFines }]
-    .filter(Boolean);
+  // Trois grilles, pour qu'une case garde à peu près la même taille à l'écran (4 pixels) : 18,4 km
+  // au zoom 5 (quatre carrés de 9,2 km regroupés, pondérés par leur forêt : le même verdict), 9,2 km
+  // au zoom 6, 4,6 km au zoom 7. Sans le regroupement, au zoom 5, un carré de 9,2 km ne faisait plus
+  // que 2 pixels : la vue la plus large redevenait mouchetée (2026-11-07). Sans vue_fine (export
+  // d'avant), la grille de 9,2 km la remplace.
+  const V9 = carte.vue;
+  const GRILLES = V9?.carre_min_km2 ? {
+    gros: { ...V9, facteur: V9.facteur * 2, nx: Math.ceil(V9.nx / 2), ny: Math.ceil(V9.ny / 2),
+            carre_min_km2: V9.carre_min_km2 * 4, lire: vues, regroupe: 2, source: V9 },
+    moyen: { ...V9, lire: vues, regroupe: 1, source: V9 },
+    ...(carte.vue_fine ? { fin: { ...V9, ...carte.vue_fine, lire: vuesFines, regroupe: 1, source: carte.vue_fine } } : {}),
+  } : {};
   let carres = null;                   // les verdicts de chaque grille, pour l'espèce et le jour affichés
   // Leaflet choisit ses tuiles au zoom arrondi (7,5 → 8) : la vue France s'arrête au même endroit.
   const vueFrance = () => carres !== null && Math.round(map.getZoom()) < SYNTHESE;
-  const grilleCarres = () => (GRILLES.length > 1 && Math.round(map.getZoom()) >= CARRES_FINS ? 1 : 0);
+  const grilleCarres = () => {
+    const z = Math.round(map.getZoom());
+    return z >= CARRES_FINS && GRILLES.fin ? "fin" : z <= CARRES_GROS ? "gros" : "moyen";
+  };
   const kmCarre = (G) => Math.round(g.pas * G.facteur * Math.cos(46.5 * Math.PI / 180) / 1000);
-  async function verdictsCarres(code, k, V) {
-    const e = V ? V.especes.indexOf(code) : -1;
-    if (e < 0 || !V.carre_min_km2) return null;
-    const v = await V.lire(k);
-    const n = V.nx * V.ny, pas = g.pas * V.facteur, jour = jourDe(k), sortie = new Int8Array(n);
-    for (let l = 0; l < V.ny; l++) {
+  async function verdictsCarres(code, k, G) {
+    const e = G.especes.indexOf(code);
+    if (e < 0) return null;
+    const v = await G.lire(k);
+    const S = G.source, n = S.nx * S.ny, r = G.regroupe, pas = g.pas * G.facteur, jour = jourDe(k);
+    const sortie = new Int8Array(G.nx * G.ny);
+    for (let l = 0; l < G.ny; l++) {
       const saison = facteurSaison(especes[code], jour, versLat(g.y1 - (l + 0.5) * pas), communs);
-      for (let c = 0; c < V.nx; c++) {
-        const i = l * V.nx + c;
-        sortie[i] = v[i] / V.km2_par < V.carre_min_km2 ? -1
-          : niveauZone(saison, v[(1 + 2 * e) * n + i] / V.parts_par, v[(2 + 2 * e) * n + i] / V.parts_par, carte.niveaux);
+      for (let c = 0; c < G.nx; c++) {
+        let s = 0, bon = 0, moyen = 0;                  // forêt (km²), puis ses parts « bon » et « moyen »
+        for (let dl = 0; dl < r; dl++) {
+          for (let dc = 0; dc < r; dc++) {
+            const ls = l * r + dl, cs = c * r + dc;
+            if (ls >= S.ny || cs >= S.nx) continue;
+            const i = ls * S.nx + cs, si = v[i] / G.km2_par;
+            s += si;
+            bon += si * v[(1 + 2 * e) * n + i];
+            moyen += si * v[(2 + 2 * e) * n + i];
+          }
+        }
+        sortie[l * G.nx + c] = s < G.carre_min_km2 ? -1
+          : niveauZone(saison, bon / s / G.parts_par, moyen / s / G.parts_par, carte.niveaux);
       }
     }
     return sortie;
@@ -821,8 +843,8 @@ async function demarrer() {
     }
     const demande = `${etat.espece}_${etat.jour}`;
     const [a, c] = await Promise.all([apercus(demande),
-      Promise.all(GRILLES.map((G) => verdictsCarres(etat.espece, etat.jour, G)))
-        .then((l) => (l.length && l.every(Boolean) ? l : null))
+      Promise.all(Object.entries(GRILLES).map(async ([nom, G]) => [nom, await verdictsCarres(etat.espece, etat.jour, G)]))
+        .then((l) => (l.length && l.every(([, v]) => v) ? Object.fromEntries(l) : null))
         .catch((err) => { console.error(err); return null; })]);
     if (demande !== `${etat.espece}_${etat.jour}`) return;   // l'utilisateur a déjà changé d'avis
     apercu = a;
