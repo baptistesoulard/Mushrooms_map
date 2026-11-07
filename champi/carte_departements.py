@@ -15,6 +15,7 @@ communes des blocs d'habitat (centre de chaque département, écart moyen d'envi
 from __future__ import annotations
 
 import json
+import re
 
 import numpy as np
 
@@ -28,6 +29,7 @@ LARGEUR = 1000                           # largeur du dessin (unités SVG)
 TOLERANCE_M = 1800                       # simplification, en mètres Mercator (moins d'une unité du dessin)
 AIRE_MIN_M2 = 4e7                        # îlots plus petits (40 km² Mercator) : écartés
 MARGE_UNE = 16                           # unités du dessin autour de la France, sur la carte de l'accueil
+TOLERANCE_FRONTIERE = 2.5                # unités du dessin (~4 km) : deux tracés simplifiés d'une même limite
 
 
 def _simplifier(points: np.ndarray, tol: float) -> np.ndarray:
@@ -94,9 +96,75 @@ def construire(codes: set[str]) -> dict:
               "cadre": [round(float(xmin)), round(float(ymax - hauteur / echelle)),
                         round(float(xmin + LARGEUR / echelle)), round(float(ymax))],
               "traces": {c: "".join(trace(a) for a in anneaux[c]) for c in sorted(anneaux)}}
+    sortie["frontieres"] = frontieres(sortie["traces"])
     FICHIER.write_text(json.dumps(sortie, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Écrit {FICHIER.name} : {len(anneaux)} départements, {FICHIER.stat().st_size // 1024} Ko")
     return sortie
+
+
+def lire_traces(d: str) -> list[np.ndarray]:
+    """Les anneaux d'un tracé (« Mx yl dx dy … z », au dixième), en coordonnées du dessin."""
+    anneaux = []
+    for morceau in d.split("M")[1:]:
+        n = np.array(re.findall(r"-?\d+(?:\.\d+)?", morceau), dtype=float)
+        pts = np.cumsum(n.reshape(-1, 2), axis=0)
+        anneaux.append(pts)
+    return anneaux
+
+
+def _distances(points: np.ndarray, anneau: np.ndarray) -> np.ndarray:
+    """La distance de chaque point à l'anneau fermé (ses segments)."""
+    a, b = anneau, np.roll(anneau, -1, axis=0)
+    ab = b - a
+    l2 = np.maximum((ab ** 2).sum(axis=1), 1e-9)
+    t = np.clip(((points[:, None, :] - a[None]) * ab[None]).sum(axis=2) / l2[None], 0, 1)
+    proj = a[None] + t[..., None] * ab[None]
+    return np.sqrt(((points[:, None, :] - proj) ** 2).sum(axis=2)).min(axis=1)
+
+
+def frontieres(traces: dict[str, str], tol: float = TOLERANCE_FRONTIERE) -> list[str]:
+    """Les limites ENTRE départements, sans le littoral ni les frontières du pays : les segments
+    d'un contour qui longent un autre département (extrémités et milieu à moins de `tol`). Chaque
+    département ayant été simplifié seul, une limite commune a deux tracés voisins : on garde celui
+    du département au plus petit code. Tracés SVG en unités du dessin, comme `traces`."""
+    anneaux = {c: lire_traces(d) for c, d in traces.items()}
+    boites = {c: (np.min([a.min(axis=0) for a in l], axis=0) - tol, np.max([a.max(axis=0) for a in l], axis=0) + tol)
+              for c, l in anneaux.items()}
+    sortie = []
+    for code, liste in anneaux.items():
+        voisins = [v for v in anneaux if v > code and np.all(boites[v][0] <= boites[code][1])
+                   and np.all(boites[code][0] <= boites[v][1])]
+        for anneau in liste:
+            fin = np.roll(anneau, -1, axis=0)
+            milieu = (anneau + fin) / 2
+            garde = np.zeros(len(anneau), dtype=bool)
+            for v in voisins:
+                proche = lambda pts: np.min([_distances(pts, a) for a in anneaux[v]], axis=0) <= tol
+                garde |= proche(anneau) & proche(fin) & proche(milieu)
+            if not garde.any():
+                continue
+            # Les suites de segments gardés, en commençant après un segment écarté (anneau fermé).
+            depart = int(np.argmin(garde)) if not garde.all() else 0
+            ordre = np.roll(np.arange(len(anneau)), -depart)
+            suite: list[int] = []
+            for i in list(ordre) + ([ordre[0]] if garde.all() else []):
+                if garde[i]:
+                    suite.append(i)
+                    continue
+                if suite:
+                    sortie.append(_chemin(anneau, suite))
+                    suite = []
+            if suite:
+                sortie.append(_chemin(anneau, suite))
+    return sortie
+
+
+def _chemin(anneau: np.ndarray, segments: list[int]) -> str:
+    """Le tracé SVG des segments i → i+1 qui se suivent, au dixième, en relatif comme `traces`."""
+    idx = segments + [(segments[-1] + 1) % len(anneau)]
+    p = np.round(anneau[idx] * 10).astype(int)
+    d = np.diff(p, axis=0)
+    return f"M{p[0, 0] / 10:g} {p[0, 1] / 10:g}l" + " ".join(f"{x / 10:g} {y / 10:g}" for x, y in d)
 
 
 def cadre_une(contours: dict) -> tuple[list[float], list[float]]:

@@ -105,3 +105,16 @@ def test_cadre_des_contours():
     box, emprise = carte_departements.cadre_une(c)
     assert abs((emprise[2] - emprise[0]) / box[2] - (x1 - x0) / c["largeur"]) < 1e-6
     assert abs((emprise[3] - emprise[1]) / box[3] - (x1 - x0) / c["largeur"]) < 1e-2
+
+
+def test_frontieres_entre_departements_seulement():
+    """Les limites entre départements, sans le littoral : deux carrés voisins simplifiés chacun de
+    son côté (leur limite commune décalée de 1 unité) ; seule la limite commune reste, tracée une
+    fois, depuis le plus petit code."""
+    traces = {"01": "M0 0l10 0 0 10 -10 0z", "02": "M11 0l10 0 0 10 -10 0z"}
+    f = carte_departements.frontieres(traces)
+    assert len(f) == 1
+    (anneau,) = carte_departements.lire_traces(f[0])
+    assert np.allclose(anneau[:, 0], 10) and sorted(anneau[:, 1].tolist()) == [0, 10]
+    assert carte_departements.frontieres({"01": traces["01"]}) == []          # seul : aucun voisin
+    assert carte_departements.frontieres(traces, tol=0.5) == []               # trop loin l'un de l'autre

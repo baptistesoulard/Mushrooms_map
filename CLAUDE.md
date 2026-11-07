@@ -182,8 +182,10 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   Fonds : plan IGN grisé par défaut (l'indice ressort), relief (estompage IGN), photos ; le choix
   est gardé (`champi-fond`). L'indice a son calque (« indice ») en mode produit sur le plan et le relief
   (pas sur les photos) ; par-dessus, les contours des départements (calque « contours »,
-  `departements_carte.json` publié par l'export, blancs sur les carrés de la vue France, sombres
-  sur les pixels de la vue régionale, jusqu'au zoom 11 :
+  `departements_carte.json` publié par l'export) : les limites ENTRE départements seulement
+  (`carte_departements.frontieres`, sans le littoral ni les frontières, qui doublaient le plan avec
+  l'écart de la simplification), en trait fin, blanc sur les carrés de la vue France, sombre sur les
+  pixels de la vue régionale ; le département choisi, côte comprise, en trait sombre épais ; jusqu'au zoom 11 :
   simplifiés à ~2 km, ils s'écarteraient des vraies limites de plus près), puis les marques
   (position, coins). Les noms de lieux de l'IGN (`GEOGRAPHICALNAMES.NAMES`) ont été essayés
   par-dessus le 2026-11-07, puis retirés : doublés par ceux du plan, peu satisfaisants.
