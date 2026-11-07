@@ -137,6 +137,7 @@ def tete(titre: str, description: str, racine: str, chemin: str, image: str | No
 <meta property="og:description" content="{e(description)}">
 <meta property="og:type" content="website">{apercu}{canonique}
 <link rel="icon" href="{racine}favicon.svg" type="image/svg+xml">
+<link rel="icon" href="{racine}icone-192.png" sizes="192x192" type="image/png">
 <link rel="stylesheet" href="{racine}style.css">{plus}
 </head>
 <body>

@@ -157,3 +157,23 @@ def test_verdicts_des_carres_comme_les_departements():
         assert niv[c] == attendu, c
     assert niv[:4].tolist() == [4, 3, 2, 0]
     assert niv[4] == -1 and niv[6:].tolist() == [-1, -1, -1]
+
+
+def test_apercu_la_meilleure_foret_du_pixel():
+    """L'aperçu (vue régionale) prend la meilleure case de chaque pixel, comme les zones de 250 m
+    prennent l'habitat le plus favorable : pas de moyenne diluée par la forêt clairsemée. Les cases
+    protégées ne comptent pas ; un pixel sans forêt libre reste hors forêt."""
+    from types import SimpleNamespace
+    from champi import export_france as X
+    from champi.export import ECHELLE, HORS_FORET
+    from champi.grille import merc_vers_lonlat
+
+    g = Grille(0.0, 2000.0, 1000.0, 2, 2)                    # quatre pixels de 1 km
+    x = np.array([100.0, 900.0, 500.0, 1500.0, 1500.0])
+    y = np.array([1900.0, 1100.0, 1500.0, 1500.0, 500.0])
+    lon, lat = merc_vers_lonlat(x, y)
+    ech = SimpleNamespace(lon=lon, lat=lat, protege=np.array([False, False, True, True, False]))
+    image = X.Apercu(g, ech).image(np.array([0.2, 0.6, 0.9, 0.9, 0.3]))
+    assert image[0, 0] == round(0.6 * ECHELLE)               # la meilleure des deux libres, pas 0,4
+    assert image[0, 1] == HORS_FORET                          # seule une case protégée
+    assert image[1, 1] == round(0.3 * ECHELLE) and image[1, 0] == HORS_FORET

@@ -9,7 +9,8 @@ l'habitat (release « habitat », copié dans `site/habitat/`) et de la météo 
 - `meteo/<bloc>.bin` : pour chaque bloc, les champs météo du jour aux points AROME qui le
   couvrent (entiers 16 bits en dixièmes ; en-tête [lignes, colonnes, i0, j0] ; ordre des
   champs dans `carte.json` → `meteo.champs`) ;
-- `apercu/<espèce>_<k>.png` : l'indice de toute la France par pixels de 1,15 km (vue large) ;
+- `apercu/<espèce>_<k>.png` : l'indice de toute la France par pixels de 1,15 km (vue régionale de la
+  carte) : la meilleure forêt de chaque pixel, comme les zones de 250 m de plus près ;
 - `vue/<k>.png` : « Que chercher ici ? », les parts de forêt aux bonnes conditions par pixel de
   9,2 km et par espèce (`Vue`) ;
 - pour une espèce des prés, ni case ni point : l'indice moyen des prés de chaque COMMUNE,
@@ -52,7 +53,7 @@ from . import pages_especes
 from . import prairies
 from . import redaction
 from .config import DATA, PAS_FIN, RACINE, SITE, SITE_DATA, VAPID_PUBLIQUE
-from .export import COUVERTURE_PLEINE, ECHELLE, HORS_FORET, JOURS_FUTURS, TRANCHE_M, ecrire_png
+from .export import ECHELLE, HORS_FORET, JOURS_FUTURS, TRANCHE_M, ecrire_png
 from .france import BLOC, COTE, ECHANTILLON, Bloc
 from .grille import Grille, lonlat_vers_merc
 from .habitat import ESSENCES, ORIENTATIONS, ROCHES
@@ -253,7 +254,10 @@ def table_communes(codes: np.ndarray) -> np.ndarray:
 
 
 class Apercu:
-    """Moyenne de l'échantillon par pixel de 1,15 km, réduite là où la forêt est clairsemée."""
+    """La meilleure case de l'échantillon par pixel de 1,15 km (hors zones protégées) : la règle des
+    zones de 250 m (`zones.py`, l'habitat le plus favorable de la zone), pour qu'en zoomant les
+    couleurs s'affinent sans changer de ton. Jusqu'au 2026-11-07, la moyenne réduite là où la forêt
+    est clairsemée : plus pâle, la carte foncissait d'un coup au passage aux zones."""
 
     def __init__(self, grille: Grille, ech: Echantillon):
         self.grille = grille
@@ -263,16 +267,12 @@ class Apercu:
         self.pixel = lig * grille.nx + col
         self.nb = grille.nx * grille.ny
         self.libre = ~ech.protege
-        n = np.bincount(self.pixel, minlength=self.nb)
-        par_pixel = (APERCU // ECHANTILLON) ** 2                       # 16 cases d'échantillon
-        self.couverture = np.minimum(1.0, n / par_pixel / COUVERTURE_PLEINE)
         self.vide = np.bincount(self.pixel[self.libre], minlength=self.nb) == 0
 
     def image(self, indice: np.ndarray) -> np.ndarray:
-        n = np.bincount(self.pixel[self.libre], minlength=self.nb)
-        s = np.bincount(self.pixel[self.libre], weights=indice[self.libre], minlength=self.nb)
-        moy = np.divide(s, n, out=np.zeros(self.nb), where=n > 0) * self.couverture
-        code = np.clip(np.round(moy * ECHELLE), 0, ECHELLE).astype(np.uint8)
+        meilleur = np.zeros(self.nb)
+        np.maximum.at(meilleur, self.pixel[self.libre], indice[self.libre])
+        code = np.clip(np.round(meilleur * ECHELLE), 0, ECHELLE).astype(np.uint8)
         return np.where(self.vide, HORS_FORET, code).astype(np.uint8).reshape(self.grille.ny, self.grille.nx)
 
 
@@ -535,7 +535,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
         "apercu": {"grille": g_apercu.en_dict(), "bornes": b},
         "communes_table": LARGEUR_TABLE,
         "vue": {"facteur": VUE, "nx": vues[0].nx, "ny": vues[0].ny, "especes": [e.code for e in E.DE_FORET],
-                "km2_par": KM2_PAR, "parts_par": PARTS_PAR},
+                "km2_par": KM2_PAR, "parts_par": PARTS_PAR, "carre_min_km2": CARRE_MIN_KM2},
         "niveaux": redaction.SEUILS_NIVEAU,
         "blocs": {"cote": COTE, "taille": BLOC, "pas": PAS_FIN, "altitude_decalage": index["altitude_decalage"],
                   "liste": noms_blocs},

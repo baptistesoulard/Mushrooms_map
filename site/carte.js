@@ -16,6 +16,7 @@ import { partager } from "./partage.js";
 const R = 6378137;
 const MONDE = 2 * Math.PI * R;
 const DETAIL = 11;                     // à partir de ce zoom, une case ≈ un pixel d'écran
+const SYNTHESE = 8;                    // en dessous, la vue France : le verdict par carrés de 9,2 km
 const CLE_ESPECE = "champi-espece";    // gardées dans le navigateur (voir a-propos.html)
 const CLE_DEPARTEMENT = "champi-departement";
 const CLE_FOND = "champi-fond";
@@ -157,6 +158,12 @@ async function demarrer() {
 
   // --- Données à la demande --------------------------------------------------------
   const resumes = memoire(8, (dep) => fetch(`data/resumes/${dep}.json`).then((r) => r.json()));
+  const vues = memoire(3, async (k) => {
+    const px = await pixels(`data/vue/${k}.png`);
+    const v = new Uint8Array(px.l * px.h);
+    for (let i = 0; i < v.length; i++) v[i] = px.d[i * 4];
+    return v;
+  });
   const apercus = memoire(6, async (cle) => {
     const px = await pixels(`data/apercu/${cle}.png`);
     const v = new Uint8Array(px.l * px.h);
@@ -460,6 +467,7 @@ async function demarrer() {
       const tuile = document.createElement("canvas");
       tuile.width = tuile.height = 256;
       if (!apercu || etat.filtre) return tuile;   // l'exploration ne se lit que de près
+      if (vueFrance()) return tuile;                // la vue France : les carrés (calqueCarres)
       const alpha = desPres(etat.espece) ? OPACITE_COMMUNES : 0;
       const { xs, ys } = axes(coords);
       const ctx = tuile.getContext("2d");
@@ -479,6 +487,64 @@ async function demarrer() {
     },
   });
   const calqueApercu = new Apercu({ pane: "overlayPane", maxZoom: DETAIL - 0.5, updateWhenZooming: false }).addTo(map);
+
+  // Vue France (zoom sous SYNTHESE) : chaque carré de 9,2 km au verdict des départements, comme la
+  // carte de l'accueil (export_france.verdicts_carres) et « Que chercher ici ? » (mêmes données,
+  // data/vue) ; rien sous carre_min_km2 de forêt. Les espèces des prés gardent leurs communes.
+  const NIVEAU_RVB = [[0xe2, 0xde, 0xd5], [0xef, 0xec, 0xe5], pal.classes[2], pal.classes[3], pal.classes[4]];
+  const versLat = (y) => (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * 180 / Math.PI;
+  let carres = null;
+  const vueFrance = () => carres !== null && map.getZoom() < SYNTHESE;
+  async function verdictsCarres(code, k) {
+    const V = carte.vue, e = V ? V.especes.indexOf(code) : -1;
+    if (e < 0 || !V.carre_min_km2) return null;
+    const v = await vues(k);
+    const n = V.nx * V.ny, pas = g.pas * V.facteur, jour = jourDe(k), sortie = new Int8Array(n);
+    for (let l = 0; l < V.ny; l++) {
+      const saison = facteurSaison(especes[code], jour, versLat(g.y1 - (l + 0.5) * pas), communs);
+      for (let c = 0; c < V.nx; c++) {
+        const i = l * V.nx + c;
+        sortie[i] = v[i] / V.km2_par < V.carre_min_km2 ? -1
+          : niveauZone(saison, v[(1 + 2 * e) * n + i] / V.parts_par, v[(2 + 2 * e) * n + i] / V.parts_par, carte.niveaux);
+      }
+    }
+    return sortie;
+  }
+  const Carres = L.GridLayer.extend({
+    createTile(coords) {
+      const tuile = document.createElement("canvas");
+      tuile.width = tuile.height = 256;
+      if (!carres || etat.filtre) return tuile;
+      const V = carte.vue, pas = g.pas * V.facteur;
+      const { xs, ys } = axes(coords);
+      const ctx = tuile.getContext("2d");
+      const img = ctx.createImageData(256, 256);
+      for (let j = 0; j < 256; j++) {
+        const l = Math.floor((g.y1 - ys[j]) / pas);
+        if (l < 0 || l >= V.ny) continue;
+        for (let i = 0; i < 256; i++) {
+          const c = Math.floor((xs[i] - g.x0) / pas);
+          if (c < 0 || c >= V.nx) continue;
+          const niv = carres[l * V.nx + c];
+          if (niv < 0) continue;
+          const p = (j * 256 + i) * 4;
+          img.data.set(NIVEAU_RVB[niv], p);
+          img.data[p + 3] = OPACITE;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      return tuile;
+    },
+  });
+  const calqueCarres = new Carres({ pane: "overlayPane", maxZoom: SYNTHESE - 0.5, updateWhenZooming: false }).addTo(map);
+  // Passer le seuil sans changer de niveau de tuiles (7,5 → 8) garderait les tuiles d'avant.
+  let coteFrance = vueFrance();
+  map.on("zoomend", () => {
+    if (vueFrance() === coteFrance) return;
+    coteFrance = vueFrance();
+    calqueApercu.redraw();
+    legende();
+  });
 
   // Vue rapprochée : chaque tuile réunit les blocs qu'elle touche, calculés à la demande.
   const Detail = L.GridLayer.extend({
@@ -693,10 +759,15 @@ async function demarrer() {
         "ne les note pas un par un. Chaque commune prend la couleur de l'ensemble de ses prés.";
     }
     const demande = `${etat.espece}_${etat.jour}`;
-    const a = await apercus(demande);
+    const [a, c] = await Promise.all([apercus(demande),
+      verdictsCarres(etat.espece, etat.jour).catch((err) => { console.error(err); return null; })]);
     if (demande !== `${etat.espece}_${etat.jour}`) return;   // l'utilisateur a déjà changé d'avis
     apercu = a;
+    carres = c;
+    coteFrance = vueFrance();
     calqueApercu.redraw();
+    calqueCarres.redraw();
+    legende();
     calqueDetail.redraw();
     if (etat.jour + 1 < carte.jours.length) apercus(`${etat.espece}_${etat.jour + 1}`).catch(() => {});
   }
@@ -903,12 +974,6 @@ async function demarrer() {
 
   // Que chercher ici ? Les espèces classées pour la zone affichée (ici.js), au verdict des
   // départements ; une zone plus petite qu'un pixel de 9,2 km prend le pixel qui la contient.
-  const vues = memoire(3, async (k) => {
-    const px = await pixels(`data/vue/${k}.png`);
-    const v = new Uint8Array(px.l * px.h);
-    for (let i = 0; i < v.length; i++) v[i] = px.d[i * 4];
-    return v;
-  });
   let tourIci = 0;
   async function queChercherIci() {
     const V = carte.vue;
@@ -951,6 +1016,15 @@ async function demarrer() {
   function legende() {
     const z = $("legende");
     z.replaceChildren();
+    if (vueFrance()) {
+      for (const n of [4, 3, 2, 1, 0]) {
+        z.append(el("div", {}, el("span", { class: `pastille n${n}` }), NIVEAU_COURT[n][0].toUpperCase() + NIVEAU_COURT[n].slice(1)));
+      }
+      z.append(el("div", {}, el("span", { class: "pastille vide" }), "Sans couleur : trop peu de forêt dans le carré"));
+      z.append(el("p", { class: "muet" }, "Vue France : chaque carré d'environ 6 km au verdict des départements " +
+        `(« bon » dès ${Math.round(carte.niveaux.bon * 100)} % de sa forêt à l'indice bon). Zoomez pour l'indice, forêt par forêt.`));
+      return;
+    }
     for (let k = carte.classes.length - 1; k >= 1; k--) {
       const c = pal.classes[k];
       const bas = carte.classes[k - 1].seuil;
@@ -961,7 +1035,8 @@ async function demarrer() {
       "Zone protégée : réglementation propre, pas d'indice"));
     z.append(el("div", {}, el("span", { class: "pastille vide" }),
       "Sans couleur : indice très faible, ou hors forêt"));
-    z.append(el("p", { class: "muet" }, `En vue large, chaque pixel résume environ 1 km² ; zoomez pour voir ` +
+    z.append(el("p", { class: "muet" }, `En vue régionale, chaque pixel d'environ 1 km prend la meilleure forêt qu'il ` +
+      "contient ; zoomez pour voir " +
       (modeFin() ? "les cases de 50 m." : "les zones de 250 m (l'habitat le plus favorable de chacune).")));
   }
 

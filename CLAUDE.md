@@ -166,6 +166,13 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   2026-11-01, le crédit d'une photo dans une fiche cliquable). Une photo dans un lien n'a pas son
   crédit à côté (`figure_photo(..., credit=False)`), il est en bas de page ; le test d'intégration
   des pages générées le contrôle.
+- **Trois niveaux sur la carte (2026-11-07)**, chacun avec son rôle : sous le zoom 8 (`SYNTHESE`),
+  la vue France, chaque carré de 9,2 km au verdict des départements (`data/vue`, comme la carte de
+  l'accueil et « Que chercher ici ? », rien sous `carre_min_km2` de forêt ; les espèces des prés
+  gardent leurs communes) ; du zoom 8 à 10,5, l'aperçu de 1,15 km, la MEILLEURE case de chaque
+  pixel (`export_france.Apercu`, la règle des zones ; la moyenne diluée d'avant foncissait d'un
+  coup au zoom 11) ; dès le zoom 11 (`DETAIL`), les zones de 250 m ou les cases de 50 m. La légende
+  de l'onglet Ici suit le niveau. Rien de plus fin que 250 m en clair.
 - **Le panneau de la carte** : l'espèce (bouton illustré, liste en boîte de dialogue, en saison
   d'abord), le jour, puis quatre onglets — Ici (que chercher ici, légende), Département (verdict,
   semaine, altitude, communes, France), L'espèce (fiche), Mes outils (coins, alertes, exploration).
