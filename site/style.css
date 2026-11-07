@@ -706,9 +706,13 @@ a.bouton.principal:hover { filter: brightness(1.08); }
   position: relative; border-radius: 14px; border: 1px solid var(--trait); overflow: hidden; background: #fbfaf7;
 }
 .une-carte-cadre img { display: block; width: 100%; height: auto; }
-.une-carte-cadre svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* Les contours : un trait sombre bordé de clair, lisible sur le brun le plus foncé comme sur le pâle. */
+.une-carte-cadre svg {
+  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+  filter: drop-shadow(0 0 .6px rgb(255 255 255 / .95)) drop-shadow(0 0 .6px rgb(255 255 255 / .8));
+}
 .une-carte-cadre path {
-  fill: transparent; stroke: rgb(29 27 23 / .3); stroke-width: .6px; stroke-linejoin: round;
+  fill: transparent; stroke: rgb(29 27 23 / .7); stroke-width: .7px; stroke-linejoin: round;
   vector-effect: non-scaling-stroke; pointer-events: visiblePainted;
 }
 .une-carte-cadre a:hover path, .une-carte-cadre a:focus-visible path {
