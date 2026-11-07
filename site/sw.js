@@ -3,7 +3,10 @@
 // les données du site efface tout (déclaré dans a-propos.html).
 //
 // - le site et les données du jour (data/, pages) : le réseau d'abord, la copie s'il manque
-//   (au-delà de 5 s, la copie, pour ne pas attendre un réseau qui traîne en forêt) ;
+//   (au-delà de 5 s, la copie, pour ne pas attendre un réseau qui traîne en forêt). Le réseau est
+//   interrogé sans le cache HTTP du navigateur (« no-cache » : il revalide, 304 si rien n'a changé) :
+//   GitHub Pages permet de garder 10 minutes, et une publication restait invisible, ou à moitié
+//   (nouveau carte.js, anciennes données), pendant ce temps (vu le 2026-11-07) ;
 // - l'habitat (habitat/) : la copie d'abord, il ne change qu'avec une reconstruction.
 //   Changer le format des blocs (france.FORMAT) = incrémenter VERSION, sinon les copies restent.
 const VERSION = "champi-hors-ligne-1";
@@ -55,7 +58,8 @@ async function dabordReseau(requete, nom) {
   // Une page ouverte par un lien (?departement=85…) retombe sur la copie de la page nue.
   const copie = await cache.match(requete, { ignoreSearch: requete.mode === "navigate" });
   try {
-    const reponse = await (copie ? avecDelai(fetch(requete), DELAI_MS) : fetch(requete));
+    const frais = () => fetch(requete, { cache: "no-cache" });
+    const reponse = await (copie ? avecDelai(frais(), DELAI_MS) : frais());
     if (reponse.ok) garder(cache, nom, requete, reponse.clone());
     return reponse;
   } catch (err) {
