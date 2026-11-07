@@ -518,6 +518,7 @@ dialog.guide h2 { font-size: 1.15rem; margin: 2px 0 8px; }
 dialog.guide p { color: var(--texte-2); }
 dialog.guide #guide-etape { margin: 0; }
 .legende-guide { display: flex; gap: 4px; margin: 4px 0 14px; }
+.legende-guide[hidden] { display: none; }
 .legende-guide .pastille { width: 34px; height: 12px; }
 .legende-guide .pastille.n1 { background: var(--classe-1); }
 .guide-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
@@ -669,12 +670,14 @@ a.bouton, button.bouton {
 }
 button.bouton[hidden] { display: none; }
 a.bouton:hover, button.bouton:hover { background: var(--surface-2); }
-a.bouton.principal { background: var(--accent); border-color: var(--accent); color: #fff; }
-a.bouton.principal:hover { filter: brightness(1.08); }
+/* Après la règle de survol : sur téléphone, un bouton touché reste « survolé » ; avant elle, le
+   bouton principal y perdait son fond (blanc sur blanc au 2e écran du guide, 2026-11-07). */
+a.bouton.principal, button.bouton.principal { background: var(--accent); border-color: var(--accent); color: #fff; }
+a.bouton.principal:hover, button.bouton.principal:hover { background: var(--accent); filter: brightness(1.08); }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) a.bouton.principal { color: #1d1b17; }
+  :root:not([data-theme="light"]) a.bouton.principal, :root:not([data-theme="light"]) button.bouton.principal { color: #1d1b17; }
 }
-:root[data-theme="dark"] a.bouton.principal { color: #1d1b17; }
+:root[data-theme="dark"] a.bouton.principal, :root[data-theme="dark"] button.bouton.principal { color: #1d1b17; }
 
 /* Accueil : la une (la réponse du jour et la carte de France), puis des blocs. */
 .une {
