@@ -185,7 +185,11 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   `departements_carte.json` publié par l'export) : les limites ENTRE départements seulement
   (`carte_departements.frontieres`, sans le littoral ni les frontières, qui doublaient le plan avec
   l'écart de la simplification), en trait fin, blanc sur les carrés de la vue France, sombre sur les
-  pixels de la vue régionale ; le département choisi, côte comprise, en trait sombre épais ; jusqu'au zoom 11 :
+  pixels de la vue régionale ; le département choisi, côte comprise, en trait sombre épais. Deux
+  précisions : ~2 km jusqu'au zoom 8,5 ; ~250 m dès le zoom 9 et jusqu'au zoom 13
+  (`data/departements_fin.json`, versionné, tiré des communes des blocs d'habitat par
+  `python -m champi.carte_departements fin`, sans réseau ; publié en `contours_fins/`, la carte ne
+  charge que les limites et le département choisi). Le tracé à ~2 km s'arrête au zoom 11 :
   simplifiés à ~2 km, ils s'écarteraient des vraies limites de plus près), puis les marques
   (position, coins). Les noms de lieux de l'IGN (`GEOGRAPHICALNAMES.NAMES`) ont été essayés
   par-dessus le 2026-11-07, puis retirés : doublés par ceux du plan, peu satisfaisants.
@@ -327,6 +331,7 @@ python -m champi.validation             # réseau (~1 h la 1re fois) ; demande s
 python -m champi.climatologie           # après la validation, ~5 min : data/climatologie.json (ce qui est habituel)
 python -m champi.prairies               # réseau, ~10 min : data/prairies.npz (les prés), à refaire avec l'habitat
 python -m champi.carte_departements     # réseau, quelques secondes : data/departements_carte.json (contours)
+python -m champi.carte_departements fin # demande site/habitat/, ~30 s : data/departements_fin.json (contours fins)
 python -m champi.photos                 # réseau : les photos des espèces (Wikimedia Commons), avec leurs crédits
 python -m http.server 8765 --directory site   # la carte : /carte/ ; les pages du matin demandent l'export
 ```

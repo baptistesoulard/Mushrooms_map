@@ -19,7 +19,9 @@ const DETAIL = 11;                     // à partir de ce zoom, une case ≈ un 
 const SYNTHESE = 8;                    // en dessous, la vue France : le verdict par carrés de 9,2 km
 const CARRES_FINS = 7;                 // … et dès ce zoom (jusqu'à SYNTHESE), par carrés de 4,6 km
 const CARRES_GROS = 5;                 // … et jusqu'à ce zoom, par carrés de 18,4 km
-const CONTOURS_JUSQUA = 11.5;          // les contours des départements, en dessous de ce zoom
+const CONTOURS_JUSQUA = 11.5;          // les contours des départements (~2 km), en dessous de ce zoom
+const CONTOURS_FINS = 9;               // dès ce zoom (arrondi), les contours fins (~250 m)…
+const CONTOURS_FINS_JUSQUA = 13.5;     // … jusqu'à ce zoom
 const CLE_ESPECE = "champi-espece";    // gardées dans le navigateur (voir a-propos.html)
 const CLE_DEPARTEMENT = "champi-departement";
 const CLE_FOND = "champi-fond";
@@ -589,41 +591,84 @@ async function demarrer() {
   const calqueContours = L.layerGroup();
   // Deux tracés : les limites ENTRE départements (sans le littoral ni les frontières, qui doublaient
   // ceux du plan avec l'écart de la simplification ; carte_departements.frontieres), en trait fin ;
-  // le département choisi (etat.departement), côte comprise, en trait épais. Chacun : un liseré, puis
-  // le trait par-dessus.
-  const traits = { limites: null, choisi: null };
-  let tracesDep = {}, versAnneaux = null;
+  // le département choisi (etat.departement), côte comprise, en trait épais. Chacun en deux
+  // précisions : ~2 km (departements_carte.json) en vue large ; ~250 m dès le zoom 9
+  // (data/contours_fins/, tirés des communes des blocs, chargés à la demande : les limites d'un
+  // fichier, le contour du seul département choisi). Chaque tracé : un liseré, puis le trait.
+  const traits = { limites: null, choisi: null, limitesFines: null, choisiFin: null };
+  let tracesDep = {}, versAnneaux = null, fins = null, codeChoisiFin = null, chargementFins = null;
   const EPAISSEURS = {   // [liseré, trait] : plus épais de près, le département choisi plus épais encore
     limites: (z) => (z < CARRES_FINS ? [3, 1.2] : z < SYNTHESE ? [3.2, 1.4] : [3.5, 1.6]),
     choisi: (z) => (z < CARRES_FINS ? [4.5, 2.2] : z < SYNTHESE ? [5, 2.6] : [6, 3]),
   };
-  const majContours = () => {
-    const voir = map.getZoom() < CONTOURS_JUSQUA;
-    if (voir !== map.hasLayer(calqueContours)) { if (voir) calqueContours.addTo(map); else map.removeLayer(calqueContours); }
-    if (!voir) return;
-    // Blanc sur les aplats des carrés (vue France) ; sombre sur le moucheté des pixels (vue
-    // régionale), où le blanc se perdait.
-    const blanc = Math.round(map.getZoom()) < SYNTHESE;
-    for (const [nom, paire] of Object.entries(traits)) {
-      if (!paire) continue;
-      const [l, t] = EPAISSEURS[nom](map.getZoom());
-      // Le département choisi : toujours sombre bordé de blanc, la marque la plus forte de la carte.
-      const clair = blanc && nom === "limites";
-      paire[0].setStyle({ weight: l, color: clair ? "#1d1b17" : "#ffffff", opacity: clair ? 0.35 : 0.9 });
-      paire[1].setStyle({ weight: t, color: clair ? "#ffffff" : "#1d1b17", opacity: nom === "limites" ? 0.9 : 1 });
-    }
-  };
   const rendu = L.canvas({ pane: "contours", padding: 0.3 });
   const tracer = (anneaux) => [L.polyline(anneaux, { renderer: rendu, interactive: false }),
                                L.polyline(anneaux, { renderer: rendu, interactive: false })];
+  const montrer = (paire, oui) => {
+    for (const l of paire || []) {
+      if (oui && !calqueContours.hasLayer(l)) l.addTo(calqueContours);
+      else if (!oui && calqueContours.hasLayer(l)) calqueContours.removeLayer(l);
+    }
+  };
+  const finsVoulus = () => Math.round(map.getZoom()) >= CONTOURS_FINS;
+  // Les tracés fins : « Mx yl dx dy … », en unités de `unite` m Mercator depuis `origine` (ouest, nord).
+  const versAnneauxFins = (d) => d.split("M").filter(Boolean).map((sous) => {
+    const n = sous.match(/-?\d+/g).map(Number), [X0, Y1] = fins.origine, k = fins.unite;
+    let u = n[0], v = n[1];
+    const points = [[versLat(Y1 - v * k), ((X0 + u * k) / R) * 180 / Math.PI]];
+    for (let i = 2; i + 1 < n.length; i += 2) {
+      u += n[i]; v += n[i + 1];
+      points.push([versLat(Y1 - v * k), ((X0 + u * k) / R) * 180 / Math.PI]);
+    }
+    return points;
+  });
+  function chargerFins() {
+    chargementFins ??= fetch("data/contours_fins/frontieres.json").then((r) => (r.ok ? r.json() : null)).then((c) => {
+      if (!c) return;
+      fins = c;
+      traits.limitesFines = tracer(c.frontieres.flatMap(versAnneauxFins));
+      majContours();
+    }).catch((err) => console.error(err));
+    if (!fins || codeChoisiFin === etat.departement) return;
+    const code = etat.departement;
+    codeChoisiFin = code;
+    montrer(traits.choisiFin, false);
+    traits.choisiFin = null;
+    if (!code) return;
+    fetch(`data/contours_fins/${code}.json`).then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (!d || code !== etat.departement) return;
+      traits.choisiFin = tracer(versAnneauxFins(d.trace));
+      majContours();
+    }).catch((err) => console.error(err));
+  }
+  const majContours = () => {
+    const finsPrets = finsVoulus() && traits.limitesFines !== null;
+    const voir = map.getZoom() < (finsPrets ? CONTOURS_FINS_JUSQUA : CONTOURS_JUSQUA);
+    if (voir !== map.hasLayer(calqueContours)) { if (voir) calqueContours.addTo(map); else map.removeLayer(calqueContours); }
+    if (finsVoulus()) chargerFins();
+    if (!voir) return;
+    const choisiFinPret = finsPrets && traits.choisiFin !== null && codeChoisiFin === etat.departement;
+    montrer(traits.limites, !finsPrets);
+    montrer(traits.limitesFines, finsPrets);
+    montrer(traits.choisi, !choisiFinPret);
+    montrer(traits.choisiFin, choisiFinPret);
+    // Blanc sur les aplats des carrés (vue France) ; sombre sur le moucheté des pixels (vue
+    // régionale), où le blanc se perdait. Le département choisi : toujours sombre bordé de blanc.
+    const blanc = Math.round(map.getZoom()) < SYNTHESE;
+    for (const [nom, paire] of Object.entries(traits)) {
+      if (!paire) continue;
+      const style = nom.startsWith("choisi") ? "choisi" : "limites";
+      const [l, t] = EPAISSEURS[style](map.getZoom());
+      const clair = blanc && style === "limites";
+      paire[0].setStyle({ weight: l, color: clair ? "#1d1b17" : "#ffffff", opacity: clair ? 0.35 : 0.9 });
+      paire[1].setStyle({ weight: t, color: clair ? "#ffffff" : "#1d1b17", opacity: style === "limites" ? 0.9 : 1 });
+    }
+  };
   function majDepartementChoisi() {
     if (!versAnneaux) return;
-    for (const l of traits.choisi || []) calqueContours.removeLayer(l);
-    traits.choisi = null;
+    montrer(traits.choisi, false);
     const d = tracesDep[etat.departement];
-    if (!d) return;
-    traits.choisi = tracer(versAnneaux(d, true));
-    for (const l of traits.choisi) l.addTo(calqueContours);
+    traits.choisi = d ? tracer(versAnneaux(d, true)) : null;
     majContours();
   }
   fetch("data/departements_carte.json").then((r) => (r.ok ? r.json() : null)).then((c) => {
@@ -641,12 +686,9 @@ async function demarrer() {
     });
     tracesDep = c.traces;
     // Un fichier d'avant les limites : les contours entiers, en trait fin.
-    const limites = c.frontieres ? c.frontieres.flatMap((d) => versAnneaux(d, false))
-      : Object.values(c.traces).flatMap((d) => versAnneaux(d, true));
-    traits.limites = tracer(limites);
-    for (const l of traits.limites) l.addTo(calqueContours);
+    traits.limites = tracer(c.frontieres ? c.frontieres.flatMap((d) => versAnneaux(d, false))
+      : Object.values(c.traces).flatMap((d) => versAnneaux(d, true)));
     majDepartementChoisi();
-    majContours();
   }).catch((err) => console.error(err));
   map.on("zoomend", majContours);
   // Passer le seuil sans changer de niveau de tuiles garderait les tuiles d'avant.

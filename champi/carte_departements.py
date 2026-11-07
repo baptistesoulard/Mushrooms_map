@@ -2,6 +2,7 @@
 département, simplifié (environ 1 km), en Mercator comme la carte du site.
 
     python -m champi.carte_departements      # réseau, quelques secondes : data/departements_carte.json
+    python -m champi.carte_departements fin  # sans réseau, demande site/habitat/ : data/departements_fin.json
 
 Gardé dans le dépôt : les pages du matin le relisent sans réseau. Source : ADMIN EXPRESS COG
 CARTO de l'IGN (Géoplateforme), Licence Ouverte.
@@ -176,10 +177,143 @@ def cadre_une(contours: dict) -> tuple[list[float], list[float]]:
             [x0 - m * par, y0 - m * par, x1 + m * par, y1 + m * par])
 
 
+# --- Contours fins, pour la carte de près ------------------------------------------------
+#
+# `departements_fin.json` : les mêmes limites à ~250 m, tirées des blocs d'habitat (la commune de
+# chaque case, rastérisée depuis ADMIN EXPRESS) : un carré de PAS_FIN_CONTOURS cases prend le
+# département de la case de son centre ; les limites suivent les bords entre carrés de départements
+# différents, lissées à TOLERANCE_FIN. Calé sur les communes de la carte, sans réseau. Pour la carte
+# à partir du zoom 9, où le tracé à ~2 km s'écartait des vraies limites.
+
+FICHIER_FIN = DATA / "departements_fin.json"
+PAS_FIN_CONTOURS = 4                     # cases de 72 m par carré : 288 m Mercator, ~200 m au sol
+TOLERANCE_FIN = 1.2                      # carrés : le lissage des marches de l'escalier
+BOUCLE_MIN = 3                           # carrés : une boucle plus petite est un artefact (case isolée)
+UNITE_FIN = 10                           # m Mercator par unité des tracés fins
+
+
+def _departements_raster(habitat, pas: int) -> tuple[np.ndarray, float, float, list[str]]:
+    """Le rang (1…) du département de la case au centre de chaque carré de `pas` cases, 0 hors
+    commune ; l'origine (ouest, nord) en m Mercator, et les codes des rangs."""
+    from PIL import Image
+    from .france import BLOC, COTE, Bloc
+    communes = json.loads((habitat / "communes.json").read_text(encoding="utf-8"))
+    codes = sorted({c["dep"] for c in communes})
+    rang = {c: k + 1 for k, c in enumerate(codes)}
+    dep_de_commune = np.array([0] + [rang[c["dep"]] for c in communes], dtype=np.int16)
+    blocs = [Bloc.depuis_nom(n) for n in json.loads((habitat / "blocs.json").read_text(encoding="utf-8"))["blocs"]]
+    bx0, bx1 = min(b.bx for b in blocs), max(b.bx for b in blocs)
+    by0, by1 = min(b.by for b in blocs), max(b.by for b in blocs)
+    n = BLOC // pas
+    grille = np.zeros(((by1 - by0 + 1) * n, (bx1 - bx0 + 1) * n), dtype=np.int16)
+    for b in blocs:
+        c = np.asarray(Image.open(habitat / "blocs" / f"{b.nom}_c.png").convert("RGB"), dtype=np.int32)
+        commune = ((c[..., 0] << 8) | c[..., 1])[pas // 2::pas, pas // 2::pas]
+        lig, col = (by1 - b.by) * n, (b.bx - bx0) * n
+        grille[lig:lig + n, col:col + n] = dep_de_commune[np.minimum(commune, len(dep_de_commune) - 1)]
+    return grille, bx0 * COTE, (by1 + 1) * COTE, codes
+
+
+def _chainer(segments: list[tuple[tuple[int, int], tuple[int, int]]]) -> list[np.ndarray]:
+    """Des segments unitaires de la grille en lignes : on suit chaque chemin d'un bout à l'autre
+    (sommets de degré autre que 2), puis les boucles restantes."""
+    voisins: dict = {}
+    for a, b in segments:
+        voisins.setdefault(a, []).append(b)
+        voisins.setdefault(b, []).append(a)
+    vus: set = set()
+    lignes = []
+
+    def suivre(depart, suivant):
+        ligne = [depart, suivant]
+        vus.add(frozenset((depart, suivant)))
+        while len(voisins[ligne[-1]]) == 2:
+            prochain = next((v for v in voisins[ligne[-1]] if frozenset((ligne[-1], v)) not in vus), None)
+            if prochain is None:
+                break
+            vus.add(frozenset((ligne[-1], prochain)))
+            ligne.append(prochain)
+        return np.array(ligne, dtype=float)
+
+    for s, vs in voisins.items():
+        if len(vs) != 2:
+            for v in vs:
+                if frozenset((s, v)) not in vus:
+                    lignes.append(suivre(s, v))
+    for s, vs in voisins.items():
+        for v in vs:
+            if frozenset((s, v)) not in vus:
+                lignes.append(suivre(s, v))
+    return lignes
+
+
+def _bords(grille: np.ndarray, garder) -> list[tuple]:
+    """Les segments (sommets de la grille, (ligne, colonne)) entre deux carrés voisins a ≠ b
+    retenus par `garder(a, b)` (tableaux)."""
+    segs = []
+    a, b = grille[:, :-1], grille[:, 1:]                       # voisins est-ouest : un bord vertical
+    for i, j in zip(*np.nonzero((a != b) & garder(a, b))):
+        segs.append(((int(i), int(j) + 1), (int(i) + 1, int(j) + 1)))
+    a, b = grille[:-1, :], grille[1:, :]                       # voisins nord-sud : un bord horizontal
+    for i, j in zip(*np.nonzero((a != b) & garder(a, b))):
+        segs.append(((int(i) + 1, int(j)), (int(i) + 1, int(j) + 1)))
+    return segs
+
+
+def construire_fin(habitat=None) -> dict:
+    """`departements_fin.json` : les limites entre départements, et le contour entier de chacun
+    (côte comprise, pour le département choisi), en tracés relatifs d'unités de UNITE_FIN m
+    depuis `origine` (ouest, nord), y vers le sud."""
+    from .config import SITE
+    from .france import PAS_FIN
+    habitat = habitat or SITE / "habitat"
+    grille, x0, y1, codes = _departements_raster(habitat, PAS_FIN_CONTOURS)
+    pas = PAS_FIN * PAS_FIN_CONTOURS
+
+    def traces(lignes):
+        sortie = []
+        for l in lignes:
+            if np.array_equal(l[0], l[-1]) and np.ptp(l, axis=0).max() < BOUCLE_MIN:
+                continue
+            if len(l) >= 3 and np.array_equal(l[0], l[-1]):
+                l = _simplifier_anneau(l[:-1], TOLERANCE_FIN)
+                l = np.vstack([l, l[:1]])
+            else:
+                l = _simplifier(l, TOLERANCE_FIN)
+            p = np.round(l[:, ::-1] * pas / UNITE_FIN).astype(int)        # (colonne, ligne) → unités
+            d = np.diff(p, axis=0)
+            d = d[(d != 0).any(axis=1)]
+            if len(d):
+                sortie.append(f"M{p[0, 0]} {p[0, 1]}l" + " ".join(f"{x} {y}" for x, y in d))
+        return sortie
+
+    limites = traces(_chainer(_bords(grille, lambda a, b: (a > 0) & (b > 0))))
+    par_dep = {}
+    for k, code in enumerate(codes, start=1):
+        if code.startswith("97") or not (grille == k).any():
+            continue
+        segs = _bords(grille, lambda a, b, k=k: (a == k) | (b == k))
+        par_dep[code] = "".join(traces(_chainer(segs)))
+    sortie = {"origine": [x0, y1], "unite": UNITE_FIN, "precision_m": pas, "frontieres": limites,
+              "departements": par_dep}
+    FICHIER_FIN.write_text(json.dumps(sortie, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(f"Écrit {FICHIER_FIN.name} : {len(limites)} limites, {len(par_dep)} départements, "
+          f"{FICHIER_FIN.stat().st_size // 1024} Ko")
+    return sortie
+
+
+def charger_fin() -> dict | None:
+    return json.loads(FICHIER_FIN.read_text(encoding="utf-8")) if FICHIER_FIN.exists() else None
+
+
 def charger() -> dict | None:
     return json.loads(FICHIER.read_text(encoding="utf-8")) if FICHIER.exists() else None
 
 
 if __name__ == "__main__":
-    noms = json.loads((DATA / "departements.json").read_text(encoding="utf-8"))
-    construire({c for c in noms if not c.startswith("97")})
+    import sys
+    if sys.argv[1:] == ["fin"]:
+        construire_fin()
+    else:
+        noms = json.loads((DATA / "departements.json").read_text(encoding="utf-8"))
+        construire({c for c in noms if not c.startswith("97")})

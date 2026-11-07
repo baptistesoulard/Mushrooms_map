@@ -118,3 +118,14 @@ def test_frontieres_entre_departements_seulement():
     assert np.allclose(anneau[:, 0], 10) and sorted(anneau[:, 1].tolist()) == [0, 10]
     assert carte_departements.frontieres({"01": traces["01"]}) == []          # seul : aucun voisin
     assert carte_departements.frontieres(traces, tol=0.5) == []               # trop loin l'un de l'autre
+
+
+def test_contours_fins_suivent_les_bords_entre_carres():
+    """Les contours fins (carte de près) : la limite entre deux départements d'une grille suit le
+    bord entre leurs carrés, d'un seul tenant ; le contour d'un département se referme."""
+    grille = np.zeros((6, 8), dtype=np.int16)
+    grille[1:5, 1:4], grille[1:5, 4:7] = 1, 2                  # deux rectangles côte à côte
+    limite = carte_departements._chainer(carte_departements._bords(grille, lambda a, b: (a > 0) & (b > 0)))
+    assert len(limite) == 1 and sorted(map(tuple, limite[0][[0, -1]])) == [(1.0, 4.0), (5.0, 4.0)]
+    (tour,) = carte_departements._chainer(carte_departements._bords(grille, lambda a, b: (a == 1) | (b == 1)))
+    assert np.array_equal(tour[0], tour[-1]) and len(tour) == 2 * (4 + 3) + 1

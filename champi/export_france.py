@@ -570,6 +570,13 @@ def exporter(meteo: Meteo | None = None) -> dict:
     # Les contours des départements, pour la carte (versionnés dans data/, publiés à côté des données).
     if (contours_deps := carte_departements.charger()):
         ecrire_json(SITE_DATA / "departements_carte.json", contours_deps)
+    # Et leurs tracés fins (~250 m), pour la carte de près : les limites d'un fichier, le contour de
+    # chaque département à part (la carte ne charge que celui du département choisi).
+    if (fins := carte_departements.charger_fin()):
+        tete = {"origine": fins["origine"], "unite": fins["unite"]}
+        ecrire_json(SITE_DATA / "contours_fins" / "frontieres.json", {**tete, "frontieres": fins["frontieres"]})
+        for code, trace in fins["departements"].items():
+            ecrire_json(SITE_DATA / "contours_fins" / f"{code}.json", {**tete, "trace": trace})
     jours = [meteo.dates[k0 + k] for k in range(JOURS_FUTURS)]
     # Pour les pages seulement (especes.json reste les règles) : ce qui est habituel aujourd'hui.
     for x in regles["especes"]:
