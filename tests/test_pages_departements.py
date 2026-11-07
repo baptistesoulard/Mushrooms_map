@@ -46,14 +46,74 @@ def test_page_departement():
     r["cepe"][0]["communes"] = [{"nom": "Saint-<Mesmin>"}]
     page = P.page_departement({"code": "85", "nom": "Vendée"}, ESPECES, r, JOURS, "2026-11-01T05:20+00:00")
     assert f'<meta name="robots" content="{"index, follow" if pages.INDEXER else "noindex, nofollow"}">' in page
-    assert "<title>Champignons en Vendée (85) : les conditions de la semaine</title>" in page
+    assert "<title>Où trouver des champignons en Vendée (85) : la semaine du 1er novembre</title>" in page
+    assert "<h1>Où trouver des champignons en Vendée cette semaine</h1>" in page
     assert "Calculé le dimanche 1er novembre 2026 à 6 h 20" in page          # heure de Paris, heure d'hiver
     assert len(re.findall(r'<a class="niveau n\w"', page)) == 3 * 8
     assert 'href="../carte/?departement=85&amp;espece=cepe&amp;jour=2026-11-03"' in page   # la carte, sous /carte/
     assert "Saint-&lt;Mesmin&gt;" in page and "<Mesmin>" not in page        # échappé
     assert "Aucun jour favorable cette semaine." in page                     # la girolle
-    girolle = page.split("<h3>Girolle ")[1].split("</section>")[0]
+    girolle = page.split('>Girolle</a> ')[1].split("</section>")[0]
     assert "Communes les mieux placées" not in girolle                       # rien de favorable ce jour-là
+    assert '<h3><a href="../especes/cepe.html">Cèpe</a>' in page             # chaque espèce mène à sa fiche
+
+
+def test_donnees_structurees_du_departement():
+    """Le fil d'Ariane et les questions fréquentes : celles des données structurées sont, mot pour
+    mot, celles écrites dans la page."""
+    import html
+    import json
+    r = resumes([4] * 8, [3] * 8, [0] * 8)
+    page = P.page_departement({"code": "40", "nom": "Landes"}, ESPECES, r, JOURS, "2026-11-01T05:20+00:00")
+    graphe = json.loads(re.search(r'<script type="application/ld\+json">(.+?)</script>', page).group(1))["@graph"]
+    types = {g["@type"]: g for g in graphe}
+    assert set(types) == {"WebPage", "BreadcrumbList", "FAQPage"}
+    assert [x["name"] for x in types["BreadcrumbList"]["itemListElement"]] == [pages.NOM, "Départements", "Landes"]
+    assert types["BreadcrumbList"]["itemListElement"][2]["item"] == f"{pages.ADRESSE}departements/40.html"
+    faq = page.split('<section class="faq">')[1].split("</section>")[0]
+    visibles = [(html.unescape(q), html.unescape(rep))
+                for q, rep in re.findall(r"<h3>(.+?)</h3>\n  <p>(.+?)</p>", faq)]
+    attendues = [(q["name"], q["acceptedAnswer"]["text"]) for q in types["FAQPage"]["mainEntity"]]
+    assert visibles == attendues and len(attendues) == 4
+    assert attendues[0][0] == "Y a-t-il des champignons en ce moment dans les Landes ?"
+    assert attendues[0][1].startswith("Aujourd'hui, bonnes conditions pour le cèpe.")
+    assert "Pouzauges, Mauléon" in attendues[1][1] or "Pouzauges et Mauléon" in attendues[1][1]
+    assert "probabilit" not in page.lower() and "chance de trouver" not in page.lower()
+
+
+def test_chiffres_de_tete():
+    r = resumes([2, 2, 4, 4, 2, 2, 2, 2], [1] * 8, [0] * 8)
+    for j in r["cepe"]:
+        j.update(part_bon=0.34, km2=503.0)
+    esp = [dict(ESPECES[0], habituel=0.7), *ESPECES[1:]]
+    assert P.chiffres(esp, r, JOURS) == [
+        ("Le mieux placé aujourd'hui", "Cèpe", "Pousse possible, sans plus"),
+        ("Forêt aux bonnes conditions", "34 %", "des 503 km² de forêt, pour le cèpe"),
+        ("Meilleur jour de la semaine", "Mardi 3 novembre", "Cèpe : bon"),
+        ("D'habitude à cette date", "7 années sur 10", "en France, la météo du cèpe est favorable"),
+    ]
+    hors = resumes([0] * 8, [0] * 8, [0] * 8)
+    assert P.chiffres(ESPECES, hors, JOURS) == [("Aujourd'hui", "Hors saison", "pour toutes les espèces suivies")]
+
+
+def test_voisins_et_prepositions():
+    r = resumes([4] * 8, [1] * 8, [0] * 8)
+    voisins = [({"code": "44", "nom": "Loire-Atlantique"}, resumes([1] * 8, [3] * 8, [0] * 8)),
+               ({"code": "79", "nom": "Deux-Sèvres"}, resumes([1] * 8, [1] * 8, [0] * 8))]
+    page = P.page_departement({"code": "85", "nom": "Vendée"}, ESPECES, r, JOURS, "2026-11-01T05:20+00:00", voisins)
+    assert '<li><a href="44.html">Loire-Atlantique (44)</a> : par endroits pour la girolle</li>' in page
+    assert '<li><a href="79.html">Deux-Sèvres (79)</a> : rien de favorable aujourd&#x27;hui</li>' in page
+    assert [pages.dans(c, n) for c, n in (("85", "Vendée"), ("40", "Landes"), ("01", "Ain"), ("75", "Paris"),
+                                          ("83", "Var"), ("26", "Drôme"))] == \
+        ["en Vendée", "dans les Landes", "dans l'Ain", "à Paris", "dans le Var", "dans la Drôme"]
+
+
+def test_voisins_des_contours():
+    """Les départements qui se touchent, tirés des contours versionnés : un coin commun ne compte pas."""
+    from champi import carte_departements as C
+    v = C.voisins(C.charger()["traces"])
+    assert v["85"] == ["17", "44", "49", "79"] and v["2A"] == ["2B"] and v["75"] == ["92", "93", "94"]
+    assert all(c in v[w] for c, l in v.items() for w in l)                  # symétrique
 
 
 def test_index_par_numero():

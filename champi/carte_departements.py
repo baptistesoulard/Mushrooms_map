@@ -160,6 +160,30 @@ def frontieres(traces: dict[str, str], tol: float = TOLERANCE_FRONTIERE) -> list
     return sortie
 
 
+def voisins(traces: dict[str, str], tol: float = TOLERANCE_FRONTIERE, longueur_min: float = 3.0) -> dict[str, list[str]]:
+    """Les départements qui se touchent : ceux dont les contours se longent (segments à moins de
+    `tol`, comme `frontieres`) sur au moins `longueur_min` unités du dessin (~5 km), pour ne pas
+    compter un coin commun. Symétrique, chaque liste triée par code."""
+    anneaux = {c: lire_traces(d) for c, d in traces.items()}
+    boites = {c: (np.min([a.min(axis=0) for a in l], axis=0) - tol, np.max([a.max(axis=0) for a in l], axis=0) + tol)
+              for c, l in anneaux.items()}
+    sortie: dict[str, set[str]] = {c: set() for c in anneaux}
+    for code, liste in anneaux.items():
+        for v in anneaux:
+            if v <= code or not (np.all(boites[v][0] <= boites[code][1]) and np.all(boites[code][0] <= boites[v][1])):
+                continue
+            longueur = 0.0
+            for anneau in liste:
+                fin = np.roll(anneau, -1, axis=0)
+                proche = lambda pts: np.min([_distances(pts, a) for a in anneaux[v]], axis=0) <= tol   # noqa: E731
+                garde = proche(anneau) & proche(fin) & proche((anneau + fin) / 2)
+                longueur += float(np.hypot(*(fin - anneau)[garde].T).sum())
+            if longueur >= longueur_min:
+                sortie[code].add(v)
+                sortie[v].add(code)
+    return {c: sorted(v) for c, v in sortie.items()}
+
+
 def _chemin(anneau: np.ndarray, segments: list[int]) -> str:
     """Le tracé SVG des segments i → i+1 qui se suivent, au dixième, en relatif comme `traces`."""
     idx = segments + [(segments[-1] + 1) % len(anneau)]

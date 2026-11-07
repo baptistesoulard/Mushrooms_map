@@ -99,6 +99,17 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   saisons viennent des règles, les chiffres de fiabilité de `validation.json`. Indexées
   (`INDEXER`, vrai depuis le 2026-11-06 : il ouvre les pages, écrit `sitemap.xml` et
   `robots.txt` ; les pages écrites à la main suivent, test).
+- **Référencement (2026-11-07)** : chaque page a une adresse canonique (pages écrites à la main
+  comprises : la carte en a UNE, sans paramètres ; ses liens datés depuis les tableaux sont
+  `nofollow`) et ses données structurées JSON-LD (`pages.donnees_structurees` : `WebSite` sur
+  l'accueil, fil d'Ariane, `WebPage` daté, `FAQPage` des départements). Le plan du site date les
+  pages du matin (`lastmod`) et liste les pages écrites à la main, jamais `404.html` (servie par
+  GitHub Pages à toute adresse inconnue, `<base href="/">`, `noindex, follow`). Une page
+  département répond à la recherche qu'on tape : « Où trouver des champignons en Vendée (85) : la
+  semaine du 7 novembre » (préposition de chaque département : `pages.dans`), chiffres de tête,
+  questions fréquentes répondues avec les chiffres du jour (le texte du JSON-LD est celui de la
+  page, test), départements voisins (`carte_departements.voisins`, tirés des contours versionnés).
+  Les forêts n'y sont pas nommées (« aucun coin ») : à décider avant de le faire.
 - **Images de partage** (`partage.py` → `data/partage/`) : l'aperçu des liens dans les
   messageries (`og:image`, 1200 × 630), la carte du jour (la meilleure espèce de chaque pixel
   de 1,15 km, jamais plus fin) et la semaine. Leur adresse change à chaque export

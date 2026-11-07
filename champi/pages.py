@@ -10,6 +10,7 @@ plan du site et `robots.txt`. Le repasser à faux referme tout.
 from __future__ import annotations
 
 import html
+import json
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -34,8 +35,11 @@ BARRE = [("carte/", "La carte"), ("en-ce-moment.html", "En ce moment"), ("espece
          ("departements/", "Départements"), ("avant-de-partir.html", "Avant de partir"),
          ("methode.html", "Méthode")]
 MENU = BARRE + [("validation.html", "Face aux observations"), ("a-propos.html", "À propos")]
-# Les pages écrites à la main, dont `python -m champi.pages barre` réécrit la barre.
-STATIQUES = ["a-propos.html", "avant-de-partir.html", "methode.html", "validation.html", "carte/index.html"]
+# Les pages écrites à la main, dont `python -m champi.pages barre` réécrit la barre. La page 404
+# (servie par GitHub Pages à toute adresse inconnue) a `<base href="/">` et n'est jamais indexée.
+STATIQUES = ["a-propos.html", "avant-de-partir.html", "methode.html", "validation.html", "carte/index.html",
+             "404.html"]
+INTROUVABLE = "404.html"
 DEBUT_BARRE, FIN_BARRE = "<!-- barre -->", "<!-- /barre -->"
 
 # Le bouton Partager : caché sans JavaScript (pages.js le montre), la page reste lisible.
@@ -97,6 +101,21 @@ def calcule_pour(jours: list[date]) -> str:
     return f' data-premier-jour="{jours[0].isoformat()}"'
 
 
+# « en Vendée », « dans les Landes », « à Paris » : la préposition de chaque département, comme on
+# le dit (et comme on le tape dans un moteur de recherche). Les autres prennent « en ».
+_PREPOSITIONS = {"dans le ": "14 15 18 25 29 30 32 39 41 45 46 56 59 62 63 67 68 69 81 83 84 90 94 95",
+                 "dans la ": "26 42 50 51 55 58 72 80 86",
+                 "dans l'": "01 02 03 10 11 27 34 36 60 61 89 91",
+                 "dans les ": "04 05 06 08 13 22 40 64 65 66 78 79 88 92",
+                 "à ": "75"}
+PREPOSITION = {code: p for p, codes in _PREPOSITIONS.items() for code in codes.split()}
+
+
+def dans(code: str, nom: str) -> str:
+    """« en Vendée », « dans les Landes », « dans l'Ain », « à Paris »."""
+    return PREPOSITION.get(code, "en ") + nom
+
+
 def cle_departement(code: str) -> str:
     """Tri par numéro, la Corse (2A, 2B) à la place du 20."""
     return code.replace("2A", "20A").replace("2B", "20B")
@@ -116,12 +135,52 @@ def lien(racine: str, chemin: str) -> str:
     return racine + chemin if chemin != "./" else racine or "./"
 
 
+# --- Données structurées (schema.org, JSON-LD) : ce que lisent les moteurs et leurs résumés ---
+
+def donnees_structurees(*objets: dict) -> str:
+    """Les blocs JSON-LD d'une page, à mettre dans l'en-tête (`tete(..., ld=...)`). `<`, `>` et `&`
+    sont échappés en JSON : un texte (un nom de commune) ne peut ni fermer le script ni y glisser
+    de balise."""
+    graphe = {"@context": "https://schema.org", "@graph": list(objets)}
+    texte = json.dumps(graphe, ensure_ascii=False, separators=(",", ":"))
+    texte = texte.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
+    return f'\n<script type="application/ld+json">{texte}</script>'
+
+
+def site_web() -> dict:
+    """Le site lui-même, et qui le publie : l'accueil le déclare, les autres pages s'y rattachent."""
+    return {"@type": "WebSite", "@id": f"{ADRESSE}#site", "url": ADRESSE, "name": NOM, "inLanguage": "fr-FR",
+            "publisher": {"@type": "Organization", "@id": f"{ADRESSE}#editeur", "name": NOM, "url": ADRESSE,
+                          "logo": f"{ADRESSE}icone-512.png"}}
+
+
+def fil_ariane(etapes: list[tuple[str, str]]) -> dict:
+    """`etapes` : (chemin depuis la racine, nom), de l'accueil à la page."""
+    return {"@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": k + 1, "name": nom, "item": ADRESSE + (chemin if chemin != "./" else "")}
+        for k, (chemin, nom) in enumerate(etapes)]}
+
+
+def page_web(titre: str, chemin: str, genere_le: str, description: str = "") -> dict:
+    """Une page du matin : son adresse, sa date de mise à jour, son site."""
+    d = {"@type": "WebPage", "@id": ADRESSE + chemin, "url": ADRESSE + chemin, "name": titre, "inLanguage": "fr-FR",
+         "dateModified": genere_le, "isPartOf": {"@id": f"{ADRESSE}#site"}}
+    return d | ({"description": description} if description else {})
+
+
+def faq(questions: list[tuple[str, str]]) -> dict:
+    """Questions et réponses en texte brut : les mêmes que celles écrites dans la page."""
+    return {"@type": "FAQPage", "mainEntity": [
+        {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": r}} for q, r in questions]}
+
+
 def tete(titre: str, description: str, racine: str, chemin: str, image: str | None = None,
-         plus: str = "", large: bool = False) -> str:
+         plus: str = "", large: bool = False, ld: list[dict] | None = None) -> str:
     """Le haut d'une page : `chemin` depuis la racine (adresse canonique), `image` de partage
-    depuis la racine aussi, `plus` ajouté en fin d'en-tête."""
+    depuis la racine aussi, `plus` ajouté en fin d'en-tête, `ld` ses données structurées."""
     robots = "index, follow" if INDEXER else "noindex, nofollow"
     canonique = f'\n<link rel="canonical" href="{ADRESSE}{chemin}">' if INDEXER else ""
+    plus = (donnees_structurees(*ld) if ld else "") + plus
     apercu = (f'\n<meta property="og:image" content="{ADRESSE}{image}">'
               '\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">'
               '\n<meta name="twitter:card" content="summary_large_image">') if image else ""
@@ -291,14 +350,24 @@ def ordre_saison(especes: list[dict], nat: dict) -> list[dict]:
     return sorted(especes, key=cle)
 
 
-def ecrire_plan(site: Path, chemins: list[str]) -> None:
+def chemins_statiques() -> list[str]:
+    """Les pages écrites à la main qui vont au plan du site (la 404 n'y va pas), depuis la racine."""
+    return [c.removesuffix("index.html") for c in STATIQUES if c != INTROUVABLE]
+
+
+def ecrire_plan(site: Path, chemins: list[str], jour: date | None = None) -> None:
     """`sitemap.xml` et `robots.txt` quand le site est indexé ; sinon, ni plan ni robots.txt (les
-    anciens s'effacent) : les balises `noindex` suffisent. Les couches d'habitat ne s'explorent pas."""
+    anciens s'effacent) : les balises `noindex` suffisent. Les couches d'habitat ne s'explorent pas.
+    Les pages du matin (`chemins`) portent le `jour` de leur calcul ; les pages écrites à la main
+    suivent, sans date (elles changent rarement)."""
     plan, robots = site / "sitemap.xml", site / "robots.txt"
     if INDEXER:
+        date_maj = f"<lastmod>{jour.isoformat()}</lastmod>" if jour else ""
         plan.write_text('<?xml version="1.0" encoding="UTF-8"?>\n'
                         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-                        + "".join(f"  <url><loc>{ADRESSE}{c}</loc></url>\n" for c in chemins)
+                        + "".join(f"  <url><loc>{ADRESSE}{c}</loc>{date_maj}</url>\n" for c in chemins)
+                        + "".join(f"  <url><loc>{ADRESSE}{c}</loc></url>\n"
+                                  for c in chemins_statiques() if c not in chemins)
                         + "</urlset>\n", encoding="utf-8")
         robots.write_text(f"User-agent: *\nDisallow: /habitat/\n\nSitemap: {ADRESSE}sitemap.xml\n", encoding="utf-8")
     else:

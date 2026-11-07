@@ -5,10 +5,10 @@ from pathlib import Path
 import pytest
 
 SITE = Path(__file__).resolve().parent.parent / "site"
-# Les pages versionnées ; l'accueil (index.html) est écrit chaque matin par l'export, hors git.
-PAGES = sorted(p for p in [*SITE.glob("*.html"), *SITE.glob("carte/*.html")] if p != SITE / "index.html")
 # Écrits chaque matin par l'export (champi/pages*.py), hors git : vérifiés par tests/test_pages_accueil.py.
 GENERES = {"departements", "especes", "en-ce-moment.html", "index.html"}
+# Les pages versionnées : pas celles de l'export, qu'un export local laisse dans site/.
+PAGES = sorted(p for p in [*SITE.glob("*.html"), *SITE.glob("carte/*.html")] if p.name not in GENERES)
 
 
 def nom(p):
@@ -19,7 +19,9 @@ def liens(page: Path) -> list[Path]:
     """Les liens et sources internes d'une page, résolus comme le navigateur (avec sa `<base>`)."""
     html = page.read_text(encoding="utf-8")
     base = re.search(r'<base href="([^"]+)">', html)
-    dossier = page.parent / base.group(1) if base else page.parent
+    # « / » (la page 404) : la racine du domaine, c'est-à-dire celle du site.
+    dossier = (SITE / base.group(1).lstrip("/") if base.group(1).startswith("/") else page.parent / base.group(1)) \
+        if base else page.parent
     html = re.sub(r"<base [^>]+>", "", html)
     return [(dossier / c).resolve() for c in re.findall(r'(?:href|src)="([^"#:?]+)["#?]', html)]
 
@@ -54,7 +56,7 @@ def test_aucun_script_tiers(page):
     """Leaflet est servi par le site ; seuls les fonds de carte viennent de l'IGN."""
     html = page.read_text(encoding="utf-8")
     assert not re.search(r'<script[^>]+src="https?://', html)
-    assert not re.search(r'<link[^>]+href="https?://', html)
+    assert not re.search(r'<link(?![^>]*rel="canonical")[^>]+href="https?://', html)   # l'adresse canonique n'est rien chargé
 
 
 def test_stockage_navigateur_declare():
@@ -95,8 +97,30 @@ def test_indexation_suit_indexer(page):
     """Les pages écrites à la main s'ouvrent aux moteurs avec les pages du matin (pages.INDEXER) :
     depuis que la carte publique est en zones de 250 m (CLAUDE.md)."""
     from champi import pages as P
+    html = page.read_text(encoding="utf-8")
+    if nom(page) == P.INTROUVABLE:                     # la page 404 : jamais indexée, ses liens suivis
+        assert '<meta name="robots" content="noindex, follow">' in html and "canonical" not in html
+        return
     robots = "index, follow" if P.INDEXER else "noindex, nofollow"
-    assert f'<meta name="robots" content="{robots}">' in page.read_text(encoding="utf-8")
+    assert f'<meta name="robots" content="{robots}">' in html
+    if P.INDEXER:                                      # une seule adresse par page (la carte : sans paramètres)
+        chemin = nom(page).removesuffix("index.html")
+        assert f'<link rel="canonical" href="{P.ADRESSE}{chemin}">' in html
+
+
+def test_plan_du_site(tmp_path):
+    """Le plan du site : les pages du matin datées du jour, les pages écrites à la main sans date,
+    jamais la 404 ; robots.txt écarte les couches d'habitat."""
+    from datetime import date
+    from champi import pages as P
+    if not P.INDEXER:
+        return
+    P.ecrire_plan(tmp_path, ["", "departements/85.html"], date(2026, 11, 7))
+    plan = (tmp_path / "sitemap.xml").read_text(encoding="utf-8")
+    assert f"<url><loc>{P.ADRESSE}departements/85.html</loc><lastmod>2026-11-07</lastmod></url>" in plan
+    assert f"<url><loc>{P.ADRESSE}carte/</loc></url>" in plan and f"{P.ADRESSE}methode.html" in plan
+    assert "404" not in plan and plan.count("<url>") == 2 + len(P.STATIQUES) - 1
+    assert "Disallow: /habitat/" in (tmp_path / "robots.txt").read_text(encoding="utf-8")
 
 
 def test_classes_de_couleur_alignees_sur_le_modele():

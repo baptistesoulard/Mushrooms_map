@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .pages import (MOIS_COURTS, NIVEAUX_COURTS, PARTAGER, calendrier_mois, credit_photo, date_courte,
                     departements_de, e, habituel, icone, image_partage, instant_paris, meilleur_niveau,
-                    mois_saison, national, noms_especes, ordre_saison, pct, pied, tete)
+                    mois_saison, national, noms_especes, ordre_saison, pct, pied, tete, NOM, fil_ariane, page_web)
 from .photos import charger as charger_photos
 from .pages_accueil import etat_espece
 from .prairies import NOMS_MILIEUX
@@ -106,7 +106,9 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
     haut = tete(f"{nom} ({x['latin']}) : où et quand le chercher en France",
                 f"{nom} : les forêts, l'altitude, la saison et la météo qui lui conviennent, à quoi "
                 f"{il} ressemble et ses sosies, et les départements où les conditions sont bonnes "
-                "aujourd'hui.", "../", f"{DOSSIER}/{code}.html", image=image_partage("france", genere_le))
+                "aujourd'hui.", "../", f"{DOSSIER}/{code}.html", image=image_partage("france", genere_le),
+                ld=[page_web(f"{nom} : où et quand le chercher en France", f"{DOSSIER}/{code}.html", genere_le),
+                    fil_ariane([("./", NOM), (f"{DOSSIER}/", "Les espèces"), (f"{DOSSIER}/{code}.html", nom)])])
     carte = "../carte/" if pre else f"../carte/?espece={code}"
     lignes = [f'  <p class="fil"><a href="./">Les espèces</a> › {e(nom)}</p>',
               f'  <h1>{e(nom)} <span class="latin">{e(x["latin"])}</span></h1>',
@@ -209,7 +211,8 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
     haut = tete("Les champignons de la carte : saisons, milieux, où les chercher",
                 f"{noms_especes(especes)[:1].upper()}{noms_especes(especes)[1:]} : leurs milieux, leur "
                 "saison mois par mois, leurs sosies, et où les conditions sont bonnes aujourd'hui en France.",
-                "../", f"{DOSSIER}/", image=image_partage("france", genere_le), large=True)
+                "../", f"{DOSSIER}/", image=image_partage("france", genere_le), large=True,
+                ld=[fil_ariane([("./", NOM), (f"{DOSSIER}/", "Les espèces")])])
     mois = jours[0].month
     ordre = ordre_saison(especes, nat)
     lignes = ["  <h1>Les champignons de la carte</h1>",

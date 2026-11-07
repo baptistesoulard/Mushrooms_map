@@ -20,7 +20,8 @@ from .config import PAS_FIN
 from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, cle_departement,
                     date_courte, date_longue, departements_de, e, enumerer, habituel, icone, image_partage,
                     instant_paris,
-                    meilleur_niveau, national, noms_especes, ordre_saison, pct, pied, tete)
+                    meilleur_niveau, national, noms_especes, ordre_saison, page_web, pct, pied, site_web, tete,
+                    fil_ariane)
 from .partage import LARGEUR_UNE
 from .photos import charger as charger_photos
 from .redaction import NBSP, NIVEAUX, nombre
@@ -378,7 +379,8 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
                 f"Où les conditions sont favorables aux champignons ({noms_especes(especes)}), aujourd'hui "
                 "et pour les sept prochains jours, forêt par forêt, d'après la pluie, la température du sol "
                 "et la saison.",
-                "", "", image=image_partage("france", genere_le), plus=APPLI + RENVOI, large=True)
+                "", "", image=image_partage("france", genere_le), plus=APPLI + RENVOI, large=True,
+                ld=[site_web(), page_web(f"{NOM} : où chercher cette semaine", "", genere_le)])
     par_numero = sorted(departements, key=lambda d: cle_departement(d["code"]))
     choix = "".join(f'<option value="{d["code"]}">{d["code"]} – {e(d["nom"])}</option>' for d in par_numero)
 
@@ -501,7 +503,9 @@ def page_en_ce_moment(departements: list[dict], especes: list[dict], nat: dict, 
     haut = tete("Champignons en ce moment en France : les conditions de la semaine",
                 f"Où les conditions sont bonnes en ce moment, département par département, pour "
                 f"aujourd'hui et les sept jours suivants : {noms_especes(especes)}.", "", "en-ce-moment.html",
-                image=image_partage("france", genere_le))
+                image=image_partage("france", genere_le),
+                ld=[page_web("Champignons en ce moment en France", "en-ce-moment.html", genere_le),
+                    fil_ariane([("./", NOM), ("en-ce-moment.html", "En ce moment")])])
     lignes = ["  <h1>Les champignons en ce moment</h1>",
               f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
               "et les sept jours "

@@ -586,7 +586,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
                                     validation)
     chemins += pages_especes.ecrire(SITE, departements, regles, carte["legendes"], resumes, jours,
                                     carte["genere_le"], validation)
-    pages.ecrire_plan(SITE, chemins)
+    pages.ecrire_plan(SITE, chemins, jours[0])
     pixel_dep = np.full(apercu.nb, -1, dtype=np.int16)
     pixel_dep[apercu.pixel] = ech.departement
     contours = carte_departements.charger() or {}

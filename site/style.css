@@ -662,8 +662,18 @@ figure.dessin { display: grid; place-items: center; background: var(--surface-2)
 .carte-espece .latin { font-style: italic; color: var(--texte-3); font-weight: 400; }
 code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-size: .9em; }
 .carte-espece h2 { font-size: 1.1rem; margin-top: 0; }
-.carte-espece h2 a { color: inherit; }
+.carte-espece h2 a, .carte-espece h3 a { color: inherit; }
 .page .chapeau { font-size: 1.08rem; color: var(--texte-2); }
+
+/* Pages des départements : les chiffres de tête, les questions, les voisins. */
+.chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 14px 0; }
+.chiffre { border: 1px solid var(--trait); border-radius: var(--rayon); background: var(--surface); padding: 10px 12px; }
+.chiffre span { display: block; font-size: .8rem; color: var(--texte-3); }
+.chiffre strong { display: block; font-size: 1.15rem; line-height: 1.25; margin: 2px 0; color: var(--texte); }
+.faq h3 { font-size: 1rem; margin: 1.1em 0 .25em; }
+.faq p { margin-top: 0; }
+.voisins { padding-left: 1.2em; }
+.voisins li { margin: 3px 0; }
 
 /* Boutons-liens des pages : la carte d'abord. */
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px; }
