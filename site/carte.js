@@ -399,9 +399,9 @@ async function demarrer() {
     if (!vueFaite && map.getSize().x > 0) { vueFaite = true; vueInitiale(); }
   }).observe($("carte"));
   map.attributionControl.setPrefix(false);
-  const wmts = (couche, format, style = "normal") =>
+  const wmts = (couche, format, style = "normal", jeu = "PM") =>
     `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=${style}` +
-    `&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=${couche}&FORMAT=${format}`;
+    `&TILEMATRIXSET=${jeu}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=${couche}&FORMAT=${format}`;
   // Les fonds : le plan IGN grisé par défaut (les couleurs de l'indice ressortent), le même avec
   // l'estompage du relief (vallées, versants), ou les photographies aériennes. Le choix est gardé.
   const plan = () => L.tileLayer(wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2", "image/png"),
@@ -420,6 +420,13 @@ async function demarrer() {
   map.createPane("indice").style.zIndex = 350;
   const marquerFond = () => map.getContainer().classList.toggle("sur-photo", fond === "photo");
   marquerFond();
+  // Les noms de lieux de l'IGN (transparents, zooms 6 à 18) par-dessus l'indice, sur tous les fonds :
+  // ceux du plan restent dessous, fondus dans les couleurs. minZoom à 5,5 : Leaflet crée les tuiles au
+  // zoom arrondi et les retire au zoom exact (voir calqueDetail).
+  map.createPane("noms").style.zIndex = 390;
+  map.getPane("noms").style.pointerEvents = "none";
+  L.tileLayer(wmts("GEOGRAPHICALNAMES.NAMES", "image/png", "normal", "PM_6_18"),
+    { pane: "noms", minZoom: 5.5, maxZoom: 19, minNativeZoom: 6, maxNativeZoom: 18, className: "noms" }).addTo(map);
   map.attributionControl.addAttribution("Indice : météo Météo-France et ECMWF via Open-Meteo, forêts et relief IGN, roches BRGM");
 
   const ControleFonds = L.Control.extend({
