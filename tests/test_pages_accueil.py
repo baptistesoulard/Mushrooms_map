@@ -1,4 +1,5 @@
 """Accueil, « en ce moment » et fiches espèces : phrases et garde-fous, sur des résumés fabriqués."""
+import json
 import re
 from datetime import date, timedelta
 from pathlib import Path
@@ -8,7 +9,8 @@ import numpy as np
 from champi import especes as E
 from champi import pages
 from champi import pages_accueil as A
-from champi import pages_departements, pages_especes, partage
+from champi import carte_departements, pages_departements, pages_especes, partage
+from champi.grille import Grille
 from champi.habitat import ESSENCES, ROCHES
 from champi.modele import CLASSES
 
@@ -112,8 +114,48 @@ def test_accueil():
     tete, corps = page.split("</head>")
     assert "l.replace(\"carte/\" + l.search + l.hash)" in tete           # anciens liens : vers la carte
     assert '<link rel="manifest" href="manifest.webmanifest">' in tete
-    assert '<a class="bouton principal" href="carte/">Voir la carte</a>' in corps
+    assert '<a class="bouton principal" href="carte/" data-une-lien>Voir la carte</a>' in corps
     assert re.findall(r'data-departement="(\w+)"', corps) == ["01", "2A", "85"]   # par numéro
+
+
+def test_carte_de_la_une():
+    """La une propose les espèces aux bonnes conditions (au moins par endroits), la mieux placée
+    d'abord et montrée sans JavaScript, puis « Toutes » ; les contours mènent à la carte de
+    l'espèce sur chaque département."""
+    r = resumes({"85": {"cepe": [4] * 8, "girolle": [3] * 8, "trompette": [2] * 8}, "01": {"cepe": [4] * 8}})
+    nat = pages.national(ESPECES, DEPS, r, 8)
+    assert [x["code"] for x in A.especes_de_la_une(ESPECES, nat)] == ["cepe", "girolle"]
+    contours = carte_departements.charger()
+    page = A.page_accueil(DEPS, ESPECES, nat, {}, JOURS, None, GENERE_LE, contours=contours)
+    une = page.split('<figure class="une-carte">')[1].split("</figure>")[0]
+    assert re.findall(r'data-une="(\w+)" aria-pressed="(\w+)"', une) == [
+        ("cepe", "true"), ("girolle", "false"), ("toutes", "false")]
+    assert "data-une-especes hidden" in une
+    assert re.search(r'<a class="une-fond" href="carte/\?espece=cepe"><img src="data/partage/carte-france-cepe\.png\?v=\d+"',
+                     une)
+    assert re.findall(r'<a href="carte/\?departement=(\w+)&amp;espece=cepe" data-dep', une) == ["01", "2A", "85"]
+    assert "<title>Vendée : bonnes conditions</title>" in une and "<title>Corse-du-Sud : hors saison</title>" in une
+    box = carte_departements.cadre_une(contours)[0]
+    assert f'height="{round(partage.LARGEUR_UNE * box[3] / box[2])}"' in une
+    assert f'<svg viewBox="-16 -16 {contours["largeur"] + 32} {contours["hauteur"] + 32}"' in une
+    assert not liens_imbriques(une)
+    donnees = json.loads(re.search(r'<script type="application/json" id="une-donnees">(.+?)</script>', page).group(1))
+    assert donnees["defaut"] == "cepe" and donnees["ordre"] == ["01", "2A", "85"]
+    assert donnees["vues"]["cepe"]["niveaux"] == "404" and donnees["vues"]["girolle"]["niveaux"] == "003"
+    assert donnees["vues"]["toutes"]["niveaux"] == "404" and donnees["vues"]["toutes"]["espece"] == ""
+    assert donnees["vues"]["toutes"]["image"].startswith("data/partage/carte-france.png?v=")
+    # Sans contours (ancien fichier, sans cadre) : la carte et les boutons, sans dessin par-dessus.
+    sans = A.page_accueil(DEPS, ESPECES, nat, {}, JOURS, None, GENERE_LE, contours=None)
+    assert "<svg" not in sans.split('<figure class="une-carte">')[1].split("</figure>")[0]
+    assert "data-une-especes" in sans
+
+
+def test_une_hors_saison_partout():
+    """Tout hors saison : pas de boutons, la carte de toutes les espèces."""
+    nat = pages.national(ESPECES, DEPS, resumes({}), 8)
+    page = A.page_accueil(DEPS, ESPECES, nat, {}, JOURS, None, GENERE_LE, contours=carte_departements.charger())
+    assert "data-une-especes" not in page and "une-donnees" not in page
+    assert '<img src="data/partage/carte-france.png?v=' in page
 
 
 def test_renvoi_des_anciens_liens():
@@ -190,8 +232,11 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
     assert len(chemins) == (1 + len(DEPS)) + 2 + (1 + len(ESPECES))
     codes = np.full((30, 30), 100, dtype=np.uint8)                # une bande de forêt par département
     pixel_dep = np.repeat(np.arange(3, dtype=np.int16), 300)
+    cadre = carte_departements.charger()["cadre"]
+    grille = Grille(cadre[0], cadre[3], (cadre[2] - cadre[0]) / 30, 30, 30)
     partage.ecrire(tmp_path / "data" / "partage", DEPS, {d["code"]: k for k, d in enumerate(DEPS)}, ESPECES, r,
-                   pages.national(ESPECES, DEPS, r, 8), JOURS, codes, pixel_dep, 200, [s for s, _ in CLASSES])
+                   pages.national(ESPECES, DEPS, r, 8), JOURS, codes, pixel_dep, 200, [s for s, _ in CLASSES],
+                   par_espece={x["code"]: codes for x in ESPECES}, grille=grille, cadre=cadre)
     for page in tmp_path.rglob("*.html"):
         html = page.read_text(encoding="utf-8")
         assert f'<meta name="robots" content="{ROBOTS}">' in html, page

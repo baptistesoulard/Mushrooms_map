@@ -22,7 +22,7 @@ l'habitat (release « habitat », copié dans `site/habitat/`) et de la météo 
 Puis les pages lisibles sans JavaScript, à côté de la carte (`site/carte/`) : l'accueil et « en
 ce moment » (`pages_accueil`), les fiches espèces (`pages_especes`), les départements
 (`pages_departements`) ; et leurs images de partage, `partage/<département>.png`, `france.png`
-et `carte-france.png` (`partage`).
+`carte-france.png` et `carte-france-<espèce>.png`, les cartes de l'accueil (`partage`).
 
 Les calculs de ce job (aperçu, résumés) se font sur l'échantillon de l'habitat (une case sur
 16), avec les MÊMES champs arrondis que le navigateur : le panneau et la carte disent la même chose.
@@ -38,6 +38,7 @@ from datetime import date, datetime, timezone
 import numpy as np
 from PIL import Image
 
+from . import carte_departements
 from . import climatologie
 from . import depot
 from . import especes as E
@@ -405,6 +406,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
     resumes = {d["code"]: {} for d in departements}
     classement = {}
     meilleure = None
+    une = {}                         # l'aperçu du jour de chaque espèce : les cartes de l'accueil
     vues = [Vue(apercu, km2) for _ in range(JOURS_FUTURS)]
     # Les prés (espèces des champs) : leur propre échantillon, jamais publié point par point.
     lus = charger_pres(communes, departements)
@@ -443,10 +445,13 @@ def exporter(meteo: Meteo | None = None) -> dict:
                 vues[k].ajouter(ind)
                 if k == 0:   # l'image de partage : la meilleure espèce de chaque pixel, aujourd'hui
                     meilleure = image if meilleure is None else np.maximum(meilleure, image)
+                    une[esp.code] = image
             else:            # les prés, commune par commune : jamais point par point
                 codes = indices_communes(pres.commune, km2_pres, ind, len(communes))
                 ecrire_png(SITE_DATA / "communes" / f"{esp.code}_{k}.png", table_communes(codes))
                 ecrire_png(SITE_DATA / "apercu" / f"{esp.code}_{k}.png", codes[communes_px])
+                if k == 0:
+                    une[esp.code] = codes[communes_px]
             jour_classement = []
             for dep, sel in zip(departements, selections):
                 if not sel.any():
@@ -528,9 +533,12 @@ def exporter(meteo: Meteo | None = None) -> dict:
     pages.ecrire_plan(SITE, chemins)
     pixel_dep = np.full(apercu.nb, -1, dtype=np.int16)
     pixel_dep[apercu.pixel] = ech.departement
+    contours = carte_departements.charger() or {}
     partage.ecrire(SITE_DATA / "partage", departements, rang, regles["especes"], resumes,
                    pages.national(regles["especes"], departements, resumes, len(jours)), jours,
-                   meilleure, pixel_dep, ECHELLE, [s for s, _ in M.CLASSES])
+                   meilleure, pixel_dep, ECHELLE, [s for s, _ in M.CLASSES],
+                   par_espece=une, grille=g_apercu,
+                   cadre=carte_departements.cadre_une(contours)[1] if "cadre" in contours else None)
     print(f"Écrit site/data/ et {len(chemins)} pages en {time.time() - t0:.0f} s")
     return carte
 

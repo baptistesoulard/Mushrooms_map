@@ -5,6 +5,12 @@ département, simplifié (environ 1 km), en Mercator comme la carte du site.
 
 Gardé dans le dépôt : les pages du matin le relisent sans réseau. Source : ADMIN EXPRESS COG
 CARTO de l'IGN (Géoplateforme), Licence Ouverte.
+
+`cadre` : l'emprise du dessin en mètres Mercator (ouest, sud, est, nord). La carte de France de
+l'accueil (`partage.carte_cadre`) est peinte sur ce cadre et sa marge (`cadre_une`), pour que les
+contours s'y posent.
+Le fichier du 2026-11-01 n'en avait pas : son cadre, ajouté le 2026-11-07, a été recalé sur les
+communes des blocs d'habitat (centre de chaque département, écart moyen d'environ 0,1 unité du dessin).
 """
 from __future__ import annotations
 
@@ -21,6 +27,7 @@ COUCHE = "ADMINEXPRESS-COG-CARTO.LATEST:departement"
 LARGEUR = 1000                           # largeur du dessin (unités SVG)
 TOLERANCE_M = 1800                       # simplification, en mètres Mercator (moins d'une unité du dessin)
 AIRE_MIN_M2 = 4e7                        # îlots plus petits (40 km² Mercator) : écartés
+MARGE_UNE = 16                           # unités du dessin autour de la France, sur la carte de l'accueil
 
 
 def _simplifier(points: np.ndarray, tol: float) -> np.ndarray:
@@ -84,10 +91,21 @@ def construire(codes: set[str]) -> dict:
         return (f"M{p[0, 0] / 10:g} {p[0, 1] / 10:g}l" + " ".join(f"{x / 10:g} {y / 10:g}" for x, y in d) + "z")
 
     sortie = {"largeur": LARGEUR, "hauteur": hauteur,
+              "cadre": [round(float(xmin)), round(float(ymax - hauteur / echelle)),
+                        round(float(xmin + LARGEUR / echelle)), round(float(ymax))],
               "traces": {c: "".join(trace(a) for a in anneaux[c]) for c in sorted(anneaux)}}
     FICHIER.write_text(json.dumps(sortie, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Écrit {FICHIER.name} : {len(anneaux)} départements, {FICHIER.stat().st_size // 1024} Ko")
     return sortie
+
+
+def cadre_une(contours: dict) -> tuple[list[float], list[float]]:
+    """La carte de l'accueil : la `viewBox` du dessin (x, y, largeur, hauteur) et l'emprise en
+    mètres Mercator (ouest, sud, est, nord) de l'image peinte dessous, le dessin et sa marge."""
+    x0, y0, x1, y1 = contours["cadre"]
+    par, m = (x1 - x0) / contours["largeur"], MARGE_UNE          # m Mercator par unité du dessin
+    return ([-m, -m, contours["largeur"] + 2 * m, contours["hauteur"] + 2 * m],
+            [x0 - m * par, y0 - m * par, x1 + m * par, y1 + m * par])
 
 
 def charger() -> dict | None:

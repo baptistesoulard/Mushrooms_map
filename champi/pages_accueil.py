@@ -10,15 +10,20 @@ Ne lit aucune donnée : reçoit les résumés (`export_france`) et la validation
 """
 from __future__ import annotations
 
+import json
 from datetime import date
+from math import cos, radians
 from pathlib import Path
 
+from .carte_departements import cadre_une, charger as charger_contours
+from .modele import CLASSES
 from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, cle_departement,
                     date_courte, date_longue, departements_de, e, enumerer, habituel, icone, image_partage,
                     instant_paris,
                     meilleur_niveau, national, noms_especes, ordre_saison, pct, pied, tete)
+from .partage import LARGEUR_UNE
 from .photos import charger as charger_photos
-from .redaction import NBSP, nombre
+from .redaction import NBSP, NIVEAUX, nombre
 
 # Avant tout affichage : la carte reçoit ses anciens liens, et l'appli installée quand la carte
 # était à la racine (iPhone : l'adresse de départ y est figée à l'installation).
@@ -257,10 +262,115 @@ def faq(especes: list[dict]) -> list[str]:
     return [f"  <details class=\"question\"><summary>{e(q)}</summary><p>{e(r)}</p></details>" for q, r in qr]
 
 
+# --- La carte de la une -----------------------------------------------------------------
+
+UNE_MAX = 6                      # boutons d'espèce de la une, au plus (« Toutes » en plus)
+
+
+def especes_de_la_une(especes: list[dict], nat: dict) -> list[dict]:
+    """Les espèces proposées sur la carte de la une : celles aux bonnes conditions quelque part
+    aujourd'hui, au moins par endroits, les mieux placées d'abord ; à défaut, les trois premières
+    en saison ; aucune si tout est hors saison."""
+    en_saison = [x for x in ordre_saison(especes, nat) if meilleur_niveau(nat[x["code"]][0]) not in (0, None)]
+    return [x for x in en_saison if meilleur_niveau(nat[x["code"]][0]) >= 3][:UNE_MAX] or en_saison[:3]
+
+
+def niveaux_du_jour(nat_espece: list[dict]) -> dict[str, int]:
+    """Le niveau de chaque département aujourd'hui, pour une espèce."""
+    return {c: n for n, codes in nat_espece[0].items() for c in codes}
+
+
+def carre_km(contours: dict | None) -> int:
+    """Le côté au sol, en km arrondi, d'un pixel de la carte de la une (à la latitude du milieu de
+    la France) ; 1 km sans cadre (l'aperçu)."""
+    if not contours or "cadre" not in contours:
+        return 1
+    x0, _, x1, _ = cadre_une(contours)[1]
+    return max(1, round((x1 - x0) / LARGEUR_UNE * cos(radians(46.5)) / 1000))
+
+
+def une_carte(especes: list[dict], nat: dict, departements: list[dict], genere_le: str,
+              contours: dict | None) -> list[str]:
+    """La carte de France de la une : l'espèce la mieux placée d'abord (lisible sans JavaScript),
+    des boutons pour en voir une autre ou toutes, et les contours des départements par-dessus,
+    chacun menant à la carte de l'espèce sur ce département. Les images : `partage.carte_cadre`."""
+    choix = especes_de_la_une(especes, nat)
+    km = carre_km(contours)
+    avec_contours = bool(contours and "cadre" in contours)
+    clic = " Un clic sur un département l'ouvre sur la carte." if avec_contours else ""
+    par_numero = sorted(departements, key=lambda d: cle_departement(d["code"]))
+    ordre = [d["code"] for d in par_numero if avec_contours and d["code"] in contours["traces"]]
+    noms = {d["code"]: d["nom"] for d in par_numero}
+
+    def vue(x: dict | None) -> dict:
+        if x is None:                          # toutes espèces : le meilleur niveau de chaque département
+            niv: dict[str, int] = {}
+            for y in especes:
+                for c, n in niveaux_du_jour(nat[y["code"]]).items():
+                    niv[c] = max(n, niv.get(c, 0))
+            return {"espece": "", "image": image_partage("carte-france", genere_le),
+                    "alt": "Carte de France du jour, toutes espèces : les forêts aux meilleures conditions en "
+                           "brun foncé",
+                    "legende": f"Aujourd'hui, toutes espèces : la meilleure de chaque forêt, par carrés de "
+                               f"{km}{NBSP}km.{clic}",
+                    "niveaux": "".join(str(niv[c]) if c in niv else "x" for c in ordre)}
+        niv = niveaux_du_jour(nat[x["code"]])
+        pre = x.get("milieu") == "pre"
+        return {"espece": x["code"], "image": image_partage(f"carte-france-{x['code']}", genere_le),
+                "alt": f"Carte de France du jour pour {article(x['de'])} : "
+                       + ("les communes aux prés les plus favorables" if pre else "les forêts aux meilleures conditions")
+                       + " en brun foncé",
+                "legende": (f"Aujourd'hui, {article(x['de'])} : les prés de chaque commune, jamais un pré." if pre else
+                            f"Aujourd'hui, {article(x['de'])} : chaque forêt, par carrés de {km}{NBSP}km.") + clic,
+                "niveaux": "".join(str(niv[c]) if c in niv else "x" for c in ordre)}
+
+    vues = {x["code"]: vue(x) for x in choix}
+    vues["toutes"] = vue(None)
+    defaut = choix[0]["code"] if choix else "toutes"
+    v = vues[defaut]
+    suffixe = f"espece={v['espece']}" if v["espece"] else ""
+    carte = f"carte/?{suffixe}" if suffixe else "carte/"
+    lignes = ['  <figure class="une-carte">']
+    if choix:
+        boutons = "".join(
+            f'<button type="button" data-une="{x["code"]}" aria-pressed="{str(x["code"] == defaut).lower()}">'
+            f'{icone("", x["code"], 24)}<span>{e(x["nom"])}</span></button>' for x in choix)
+        boutons += (f'<button type="button" data-une="toutes" aria-pressed="{str(defaut == "toutes").lower()}">'
+                    "<span>Toutes</span></button>")
+        # Cachés sans JavaScript : la carte montre alors l'espèce la mieux placée.
+        lignes.append(f'  <div class="especes-dep une-especes" role="group" aria-label="Espèce de la carte" '
+                      f'data-une-especes hidden>{boutons}</div>')
+    vue_box = cadre_une(contours)[0] if avec_contours else [0, 0, 1, 1]
+    lignes.append(f'  <div class="une-carte-cadre"><a class="une-fond" href="{carte}"><img src="{v["image"]}" '
+                  f'alt="{e(v["alt"])}" width="{LARGEUR_UNE}" height="{round(LARGEUR_UNE * vue_box[3] / vue_box[2])}">'
+                  "</a>")
+    if avec_contours:
+        chemins = "".join(
+            f'<a href="carte/?departement={c}{"&amp;" + suffixe if suffixe else ""}" data-dep="{c}">'
+            f'<path d="{contours["traces"][c]}"><title>{e(noms[c])} : '
+            f'{e(NIVEAUX[int(n)].lower() if (n := v["niveaux"][k]) != "x" else "rien de calculé")}</title></path></a>'
+            for k, c in enumerate(ordre))
+        lignes.append(f'  <svg viewBox="{" ".join(f"{v:g}" for v in vue_box)}" role="group" '
+                      f'aria-label="Départements">{chemins}</svg>')
+    lignes.append("  </div>")
+    noms_classes = [CLASSES[0][1].lower(), CLASSES[-1][1].lower()]
+    lignes += ['  <div class="une-legende"><span>' + e(noms_classes[0]) + '</span><span class="echelle" aria-hidden="true">'
+               + "".join(f'<i class="c{k}"></i>' for k in range(len(CLASSES))) + "</span><span>"
+               + e(noms_classes[1]) + "</span></div>",
+               f"  <figcaption>{e(v['legende'])}</figcaption>",
+               "  </figure>"]
+    if choix:
+        donnees = {"defaut": defaut, "ordre": ordre, "noms": {c: noms[c] for c in ordre}, "vues": vues}
+        lignes.append(f'  <script type="application/json" id="une-donnees">{json.dumps(donnees, ensure_ascii=False)}'
+                      "</script>")
+    return lignes
+
+
 # --- Pages ------------------------------------------------------------------------------
 
 def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phases: dict, jours: list[date],
-                 validation: dict | None, genere_le: str, photos: dict | None = None) -> str:
+                 validation: dict | None, genere_le: str, photos: dict | None = None,
+                 contours: dict | None = None) -> str:
     noms = {d["code"]: d["nom"] for d in departements}
     photos = photos or {}
     haut = tete(f"{NOM} : où chercher cette semaine",
@@ -281,20 +391,17 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
               '  <p class="chapeau">Les forêts de France case par case, et les prés commune par commune, selon '
               "la pluie des dernières semaines et la météo des 7 prochains jours.</p>",
               f'  <p class="en-bref">{e(en_bref(especes, nat))}</p>',
-              '  <p class="actions"><a class="bouton principal" href="carte/">Voir la carte</a>'
-              '<a class="bouton" href="carte/?autour">Autour de moi</a>'
+              '  <p class="actions"><a class="bouton principal" href="carte/" data-une-lien>Voir la carte</a>'
+              '<a class="bouton" href="carte/?autour" data-une-lien>Autour de moi</a>'
               '<a class="bouton" href="departements/" id="mon-departement">Mon département</a></p>',
               '  <form class="aller-departement" action="departements/" data-aller-departement>',
               '  <label for="aller-departement">Un département</label>',
               f'  <select id="aller-departement" name="d"><option value="">Choisir…</option>{choix}</select>',
               '  <button type="submit" class="bouton">Voir</button>',
               "  </form>",
-              "  </div>",
-              f'  <figure class="une-carte"><a href="carte/"><img src="{image_partage("carte-france", genere_le)}" '
-              'alt="Carte de France du jour : les forêts aux meilleures conditions, toutes espèces, en orange '
-              'foncé" width="560" height="560"></a><figcaption>Aujourd\'hui, toutes espèces : la meilleure de '
-              "chaque forêt, par carrés d'un kilomètre.</figcaption></figure>",
-              "  </section>"]
+              "  </div>"]
+    lignes += une_carte(especes, nat, departements, genere_le, contours)
+    lignes.append("  </section>")
 
     # 2. Les espèces en saison, illustrées : leur état aujourd'hui, ce que la semaine change.
     en_saison = [x for x in ordre_saison(especes, nat) if meilleur_niveau(nat[x["code"]][0]) not in (0, None)]
@@ -445,7 +552,8 @@ def ecrire(site: Path, departements: list[dict], especes: list[dict], resumes: d
     nat = national(especes, departements, resumes, len(jours))
     phases = phases_du_jour(especes, departements, resumes)
     (site / "index.html").write_text(
-        page_accueil(departements, especes, nat, phases, jours, validation, genere_le, charger_photos()),
+        page_accueil(departements, especes, nat, phases, jours, validation, genere_le, charger_photos(),
+                     charger_contours()),
         encoding="utf-8")
     (site / "en-ce-moment.html").write_text(
         page_en_ce_moment(departements, especes, nat, phases, jours, genere_le), encoding="utf-8")

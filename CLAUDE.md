@@ -148,6 +148,13 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   `en_bref`, la carte de France, la carte, autour de moi, un département au choix), les espèces
   en saison en fiches illustrées, la semaine, puis comment ça marche, les fonctions, la
   vérification (détail replié), les départements (repliés) et les questions.
+  La carte de la une (2026-11-07) : l'espèce la mieux placée d'abord, des boutons pour les espèces
+  aux bonnes conditions au moins par endroits (`especes_de_la_une`, six au plus) et « Toutes »,
+  cachés sans JavaScript (`pages.js`, `uneCarte` : l'espèce de `champi-espece` d'abord) ; les
+  images `partage/carte-france[-<espèce>].png` sont peintes sur le cadre Mercator des contours
+  (`carte_departements.cadre_une`, `partage.carte_cadre`) et les départements s'y posent en SVG,
+  chacun menant à `carte/?departement=…&espece=…`. Le cadre de `departements_carte.json` (absent
+  du fichier d'origine) a été recalé le 2026-11-07 sur les communes des blocs ; `construire` l'écrit.
 - **Page des départements** : une carte de France cliquable (`carte_departements.py` →
   `data/departements_carte.json`, contours ADMIN EXPRESS simplifiés à ~2 km, versionnés), chaque
   département au verdict de l'espèce et du jour choisis (dessins des espèces pour choisir, l'espèce

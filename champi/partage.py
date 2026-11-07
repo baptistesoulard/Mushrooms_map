@@ -3,8 +3,10 @@ messageries et les réseaux quand on y colle le lien d'une page (`og:image`, 120
 
 `data/partage/<département>.png` et `france.png` : à gauche la carte du jour (pour chaque
 pixel de 1,15 km, la meilleure des espèces), à droite la semaine espèce par espèce, aux
-couleurs du site (`style.css`, vérifié par les tests). `carte-france.png` : la carte seule,
-pour l'accueil. Aucun coin : des pixels de 1,15 km, comme la vue large de la carte.
+couleurs du site (`style.css`, vérifié par les tests). Pour l'accueil, la carte seule :
+`carte-france.png` (toutes espèces) et `carte-france-<espèce>.png`, peintes sur le cadre des
+contours des départements (`carte_departements`), que la page pose par-dessus. Aucun coin : des
+pixels de 1,15 km au plus fin, comme la vue large de la carte.
 
 Ne lit aucune donnée : reçoit l'aperçu du jour et les niveaux, rend des PNG.
 """
@@ -21,7 +23,8 @@ from .pages import JOURS_COURTS, NOM, date_longue
 
 LARGEUR, HAUTEUR = 1200, 630
 CARTE = (560, 430)                           # la place de la carte, à gauche, sous le titre
-VIGNETTE = (560, 560)                        # la carte seule, pour l'accueil
+VIGNETTE = (560, 560)                        # la carte seule, sans cadre de contours
+LARGEUR_UNE = 560                            # la carte de l'accueil, sur le cadre des contours
 # Les couleurs du site (style.css) : la classe 0 de l'indice n'en a pas (transparente sur la carte).
 FOND, TRAIT, TEXTE, TEXTE_2, TEXTE_3 = "#fbfaf7", "#e2ded5", "#1d1b17", "#57534a", "#7a756a"
 CLASSES = ["#f9d7a6", "#f2a65a", "#d9662b", "#9c3510", "#5e1b13"]   # --classe-1 à --classe-5
@@ -77,6 +80,21 @@ def carte_france(cl: np.ndarray, place: tuple[int, int] = CARTE) -> Image.Image:
     img = _peindre(reduite)
     s = min(place[0] / img.width, place[1] / img.height)
     return img.resize((round(img.width * s), round(img.height * s)), Image.Resampling.NEAREST)
+
+
+def carte_cadre(cl: np.ndarray, grille, cadre: list[float], largeur: int = LARGEUR_UNE) -> Image.Image:
+    """La carte de l'accueil, peinte sur `cadre` (ouest, sud, est, nord, m Mercator : celui des
+    contours des départements) pour qu'ils s'y posent exactement. Chaque pixel prend le meilleur
+    des pixels de l'aperçu (`grille`) dont le centre y tombe, comme `carte_france`."""
+    x0, y0, x1, y1 = cadre
+    hauteur = round(largeur * (y1 - y0) / (x1 - x0))
+    j = np.floor((grille.centres_x() - x0) / (x1 - x0) * largeur).astype(np.int64)
+    i = np.floor((y1 - grille.centres_y()) / (y1 - y0) * hauteur).astype(np.int64)
+    dans_j, dans_i = (j >= 0) & (j < largeur), (i >= 0) & (i < hauteur)
+    sortie = np.full((hauteur, largeur), -1, dtype=np.int8)
+    ii, jj = np.meshgrid(i[dans_i], j[dans_j], indexing="ij")
+    np.maximum.at(sortie, (ii.ravel(), jj.ravel()), cl[np.ix_(dans_i, dans_j)].ravel())
+    return _peindre(sortie)
 
 
 def carte_departement(cl: np.ndarray, dans: np.ndarray, place: tuple[int, int] = CARTE) -> Image.Image:
@@ -153,13 +171,21 @@ def en_saison(lignes: list) -> list:
 
 def ecrire(dossier: Path, departements: list[dict], rang: dict, especes: list[dict], resumes: dict,
            nat: dict, jours: list[date], codes: np.ndarray, pixel_dep: np.ndarray, echelle: int,
-           seuils: list[float]) -> None:
+           seuils: list[float], par_espece: dict | None = None, grille=None, cadre: list[float] | None = None) -> None:
     """`codes` : l'aperçu du jour, la meilleure espèce de chaque pixel ; `pixel_dep` : le rang du
-    département de chaque pixel (-1 hors forêt), `rang` celui de chaque code de département."""
+    département de chaque pixel (-1 hors forêt), `rang` celui de chaque code de département.
+    `par_espece` : l'aperçu du jour de chaque espèce ; avec `grille` (celle de l'aperçu) et `cadre`
+    (celui des contours), les cartes de l'accueil se posent sous les contours des départements."""
     dossier.mkdir(parents=True, exist_ok=True)
     cl = classes(codes, echelle, seuils)
     sous_titre = f"La semaine à partir du {date_longue(jours[0])}"
-    carte_france(cl, VIGNETTE).save(dossier / "carte-france.png", optimize=True)
+    if grille is not None and cadre:
+        carte_cadre(cl, grille, cadre).save(dossier / "carte-france.png", optimize=True)
+        for code, image_espece in (par_espece or {}).items():
+            carte_cadre(classes(image_espece, echelle, seuils), grille, cadre).save(
+                dossier / f"carte-france-{code}.png", optimize=True)
+    else:
+        carte_france(cl, VIGNETTE).save(dossier / "carte-france.png", optimize=True)
     france = carte_france(cl)
     lignes = []
     for x in especes:

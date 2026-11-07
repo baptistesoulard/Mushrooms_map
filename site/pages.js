@@ -246,6 +246,48 @@ function carteDepartements(choix) {
   if (espece !== d.defaut) peindre();
 }
 
+// Accueil : la carte de la une change d'espèce (ou toutes), avec ses contours, sa légende et
+// les liens vers la carte ; l'espèce regardée sur la carte d'abord, si elle est proposée.
+function uneCarte(groupe) {
+  const d = JSON.parse(document.getElementById("une-donnees").textContent);
+  const figure = groupe.closest(".une-carte");
+  const img = figure.querySelector(".une-fond img");
+  const fond = figure.querySelector(".une-fond");
+  const legende = figure.querySelector("figcaption");
+  const contours = [...figure.querySelectorAll("svg a[data-dep]")];
+  const liens = [...document.querySelectorAll("a[data-une-lien]")].map((a) => [a, a.getAttribute("href")]);
+  const boutons = [...groupe.querySelectorAll("[data-une]")];
+  let choix = d.defaut;
+  try {
+    const vue = localStorage.getItem("champi-espece");
+    if (vue && d.vues[vue]) choix = vue;
+  } catch { /* rien de gardé */ }
+  const avec = (base, espece) => espece ? `${base}${base.includes("?") ? "&" : "?"}espece=${espece}` : base;
+  function montrer() {
+    const v = d.vues[choix];
+    img.src = v.image;
+    img.alt = v.alt;
+    legende.textContent = v.legende;
+    fond.href = avec("carte/", v.espece);
+    for (const [a, base] of liens) a.href = avec(base, v.espece);
+    contours.forEach((a, i) => {
+      const n = v.niveaux[i];
+      a.setAttribute("href", avec(`carte/?departement=${a.dataset.dep}`, v.espece));
+      a.querySelector("title").textContent = `${d.noms[a.dataset.dep]} : ${n === "x" ? "rien de calculé" : NIVEAUX[n]}`;
+    });
+    for (const b of boutons) b.setAttribute("aria-pressed", String(b.dataset.une === choix));
+  }
+  for (const b of boutons) {
+    // L'image se charge dès le survol : elle est prête au clic.
+    const charger = () => { new Image().src = d.vues[b.dataset.une].image; };
+    b.addEventListener("pointerenter", charger, { once: true });
+    b.addEventListener("focus", charger, { once: true });
+    b.addEventListener("click", () => { choix = b.dataset.une; montrer(); });
+  }
+  groupe.hidden = false;
+  montrer();
+}
+
 // Une page calculée pour un jour passé : la mise à jour de la nuit n'a pas eu lieu (GitHub lance
 // parfois son départ programmé avec des heures de retard). Le dire en tête, comme la carte.
 function perime(p) {
@@ -263,6 +305,7 @@ if (datee) perime(datee);
 if (document.getElementById("mon-departement")) monDepartement(document.getElementById("mon-departement"));
 for (const b of document.querySelectorAll("[data-filtres]")) filtres(b);
 for (const c of document.querySelectorAll("[data-carte-deps]")) carteDepartements(c);
+for (const g of document.querySelectorAll("[data-une-especes]")) uneCarte(g);
 for (const f of document.querySelectorAll("[data-aller-departement]")) allerDepartement(f);
 // Le bouton Partager des pages générées : caché tant que ce script n'a pas tourné.
 for (const b of document.querySelectorAll("[data-partager]")) {
