@@ -204,6 +204,10 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   simplifiés à ~2 km, ils s'écarteraient des vraies limites de plus près), puis les marques
   (position, coins). Les noms de lieux de l'IGN (`GEOGRAPHICALNAMES.NAMES`) ont été essayés
   par-dessus le 2026-11-07, puis retirés : doublés par ceux du plan, peu satisfaisants.
+- **Alertes réservées au groupe (décision du 2026-11-07)** : sans lien de groupe sur l'appareil, la
+  section « Mes alertes » de la carte reste cachée (sauf alertes encore à retirer) ; ni l'accueil ni le
+  guide ne les annoncent. Une version publique gratuite passerait par un petit service (Worker
+  Cloudflare) pour ranger les abonnements : écartée pour l'instant.
 - **Alertes personnalisées** (`site/alertes.js` → `alertes.json` du dépôt privé du lien de groupe
   → `alertes.py`, étape de `carte.yml` avant le déploiement) : un département, des espèces, un
   seuil (« bon » ou « par endroits ») ; notification Web Push quand une espèce DEVIENT favorable

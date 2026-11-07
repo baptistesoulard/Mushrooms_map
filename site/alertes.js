@@ -112,6 +112,9 @@ export function installerAlertes({ carte, etat }) {
   }
 
   function preparer() {
+    // Les alertes sont réservées au groupe (décision du 2026-11-07) : sans lien de groupe sur cet
+    // appareil, la section reste cachée, sauf s'il garde des alertes à pouvoir retirer.
+    $("alertes").hidden = !synchro() && !moi?.alertes?.length;
     const o = obstacle();
     form.hidden = Boolean(o);
     if (o) { dire(...o); return; }

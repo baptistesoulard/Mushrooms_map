@@ -48,7 +48,6 @@ TRAITS = {
     "carte": '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
     "semaine": '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'
                '<path d="M7 14h2M11 14h2M15 14h2M7 17h2M11 17h2"/>',
-    "alerte": '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
     "coin": '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
     "explorer": '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/>'
                 '<circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
@@ -71,8 +70,6 @@ FONCTIONS = [
      "Les zones protégées sont hachurées ; un clic sur une zone dit pourquoi elle est notée ainsi."),
     ("semaine", "Les 7 prochains jours", "La pluie déjà tombée et les prévisions : la carte dit si la pousse "
      "arrive, dure ou s'arrête, jour par jour."),
-    ("alerte", "Mes alertes", "Une notification quand une espèce que vous suivez devient favorable dans votre "
-     "département au cours de la semaine. Pour l'instant, avec un lien de groupe."),
     ("coin", "Mes coins", "Vos trouvailles notées d'un appui long sur la carte. Elles restent sur votre "
      "appareil, ou se partagent avec vos proches par un lien privé."),
     ("explorer", "Explorer les forêts", "Sans météo ni saison : les forêts qui répondent à vos critères "

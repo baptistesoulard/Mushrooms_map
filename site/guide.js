@@ -13,10 +13,10 @@ const ETAPES = (etroit) => [
   [etroit ? "Tirez le panneau vers le haut" : "Le panneau, à gauche",
     "En haut, l'espèce (un toucher ouvre la liste illustrée) et le jour. Puis quatre onglets : « Ici » " +
     "classe les espèces pour la zone affichée ; « Département » donne le verdict, la semaine et les " +
-    "communes ; « L'espèce », sa fiche ; « Mes outils », vos coins et vos alertes."],
-  ["Vos coins, vos alertes",
+    "communes ; « L'espèce », sa fiche ; « Mes outils », vos coins et l'exploration des forêts."],
+  ["Vos coins",
     `${etroit ? "Un appui long" : "Un clic droit"} sur la carte note une trouvaille, gardée dans ce navigateur. ` +
-    "« Mes alertes » prévient quand une espèce devient favorable dans votre département."],
+    "Vous pouvez les sauvegarder, les envoyer à un proche, ou les partager avec un groupe par un lien privé."],
   ["Avant de cueillir",
     "La carte dit où chercher, jamais quoi manger : faites contrôler toute récolte par un pharmacien ou " +
     "une société mycologique. En forêt privée, les champignons appartiennent au propriétaire."],
