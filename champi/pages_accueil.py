@@ -509,36 +509,65 @@ def page_en_ce_moment(departements: list[dict], especes: list[dict], nat: dict, 
     lignes = bandeau("En ce moment", "Les champignons en ce moment", [
         f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
         "et les sept jours suivants, sur les forêts de chaque département.</p>",
-        f'  <p class="en-bref">{e(en_bref(especes, nat))}</p>'])
-    lignes += ['  <ul class="ce-matin">']
-    lignes += [f"    <li>{x}</li>" for x in ce_matin(especes, nat, phases, jours, noms)]
-    lignes += ["  </ul>",
-               f'  <p class="actions"><a class="bouton principal" href="carte/">Voir la carte</a>{PARTAGER}</p>',
-               "  <h2>La semaine en France</h2>"]
+        f'  <p class="en-bref">{e(en_bref(especes, nat))}</p>',
+        f'  <p class="actions"><a class="bouton principal" href="carte/">Voir la carte</a>{PARTAGER}</p>'])
+    # La semaine d'abord : le plus lisible. Puis une carte courte par espèce en saison.
+    lignes += ["  <h2>La semaine en France</h2>"]
     lignes += tableau_national(especes, nat, jours)
     lignes += ['  <p class="muet">Dans chaque case, le nombre de départements aux bonnes conditions, au '
-               "moins par endroits ; sa couleur, celle du mieux placé d'entre eux (même échelle que les "
-               "pages des départements). Un clic ouvre la carte de l'espèce ce jour-là. Ci-dessous, "
-               "aujourd'hui : les départements qui ont le plus de forêt aux bonnes conditions d'abord.</p>"]
+               "moins par endroits ; sa couleur, celle du mieux placé d'entre eux. Un clic ouvre la carte de "
+               "l'espèce ce jour-là.</p>",
+               "  <h2>Espèce par espèce, aujourd'hui</h2>",
+               '  <div class="moment-grille">']
+    hors = []
     for x in ordre_saison(especes, nat):
-        j0 = nat[x["code"]][0]
-        lignes.append(f'  <section class="carte-espece" id="{x["code"]}"><h2>{e(x["nom"])} '
-                      f'<span class="latin">{e(x["latin"])}</span></h2>')
-        if meilleur_niveau(j0) in (0, None):
-            debut, _, _, fin = x["saison"]
-            lignes.append(f"  <p>Hors saison partout aujourd'hui : la saison {e(x['de'])} court en gros du "
-                          f"{date_courte(debut)} au {date_courte(fin)}.</p>")
-        else:
-            for n, quoi in ((4, "Bonnes conditions"), (3, "Bonnes conditions par endroits")):
-                if j0[n]:
-                    lignes.append(f"  <p><strong>{quoi}</strong> ({departements_de(len(j0[n]))}) : "
-                                  f"{', '.join(_lien_dep(c, noms, '') for c in j0[n])}.</p>")
-            if not j0[4] and not j0[3]:
-                t = etat_espece(nat[x["code"]], jours, noms)
-                lignes.append(f"  <p>{t[:1].upper()}{t[1:]}.</p>")
-        lignes.append(f'  <p><a href="carte/?espece={x["code"]}">{e(x["nom"])} sur la carte</a> · '
-                      f'<a href="{chemin_espece(x["code"])}">Où et quand le chercher</a></p></section>')
+        if meilleur_niveau(nat[x["code"]][0]) in (0, None):
+            hors.append(x)
+            continue
+        lignes += carte_moment(x, nat[x["code"]], jours, noms, phases.get(x["code"]))
+    lignes.append("  </div>")
+    if hors:
+        lignes.append("  <p class=\"muet\">Hors saison partout : "
+                      + enumerer([f'<a id="{x["code"]}" href="{chemin_espece(x["code"])}">{e(article(x["de"]))}</a>'
+                                  for x in hors]) + ".</p>")
     return haut + "\n".join(lignes) + "\n" + pied("")
+
+
+VISIBLES = 5            # les départements montrés par espèce ; les autres, repliés
+
+
+def carte_moment(x: dict, niv: list[dict], jours: list[date], noms: dict, phase_x: str | None) -> list[str]:
+    """La carte courte d'une espèce sur « en ce moment » : son verdict en une étiquette, ses cinq
+    départements les mieux placés, les autres repliés (toujours liés : moteurs et curieux)."""
+    j0 = niv[0]
+    n = meilleur_niveau(j0)
+    codes = j0[4] or j0[3]
+    if codes:
+        etiquette = f"{NIVEAUX_COURTS[4 if j0[4] else 3]} dans {departements_de(len(codes))}"
+    elif n == 2:
+        etiquette = f"possible dans {departements_de(len(j0[2]))}"
+    else:
+        etiquette = "défavorable partout"
+    tags = [f'<span class="badge n{n}">{e(etiquette)}</span>']
+    if phase_x:
+        tags.append(f'<span class="badge">{e(phase_x.rstrip("."))}</span>')
+    bons = [len(j[4]) for j in niv]
+    k = max(range(len(niv)), key=lambda k: (bons[k], -k))
+    if bons[k] > bons[0]:
+        tags.append(f'<span class="badge">jusqu\'à {bons[k]} {JOURS_COURTS[jours[k].weekday()]} {jours[k].day}</span>')
+    lignes = [f'  <section class="carte-espece fiche-moment" id="{x["code"]}">',
+              f'  <h3><a href="{chemin_espece(x["code"])}">{icone("", x["code"], 32)}{e(x["nom"])}</a></h3>',
+              f'  <p class="badges">{"".join(tags)}</p>']
+    if codes:
+        lignes.append(f"  <p>{'Surtout' if len(codes) > VISIBLES else 'Dans'} "
+                      f"{enumerer([_lien_dep(c, noms, '') for c in codes[:VISIBLES]])}.</p>")
+        if len(codes) > VISIBLES:
+            lignes.append(f'  <details class="detail"><summary>Les {len(codes) - VISIBLES} autres</summary>'
+                          f"<p>{', '.join(_lien_dep(c, noms, '') for c in codes[VISIBLES:])}.</p></details>")
+    lignes.append(f'  <p class="muet"><a href="carte/?espece={x["code"]}">Sur la carte</a> · '
+                  f'<a href="{chemin_espece(x["code"])}">Où et quand le chercher</a></p>')
+    lignes.append("  </section>")
+    return lignes
 
 
 def phases_du_jour(especes: list[dict], departements: list[dict], resumes: dict) -> dict:

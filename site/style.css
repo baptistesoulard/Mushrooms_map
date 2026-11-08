@@ -874,3 +874,13 @@ h1 a.titre:hover { color: var(--accent); }
 /* Face aux observations : une région par volet */
 .region { border: 1px solid var(--trait); border-radius: var(--rayon); padding: 8px 12px; margin: 12px 0; }
 .region summary { cursor: pointer; }
+
+/* « En ce moment » : une carte courte par espèce en saison. */
+.moment-grille { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); margin: 10px 0 14px; }
+.fiche-moment { margin: 0; display: grid; gap: 6px; align-content: start; }
+.fiche-moment h3 { margin: 0; font-family: var(--police-titre); font-size: 1.2rem; }
+.fiche-moment h3 a { display: inline-flex; align-items: center; gap: 8px; color: var(--texte); text-decoration: none; }
+.fiche-moment h3 a:hover { color: var(--accent); }
+.fiche-moment p { margin: 0; }
+.fiche-moment .badges { margin: 0 !important; }
+.fiche-moment details summary { font-size: .88rem; }

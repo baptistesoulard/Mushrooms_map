@@ -55,10 +55,12 @@ def test_page_departement():
     assert len(re.findall(r'<a class="niveau n\w"', page)) == 3 * 8
     assert 'href="../../carte/?departement=85&amp;espece=cepe&amp;jour=2026-11-03"' in page   # sous /carte/
     assert "Saint-&lt;Mesmin&gt;" in page and "<Mesmin>" not in page        # échappé
-    assert "Aucun jour favorable cette semaine." in page                     # la girolle
-    girolle = page.split('>Girolle</a> ')[1].split("</section>")[0]
-    assert "Communes les mieux placées" not in girolle                       # rien de favorable ce jour-là
+    # Un bloc pour l'espèce favorable ; les autres en une phrase (le tableau les montre toutes).
     assert '<h3><a href="../../especes/cepe/">Cèpe</a>' in page             # chaque espèce mène à sa fiche
+    assert '>Girolle</a> <span class="latin">' not in page
+    assert ('<p class="muet">Aucun jour favorable cette semaine : '
+            '<a href="../../especes/girolle/">la girolle</a>.</p>') in page
+    assert '<p class="muet">Hors saison toute la semaine : <a href="../../especes/morille/">la morille</a>.</p>' in page
 
 
 def test_donnees_structurees_du_departement():

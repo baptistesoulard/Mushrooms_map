@@ -123,6 +123,10 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   renvoi (`pages.renvoi` : refresh immédiat, canonical, `noindex, follow`) : liens partagés, alertes
   et applis installées continuent de marcher. `carte.json` donne la page de chaque département
   (`page`), l'accueil la met sur ses options (`data-page`) : le JavaScript ne fabrique pas d'adresse.
+- **Pages légères (2026-11-08)** : « en ce moment » met la semaine en tableau d'abord, puis une carte
+  courte par espèce en saison (`pages_accueil.carte_moment` : étiquette, cinq départements, les autres
+  repliés mais liés) ; une page département ne détaille que les espèces qui ont au moins un jour
+  favorable, les autres tiennent en une phrase (le tableau de la semaine les montre toutes).
 - **Images de partage** (`partage.py` → `data/partage/`) : l'aperçu des liens dans les
   messageries (`og:image`, 1200 × 630), la carte du jour (la meilleure espèce de chaque pixel
   de 1,15 km, jamais plus fin) et la semaine. Leur adresse change à chaque export

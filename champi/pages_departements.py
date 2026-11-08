@@ -332,28 +332,36 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
                "les espèces des champs. Un clic l'affiche sur la carte, forêt par forêt ; les prés n'ont pas "
                "de carte fine, ils sont presque tous privés.</p>"]
 
+    # Un bloc par espèce qui a au moins un jour favorable ; les autres tiennent en une phrase (le
+    # tableau de la semaine les montre toutes).
+    rien, hors, absentes = [], [], []
     for x in especes:
         jours_x = resumes.get(x["code"]) or []
+        lien_x = f'<a href="{R}{chemin_espece(x["code"])}">{e(article(x["de"]))}</a>'
+        if not jours_x:
+            absentes.append(lien_x)
+            continue
+        if all(r["niveau"] == 0 for r in jours_x):
+            hors.append(lien_x)
+            continue
+        if max(r["niveau"] for r in jours_x) <= 1:
+            rien.append(lien_x)
+            continue
         lignes.append(f'  <section class="carte-espece"><h3><a href="{R}{chemin_espece(x["code"])}">{e(x["nom"])}</a> '
                       f'<span class="latin">{e(x["latin"])}</span></h3>')
-        if not jours_x:
-            lignes.append(f"  <p>Pas de {'pré' if x.get('milieu') == 'pre' else 'forêt'} calculé"
-                          f"{'' if x.get('milieu') == 'pre' else 'e'} dans ce département.</p></section>")
-            continue
         r0 = jours_x[0]
         lignes.append(f"  <p><strong>Aujourd'hui : {e(r0['verdict'])}.</strong> {e(' '.join(r0['phrases']))}</p>")
-        if all(r["niveau"] == 0 for r in jours_x):
-            lignes.append("  <p>Hors saison toute la semaine.</p>")
-        elif max(r["niveau"] for r in jours_x) <= 1:
-            lignes.append("  <p>Aucun jour favorable cette semaine.</p>")
-        else:
-            k = max(range(len(jours_x)), key=lambda k: (jours_x[k]["niveau"], jours_x[k]["indice_moyen"], -k))
-            lignes.append(f"  <p>Meilleur jour de la semaine : {date_longue(jours[k])} "
-                          f"({NIVEAUX_COURTS[jours_x[k]['niveau']]}).</p>")
+        k = max(range(len(jours_x)), key=lambda k: (jours_x[k]["niveau"], jours_x[k]["indice_moyen"], -k))
+        lignes.append(f"  <p>Meilleur jour de la semaine : {date_longue(jours[k])} "
+                      f"({NIVEAUX_COURTS[jours_x[k]['niveau']]}).</p>")
         if r0["niveau"] >= 2 and r0["communes"]:
             lignes.append("  <p>Communes les mieux placées aujourd'hui : "
                           f"{e(enumerer([c['nom'] for c in r0['communes'][:4]]))}.</p>")
         lignes.append("  </section>")
+    for liste, quoi in ((rien, "Aucun jour favorable cette semaine"), (hors, "Hors saison toute la semaine"),
+                        (absentes, "Pas de forêt ni de pré calculé ici")):
+        if liste:
+            lignes.append(f'  <p class="muet">{quoi} : {enumerer(liste)}.</p>')
 
     lignes += ['  <section class="faq">', "  <h2>Questions fréquentes</h2>"]
     for q, r in qr:
