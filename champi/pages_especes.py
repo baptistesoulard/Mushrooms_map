@@ -122,7 +122,7 @@ def en_cuisine(x: dict, p, R: str) -> list[str]:
     r = p.recette
     lignes += ['  <section class="recette">',
                f"  <h3>{e(r.titre)}</h3>",
-               f'  <p class="muet">Pour {e(r.pour)}</p>',
+               f'  <p class="muet">Pour {e(r.pour)} · végétarienne</p>',
                "  <h4>Ingrédients</h4>",
                "  <ul>"] + [f"    <li>{e(i)}</li>" for i in r.ingredients] + [
                "  </ul>",

@@ -1,5 +1,6 @@
 """Les portraits des espèces, pour leurs fiches (`pages_especes.py`) : où chacune pousse, des
-astuces pour la trouver, sa réputation en cuisine et une recette (demande du 2026-11-08).
+astuces pour la trouver, sa réputation en cuisine et une recette végétarienne (demandes du
+2026-11-08 : ni viande, ni poisson, ni fromage à présure animale ; test).
 
 Rien ici ne sert au calcul : les règles restent dans `especes.py`, et `especes.json` (chargé par
 la carte) n'en reçoit rien. Les textes viennent des guides de terrain (`especes.REFERENCES`) ;
@@ -58,14 +59,14 @@ PORTRAITS: dict[str, Portrait] = {
         recette=Recette(
             titre="Cèpes à la bordelaise", pour="4 personnes",
             ingredients=(f"500{U}g de cèpes", "2 gousses d'ail (ou 1 échalote)", "1 petit bouquet de persil",
-                         "3 cuillerées à soupe de graisse de canard ou d'huile", "sel, poivre"),
+                         "3 cuillerées à soupe d'huile d'olive", "sel, poivre"),
             etapes=(
                 "Brossez et essuyez les cèpes. Séparez les pieds des chapeaux ; coupez les chapeaux en "
                 "tranches épaisses, hachez les pieds.",
-                "Faites dorer les chapeaux dans la graisse bien chaude, à feu vif, une dizaine de minutes, "
+                "Faites dorer les chapeaux dans l'huile bien chaude, à feu vif, une dizaine de minutes, "
                 "en les retournant.",
                 "Ajoutez les pieds hachés, l'ail et le persil, et poursuivez 5 minutes à feu moyen.",
-                "Salez, poivrez, servez aussitôt, avec une viande grillée ou des pommes de terre sautées.",
+                "Salez, poivrez, servez aussitôt, avec des pommes de terre sautées ou une omelette.",
             )),
     ),
     "bolet_bai": Portrait(
@@ -121,7 +122,7 @@ PORTRAITS: dict[str, Portrait] = {
                 "qu'elles ont rendue.",
                 "Ajoutez le beurre et les échalotes hachées, et poursuivez 10 minutes à feu moyen, jusqu'à "
                 "ce qu'elles dorent.",
-                "Salez, poivrez, parsemez de persil ; c'est parfait avec une volaille ou des œufs brouillés.",
+                "Salez, poivrez, parsemez de persil ; c'est parfait avec des œufs brouillés ou une polenta.",
             )),
     ),
     "trompette": Portrait(
@@ -143,13 +144,13 @@ PORTRAITS: dict[str, Portrait] = {
             titre="Tagliatelles aux trompettes et à la crème", pour="4 personnes",
             ingredients=(f"300{U}g de tagliatelles", f"250{U}g de trompettes (ou 30{U}g séchées, "
                          "réhydratées 20 minutes dans l'eau tiède)", "1 échalote", f"20{U}g de beurre",
-                         f"20{U}cl de crème", "parmesan, sel, poivre"),
+                         f"20{U}cl de crème", "fromage râpé à présure végétale", "sel, poivre"),
             etapes=(
                 "Fendez, rincez et égouttez les trompettes ; coupez les plus grandes en lanières.",
                 "Faites suer l'échalote hachée dans le beurre, ajoutez les trompettes et laissez cuire 10 "
                 "minutes à feu moyen, jusqu'à ce que leur eau soit évaporée.",
                 "Versez la crème, salez, poivrez, laissez réduire 5 minutes.",
-                "Mêlez aux tagliatelles cuites et égouttées, servez avec du parmesan râpé.",
+                "Mêlez aux tagliatelles cuites et égouttées, servez avec le fromage râpé.",
             )),
     ),
     "pied_de_mouton": Portrait(
@@ -177,7 +178,7 @@ PORTRAITS: dict[str, Portrait] = {
                 "Faites-les revenir dans le beurre avec l'échalote hachée, 10 à 15 minutes à feu moyen, "
                 "jusqu'à évaporation de leur eau.",
                 "Ajoutez la crème, salez, poivrez, laissez réduire 5 minutes et parsemez de persil. Avec "
-                "une volaille ou du riz.",
+                "du riz ou des pommes de terre vapeur.",
             )),
     ),
     "lactaire": Portrait(
@@ -233,7 +234,7 @@ PORTRAITS: dict[str, Portrait] = {
                 "Faites suer l'échalote hachée dans le beurre, ajoutez les morilles (et un peu de leur eau "
                 "filtrée) et laissez cuire 15 minutes à couvert, à feu doux.",
                 "Versez la crème, salez, poivrez et laissez réduire encore 10 minutes, à découvert.",
-                "Servez avec une volaille ou des pâtes fraîches.",
+                "Servez avec des pâtes fraîches ou du riz.",
             )),
     ),
     "chanterelle_tube": Portrait(
@@ -253,16 +254,16 @@ PORTRAITS: dict[str, Portrait] = {
         saveur=3, saveur_texte="parfumée, et excellente séchée",
         cuisine="Brossez-la et rincez-la à peine. Elle rend son eau à la cuisson : laissez-la s'évaporer.",
         recette=Recette(
-            titre="Chanterelles en tube aux lardons", pour="4 personnes",
-            ingredients=(f"400{U}g de chanterelles en tube", f"100{U}g de lardons", "1 échalote",
-                         "quelques brins de persil", "poivre"),
+            titre="Chanterelles en tube aux noisettes", pour="4 personnes",
+            ingredients=(f"400{U}g de chanterelles en tube", f"40{U}g de noisettes", "1 échalote",
+                         f"20{U}g de beurre", "quelques brins de persil", "sel, poivre"),
             etapes=(
                 "Nettoyez les chanterelles ; fendez les plus grosses en deux.",
                 "Mettez-les dans une poêle chaude, sans matière grasse, 5 minutes, puis égouttez l'eau "
                 "qu'elles ont rendue.",
-                "Faites dorer les lardons, ajoutez l'échalote hachée et les chanterelles, et poursuivez 10 "
-                "minutes à feu moyen.",
-                "Poivrez (les lardons salent assez) et parsemez de persil.",
+                "Faites dorer les noisettes concassées dans le beurre, ajoutez l'échalote hachée et les "
+                "chanterelles, et poursuivez 10 minutes à feu moyen.",
+                "Salez, poivrez et parsemez de persil. Avec une polenta crémeuse ou des œufs au plat.",
             )),
     ),
     "oronge": Portrait(

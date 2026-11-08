@@ -222,6 +222,20 @@ def test_portraits_complets():
         assert "probabilit" not in texte and "chance" not in texte, code
 
 
+def test_recettes_vegetariennes():
+    """Toutes les recettes sont végétariennes (demande du 2026-11-08) : ni viande, ni poisson, ni
+    fromage à présure animale (le parmesan), ni bouillon de viande, ni dans les accompagnements."""
+    from champi.portraits import PORTRAITS
+    interdits = ("viande", "volaille", "poulet", "canard", "lardon", "jambon", "bacon", "porc", "bœuf", "veau",
+                 "agneau", "saucisse", "chorizo", "poisson", "anchois", "saumon", "crevette", "gélatine",
+                 "parmesan", "bouillon de", "fond de", "graisse")
+    for code, p in PORTRAITS.items():
+        if p.recette:
+            texte = " ".join((p.recette.titre, *p.recette.ingredients, *p.recette.etapes)).lower()
+            assert not [m for m in interdits if m in texte], (code, [m for m in interdits if m in texte])
+    assert "Pour 4 personnes · végétarienne" in fiche("cepe")
+
+
 def test_ce_qui_est_habituel_a_cote_du_verdict():
     """« Météo favorable 7 années sur 10 à cette date » sur la vignette et l'accueil ; rien pour une
     espèce hors saison, ni sans mesure."""
