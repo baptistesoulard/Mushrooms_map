@@ -337,7 +337,12 @@ def bandeau(sur_titre: str, titre: str, contenu: list[str] | None = None, fil: s
             + ["  </header>"])
 
 
+# Le seul soutien du site : un lien simple, jamais le bouton ni le script de Buy Me a Coffee.
+CAFE = "https://buymeacoffee.com/baptistesoulard"
+
+
 def pied_site(racine: str) -> str:
+
     """Le pied de page commun à toutes les pages sauf la carte : le logo, ce que fait le site, le
     plan ; le sous-bois en fond (style.css). Entre marqueurs : les pages écrites à la main le
     reçoivent de `python -m champi.pages barre`."""
@@ -348,6 +353,7 @@ def pied_site(racine: str) -> str:
     <a class="marque" href="{lien(racine, "./")}" aria-label="{NOM}, l'accueil">{svg_marque(34)}<span class="marque-nom">Champi<span>météo</span></span></a>
     <p class="pied-devise">Où les conditions sont réunies pour les champignons, forêt par forêt, d'après la
     pluie, le sol et la saison. Le site dit où chercher, jamais quoi manger.</p>
+    <p class="pied-cafe">Sans publicité : <a href="{CAFE}">offrir un café</a> à son auteur.</p>
     <nav class="pied-plan" aria-label="Plan du site">
 {plan}
     </nav>
