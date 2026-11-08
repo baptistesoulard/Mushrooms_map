@@ -68,17 +68,16 @@ def trait(nom: str) -> str:
 
 
 FONCTIONS = [
-    ("carte", "La carte à 250 m", "Chaque zone de forêt, du pâle au foncé, pour l'espèce et le jour choisis. "
-     "Les zones protégées sont hachurées ; un clic sur une zone dit pourquoi elle est notée ainsi."),
-    ("semaine", "Les 7 prochains jours", "La pluie déjà tombée et les prévisions : la carte dit si la pousse "
-     "arrive, dure ou s'arrête, jour par jour."),
-    ("coin", "Mes coins", "Vos trouvailles notées d'un appui long sur la carte. Elles restent sur votre "
-     "appareil, ou se partagent avec vos proches par un lien privé."),
-    ("explorer", "Explorer les forêts", "Sans météo ni saison : les forêts qui répondent à vos critères "
-     "(essences, roche, altitude, exposition, forêts publiques)."),
-    ("hors_ligne", "Sans réseau", "Installée sur le téléphone, la carte s'ouvre en forêt sans réseau, avec les "
-     "données de votre dernier passage en ligne."),
+    ("carte", "La carte à 250 m", "Chaque zone de forêt, du pâle au foncé ; un clic dit pourquoi."),
+    ("semaine", "Les 7 prochains jours", "Si la pousse arrive, dure ou s'arrête, jour par jour."),
+    ("coin", "Mes coins", "Vos trouvailles, gardées sur votre appareil ou partagées avec vos proches."),
+    ("explorer", "Explorer les forêts", "Les forêts selon vos critères : essences, roche, altitude, exposition."),
+    ("hors_ligne", "Sans réseau", "Installée sur le téléphone, la carte s'ouvre en forêt sans réseau."),
 ]
+
+# Sous les tableaux de la semaine (accueil, « en ce moment ») : la légende, en une ligne.
+NOTE_SEMAINE = ('  <p class="muet">Chiffre : départements aux bonnes conditions, au moins par endroits. '
+                "Un clic ouvre la carte de ce jour.</p>")
 
 
 # --- Phrases ----------------------------------------------------------------------------
@@ -207,13 +206,12 @@ def preuve(especes: list[dict], validation: dict | None, racine: str = "") -> li
     moment = [x for x in au_moment if v[x["code"]]["meteo"]["ic_ecart"][0] > 0]
     lieu = [x for x in au_lieu if v[x["code"]]["habitat"]["ic_ecart"][0] > 0]
     observations = sum(v[x["code"]]["observations"] for x in testees)
-    lignes = [f"  <p>Les règles de la carte ont été écrites avant de regarder les observations, puis "
-              f"vérifiées sur {nombre(observations)} observations datées de toute la France (GBIF, "
-              f"{validation['periode'][0]} à {validation['periode'][1]}). Pour {len(moment)} "
-              f"espèce{'s' if len(moment) > 1 else ''} sur "
-              f"{len(au_moment)}, la météo de la carte repère mieux les jours de pousse que le seul calendrier ; "
-              f"pour {len(lieu)} sur {len(au_lieu)} (les espèces de forêt aux lieux assez précis), ses forêts "
-              "distinguent mieux les lieux que la seule présence de forêt.</p>",
+    lignes = [f"  <p>Écrites avant de regarder les observations, les règles ont été vérifiées sur "
+              f"{nombre(observations)} observations (GBIF, {validation['periode'][0]} à "
+              f"{validation['periode'][1]}) : la météo de la carte repère mieux les jours de pousse que le "
+              f"calendrier pour {len(moment)} espèce{'s' if len(moment) > 1 else ''} sur {len(au_moment)} ; ses "
+              f"forêts trouvent mieux les lieux que la seule présence de forêt pour {len(lieu)} sur "
+              f"{len(au_lieu)}.</p>",
               '  <div class="tableau"><table>',
               '  <thead><tr><th>Espèce</th><th>Le bon endroit</th><th>Le bon moment</th></tr></thead><tbody>']
     for x in testees:
@@ -225,11 +223,9 @@ def preuve(especes: list[dict], validation: dict | None, racine: str = "") -> li
         lignes.append(f'  <tr><th scope="row"><a href="{racine}{chemin_espece(x["code"])}">{e(x["nom"])}</a></th>'
                       f"<td>{endroit}</td><td>{quand}</td></tr>")
     lignes += ["  </tbody></table></div>",
-               '  <p class="muet">Chaque chiffre compte, sur des paires tirées des observations, combien de '
-               "fois la carte note plus haut le bon des deux : le lieu où l'espèce a été vue plutôt qu'un lieu "
-               "où d'autres champignons l'ont été ; le jour où elle a été vue plutôt qu'un autre jour de sa "
-               f"saison, au même endroit. 50{NBSP}% : le hasard. <a href=\"{racine}validation.html\">Le détail, "
-               "avec les intervalles et les régions</a>.</p>"]
+               f'  <p class="muet">La part des paires (lieu ou jour de l\'espèce, autre lieu ou autre jour) que la '
+               f'carte classe dans le bon ordre ; 50{NBSP}% : le hasard. <a href="{racine}validation.html">Le '
+               "détail</a>.</p>"]
     return lignes
 
 
@@ -312,16 +308,15 @@ def une_carte(especes: list[dict], nat: dict, departements: list[dict], genere_l
             return {"espece": "", "image": image_partage("carte-france", genere_le),
                     "alt": f"Carte de France du jour, toutes espèces : chaque carré de {km} au meilleur verdict "
                            "de ses espèces, de « hors saison » à « bon »",
-                    "legende": f"Aujourd'hui, toutes espèces : le meilleur verdict de chaque carré de {km}.{clic}",
+                    "legende": f"Aujourd'hui, toutes espèces, par carrés de {km}.{clic}",
                     "niveaux": "".join(str(niv[c]) if c in niv else "x" for c in ordre)}
         niv = niveaux_du_jour(nat[x["code"]])
         pre = x.get("milieu") == "pre"
         return {"espece": x["code"], "image": image_partage(f"carte-france-{x['code']}", genere_le),
                 "alt": f"Carte de France du jour pour {article(x['de'])} : chaque carré de {km} au verdict de ses "
                        f"{'prés' if pre else 'forêts'}, de « hors saison » à « bon »",
-                "legende": (f"Aujourd'hui, {article(x['de'])} : le verdict des {'prés' if pre else 'forêts'} de chaque "
-                            f"carré de {km}, comme pour les départements"
-                            + (", jamais un pré." if pre else ".") + clic),
+                "legende": f"Aujourd'hui, {article(x['de'])}, par carrés de {km}.{clic}",
+
                 "niveaux": "".join(str(niv[c]) if c in niv else "x" for c in ordre)}
 
     vues = {x["code"]: vue(x) for x in choix}
@@ -411,9 +406,7 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
     hors = [article(x["de"]) for x in especes if x not in en_saison]
     lignes += ['  <section class="bloc">',
                "  <h2>En saison cette semaine</h2>",
-               f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, sur les forêts '
-               "(les prés pour les espèces "
-               "des champs) de chaque département. Les mieux placées d'abord.</p>",
+               f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}.</p>',
                '  <ul class="saison-cartes">']
     for x in en_saison:
         j0 = nat[x["code"]][0]
@@ -442,10 +435,8 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
 
     # 3. La semaine en France, d'un coup d'œil.
     lignes += ['  <section class="bloc">',
-               "  <h2>La semaine en France</h2>",
-               '  <p class="muet">Dans chaque case, le nombre de départements aux bonnes conditions, au moins par '
-               "endroits ; sa couleur, celle du mieux placé. Un clic ouvre la carte de l'espèce ce jour-là.</p>"]
-    lignes += tableau_national(especes, nat, jours)
+               "  <h2>La semaine en France</h2>"]
+    lignes += tableau_national(especes, nat, jours) + [NOTE_SEMAINE]
     lignes += ['  <p><a href="en-ce-moment.html">Les départements, espèce par espèce</a></p>',
                "  </section>"]
 
@@ -453,18 +444,15 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
     lignes += ['  <section class="bloc">',
                "  <h2>Comment ça marche</h2>",
                '  <ol class="etapes-cartes">',
-               f"    <li>{trait('foret')}<strong>La forêt</strong> Pour chaque case de 50 m : l'essence des "
-               "arbres, la roche ou le pH du sol, l'altitude, la pente et l'exposition. Chaque espèce a ses "
-               "préférences ; la carte réunit les cases en zones de 250 m.</li>",
-               f"    <li>{trait('meteo')}<strong>La météo</strong> Chaque matin, la pluie des dernières semaines, "
-               "la température du sol et le gel, d'après Météo-France et le Centre européen, puis leurs "
-               "prévisions pour 7 jours.</li>",
-               f"    <li>{trait('saison')}<strong>La saison</strong> Chaque espèce a sa période, plus précoce au "
-               "sud au printemps et plus tardive à l'automne.</li>",
+               f"    <li>{trait('foret')}<strong>La forêt</strong> Les arbres, le sol, l'altitude et "
+               "l'exposition, case par case.</li>",
+               f"    <li>{trait('meteo')}<strong>La météo</strong> La pluie des dernières semaines, la "
+               "température du sol, le gel, et 7 jours de prévisions.</li>",
+               f"    <li>{trait('saison')}<strong>La saison</strong> La période de chaque espèce, plus tôt au "
+               "sud au printemps.</li>",
                "  </ol>",
-               "  <p>L'indice multiplie les trois : un seul facteur contraire (le gel, la sécheresse, la "
-               "saison) suffit à l'éteindre. Il dit où les conditions sont réunies, pas ce que vous "
-               'trouverez. <a href="methode.html">La méthode en détail</a>.</p>',
+               "  <p>L'indice multiplie les trois : un seul facteur contraire l'éteint. Il dit où les "
+               'conditions sont réunies, pas ce que vous trouverez. <a href="methode.html">La méthode</a>.</p>',
                "  <h2>Ce que vous pouvez faire</h2>",
                '  <ul class="fonctions">']
     lignes += [f"    <li>{trait(i)}<strong>{e(t)}</strong> {e(d)}</li>" for i, t, d in FONCTIONS]
@@ -478,9 +466,8 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
     if len(preuves) > 1:
         lignes += ['  <details class="detail"><summary>Le détail, espèce par espèce</summary>'] + preuves[1:] + \
                   ["  </details>"]
-    lignes += ["  <p>Ce qu'elle ne sait pas faire : voir chaque arbre (les cartes forestières décrivent "
-               "des peuplements, souvent « en mélange »), l'humus, les coupes récentes ou les années "
-               "sans champignons, ni dire ce qui se mange.</p>",
+    lignes += ["  <p>Ce qu'elle ne voit pas : chaque arbre, l'humus, les coupes récentes. Et elle ne dit "
+               "jamais ce qui se mange.</p>",
                "  </section>"]
 
     # 6. Les départements (la liste, repliée : le choix du haut suffit le plus souvent), les questions.
@@ -507,16 +494,13 @@ def page_en_ce_moment(departements: list[dict], especes: list[dict], nat: dict, 
                 ld=[page_web("Champignons en ce moment en France", "en-ce-moment.html", genere_le),
                     fil_ariane([("./", NOM), ("en-ce-moment.html", "En ce moment")])])
     lignes = bandeau("En ce moment", "Les champignons en ce moment", [
-        f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
-        "et les sept jours suivants, sur les forêts de chaque département.</p>",
+        f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}.</p>',
         f'  <p class="en-bref">{e(en_bref(especes, nat))}</p>',
         f'  <p class="actions"><a class="bouton principal" href="carte/">Voir la carte</a>{PARTAGER}</p>'])
     # La semaine d'abord : le plus lisible. Puis une carte courte par espèce en saison.
     lignes += ["  <h2>La semaine en France</h2>"]
     lignes += tableau_national(especes, nat, jours)
-    lignes += ['  <p class="muet">Dans chaque case, le nombre de départements aux bonnes conditions, au '
-               "moins par endroits ; sa couleur, celle du mieux placé d'entre eux. Un clic ouvre la carte de "
-               "l'espèce ce jour-là.</p>",
+    lignes += [NOTE_SEMAINE,
                "  <h2>Espèce par espèce, aujourd'hui</h2>",
                '  <div class="moment-grille">']
     hors = []

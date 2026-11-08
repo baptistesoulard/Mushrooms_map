@@ -117,28 +117,26 @@
           <span><span class="pastille vide"></span>défavorable</span>
           <span>– hors saison</span>
         </div>
-        <p class="muet">Les conditions dans les forêts du département (ses prés pour les espèces des
-        champs, soulignées en tirets), comme le verdict ci-dessus. Un clic affiche l'espèce et le jour
-        sur la carte.</p>
+        <p class="muet">Espèces des prés soulignées en tirets. Un clic affiche ce jour sur la carte.</p>
         <p id="lien-departement"></p>
       </div>
 
       <div class="section">
         <h3>Par altitude</h3>
         <div class="tranches" id="tranches"></div>
-        <p class="muet">Indice moyen des forêts (des prés, pour une espèce des champs) de chaque tranche de 200 m.</p>
+        <p class="muet">Indice moyen par tranche de 200 m.</p>
       </div>
 
       <div class="section">
         <h3>Communes les mieux placées</h3>
         <ul class="communes" id="communes"></ul>
-        <p class="muet">Moyenne sur les forêts de la commune (ses prés, pour une espèce des champs). Un clic centre la carte.</p>
+        <p class="muet">Un clic centre la carte sur la commune.</p>
       </div>
 
       <div class="section">
         <h3>Où chercher en France</h3>
         <ol class="communes" id="classement"></ol>
-        <p class="muet">Indice moyen des forêts (des prés, pour une espèce des champs) de chaque département. Un clic l'affiche.</p>
+        <p class="muet">Indice moyen de chaque département. Un clic l'affiche.</p>
       </div>
     </section>
 
@@ -173,18 +171,14 @@
         <ul class="muet" id="coins-sources"></ul>
         <p class="muet" id="coins-message" aria-live="polite"></p>
         <p class="muet" id="coins-synchro" aria-live="polite" hidden></p>
-        <p class="muet">Un appui long (ou un clic droit) sur la carte note une trouvaille à cet
-        endroit. Vos coins restent dans ce navigateur. Le partage crée un fichier de vos seuls
-        coins, à envoyer à qui vous voulez ; la sauvegarde les garde tous. Pour les retrouver sur
-        tous vos appareils ou les partager avec un groupe, voir
-        <a href="a-propos.html#synchro">la synchronisation</a>.</p>
+        <p class="muet">Un appui long sur la carte note une trouvaille. Vos coins restent sur cet
+        appareil ; pour les avoir partout, <a href="a-propos.html#synchro">la synchronisation</a>.</p>
       </div>
 
       <!-- Réservées au groupe : alertes.js ne montre la section qu'avec un lien de groupe. -->
       <details class="section alertes" id="alertes" hidden>
         <summary><h3>Mes alertes</h3></summary>
-        <p class="muet">Une notification sur cet appareil quand une espèce devient favorable dans
-        votre département au cours des 7 prochains jours, puis un rappel la veille.</p>
+        <p class="muet">Prévenu quand une espèce devient favorable dans les 7 jours, puis la veille.</p>
         <ul class="communes" id="alertes-liste"></ul>
         <p class="muet" id="alertes-etat" aria-live="polite"></p>
         <form id="alertes-form" hidden>
@@ -201,8 +195,8 @@
 
       <details class="section explorer" id="explorer">
         <summary><h3>Explorer les forêts</h3></summary>
-        <p class="muet">Sans météo ni saison : les forêts qui répondent à vos critères, case par
-        case. Les zones protégées restent hachurées.</p>
+        <p class="muet">Les forêts selon vos critères, sans météo ni saison.</p>
+
         <label class="case"><input type="checkbox" id="explorer-actif"> Afficher ces forêts
         <span class="pastille exploration"></span> au lieu de l'indice</label>
         <button type="button" class="lien" id="explorer-espece">Partir des préférences de l'espèce choisie</button>

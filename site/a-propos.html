@@ -70,41 +70,29 @@
   <h2>Ce que le site garde et ce qu'il appelle</h2>
   <ul>
     <li>Le site ne dépose aucun cookie et ne mesure pas l'audience.</li>
-    <li>Il garde dans votre navigateur quatre informations : la dernière espèce consultée
-    (clé <code>champi-espece</code>) et le dernier département affiché
-    (<code>champi-departement</code>), pour les rouvrir à la visite suivante, et le fait d'avoir
-    vu la présentation de la carte (<code>champi-guide</code>), et le fond de carte choisi
-    (<code>champi-fond</code>). Elles ne quittent jamais votre appareil.</li>
-    <li>Vos coins (« Mes coins ») sont gardés au même endroit (clés <code>champi-coins</code> et
-    <code>champi-coins-effaces</code>, la liste des trouvailles effacées) : le site n'a pas de
-    serveur qui pourrait les recevoir. Ils disparaissent si vous effacez les données du site,
-    et Safari les efface de lui-même après sept jours sans visite (sauf si le site est ajouté à
-    l'écran d'accueil) : sauvegardez-les dans un fichier, ou synchronisez-les (ci-dessous).
-    Partager vos coins crée un fichier que vous envoyez vous-même ; ceux qu'on vous a confiés
-    n'y figurent pas.</li>
-    <li>Pour s'ouvrir sans réseau en forêt, le site garde dans le navigateur une copie de ses
-    propres fichiers et des données déjà consultées (caches <code>champi-hors-ligne-…</code>) :
-    rien d'autre, ni les fonds de carte, ni vos coins, qui ont leur propre place. Effacer les
-    données du site la vide.</li>
-    <li>La carte publique montre l'indice par zones de 250 m. La carte fine, par cases de 50 m,
-    est publiée chiffrée : avec le mot de passe (Mes outils), votre navigateur la déchiffre
-    lui-même, et garde la clé qui en est tirée (clé <code>champi-carte-fine</code>), pas le mot
-    de passe, pour ne pas le redemander. Le mot de passe ne quitte jamais l'appareil.
-    « Revenir aux zones de 250 m » efface la clé.</li>
-    <li>Si vous activez la synchronisation, le jeton GitHub est gardé dans le navigateur (clé
-    <code>champi-synchro</code>), ainsi que le prénom qui signe vos coins
-    (<code>champi-nom</code>) ; vos coins sont envoyés à <code>api.github.com</code>, dans le
-    dépôt privé du lien, et nulle part ailleurs.</li>
-    <li>À l'ouverture, la carte demande la position de l'appareil pour se placer sur votre
-    département et afficher où vous êtes ; si vous refusez, elle ne redemande plus (le
-    navigateur garde votre choix). Elle sert aussi à « Ma position » et à « Noter une
-    trouvaille à ma position ». Elle n'est envoyée nulle part.</li>
-    <li>Les fonds de carte sont chargés directement depuis les serveurs de l'IGN
-    (<code>data.geopf.fr</code>), qui reçoivent donc votre adresse IP, comme pour toute carte
-    en ligne. La bibliothèque de carte (Leaflet) est servie par le site lui-même.</li>
-    <li>« Y aller », dans la fenêtre d'une case ou d'un coin, ouvre Google Maps, Waze ou Plans
-    avec les coordonnées du point : rien ne part tant que vous ne touchez pas l'un de ces liens,
-    et c'est alors l'application choisie qui les reçoit.</li>
+    <li>Il garde dans votre navigateur, sans jamais les envoyer : la dernière espèce
+    (<code>champi-espece</code>) et le dernier département (<code>champi-departement</code>)
+    consultés, la présentation déjà vue (<code>champi-guide</code>) et le fond de carte choisi
+    (<code>champi-fond</code>).</li>
+    <li>Vos coins aussi (<code>champi-coins</code>, et <code>champi-coins-effaces</code> pour
+    ceux que vous avez effacés) : le site n'a pas de serveur. Effacer les données du site les
+    efface, et Safari le fait seul après sept jours sans visite (sauf appli ajoutée à l'écran
+    d'accueil) : sauvegardez-les dans un fichier, ou synchronisez-les (ci-dessous). Un partage
+    ne contient que vos coins, jamais ceux qu'on vous a confiés.</li>
+    <li>Pour s'ouvrir sans réseau, une copie des fichiers du site et des données déjà vues
+    (<code>champi-hors-ligne-…</code>), sans fonds de carte ni coins.</li>
+    <li>La carte fine (50 m) est publiée chiffrée : votre navigateur la déchiffre avec le mot de
+    passe, puis garde la clé qui en est tirée (<code>champi-carte-fine</code>), jamais le mot de
+    passe. « Revenir aux zones de 250 m » l'efface.</li>
+    <li>Avec la synchronisation : le jeton GitHub (<code>champi-synchro</code>) et le prénom qui
+    signe vos coins (<code>champi-nom</code>) ; vos coins partent à <code>api.github.com</code>,
+    dans le dépôt privé du lien, nulle part ailleurs.</li>
+    <li>La position de l'appareil, demandée à l'ouverture pour vous placer sur la carte, n'est
+    envoyée nulle part ; refusée, elle n'est plus redemandée.</li>
+    <li>Les fonds de carte viennent de l'IGN (<code>data.geopf.fr</code>), qui reçoit votre
+    adresse IP comme pour toute carte en ligne. Leaflet est servi par le site lui-même.</li>
+    <li>« Y aller » ouvre Google Maps, Waze ou Plans avec les coordonnées du point, seulement
+    quand vous touchez l'un de ces liens.</li>
   </ul>
 
   <h2 id="synchro">Retrouver ses coins sur tous ses appareils</h2>
@@ -156,17 +144,13 @@
   </ul>
 
   <h2 id="alertes">Recevoir des alertes</h2>
-  <p>Les alertes sont réservées aux membres d'un groupe : la section « Mes alertes » de la carte
-  n'apparaît qu'une fois le lien de groupe ouvert sur l'appareil. Chacun y choisit un département,
-  des espèces et un seuil. Chaque matin,
-  une notification part sur son appareil quand l'une de ces espèces devient favorable dans les
-  7 prochains jours, puis un rappel la veille. Les alertes passent par le lien de groupe : les
-  choix (prénom, départements, espèces, seuil) et l'adresse technique de notification de
-  l'appareil sont écrits dans le dépôt privé du groupe, que ses membres peuvent lire. Cet
-  appareil garde son identifiant et ses alertes (clé <code>champi-alertes</code>). Le contenu des
-  notifications est chiffré : le service de notification du navigateur (Google, Apple ou
-  Mozilla) le transporte sans le lire. Sur iPhone, il faut d'abord ajouter la carte à l'écran
-  d'accueil.</p>
+  <p>Réservées aux membres d'un groupe : « Mes alertes » n'apparaît qu'une fois le lien de
+  groupe ouvert. Chacun choisit un département, des espèces et un seuil ; une notification part
+  quand l'une d'elles devient favorable dans les 7 jours, puis un rappel la veille.</p>
+  <p>Ces choix (prénom compris) et l'adresse de notification de l'appareil sont écrits dans le
+  dépôt privé du groupe, lisible par ses membres ; l'appareil garde ses alertes
+  (<code>champi-alertes</code>). Les notifications sont chiffrées : Google, Apple ou Mozilla les
+  transportent sans les lire. Sur iPhone, ajoutez d'abord la carte à l'écran d'accueil.</p>
 
   <h2>Mentions légales</h2>
   <p>Site personnel, non commercial, publié par l'auteur du dépôt GitHub

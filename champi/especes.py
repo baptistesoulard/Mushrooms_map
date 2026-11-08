@@ -120,9 +120,8 @@ ESPECES: list[Espece] = [
                    "(bolet de Satan), et bolets dont la chair bleuit.",
         repere="L'amanite tue-mouches (chapeau rouge à flocons blancs, toxique) vit avec les "
                "mêmes bouleaux, épicéas et pins, et sort en même temps à l'automne : visible de "
-               "loin, elle signale un coin où chercher. Sous les chênes, sur calcaire et pour le "
-               "cèpe d'été, où elle est rare, son absence ne dit rien. La BD Forêt n'a pas de "
-               "classe « bouleau » : la carte note ces bois comme des feuillus en mélange.",
+               "loin, elle signale un coin où chercher. Son absence, elle, ne dit rien.",
+
     ),
     Espece(
         code="bolet_bai", nom="Bolet bai", de="du bolet bai", latin="Imleria badia",

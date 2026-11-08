@@ -127,6 +127,12 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   courte par espèce en saison (`pages_accueil.carte_moment` : étiquette, cinq départements, les autres
   repliés mais liés) ; une page département ne détaille que les espèces qui ont au moins un jour
   favorable, les autres tiennent en une phrase (le tableau de la semaine les montre toutes).
+- **Textes courts (2026-11-08), sur tout le site** : une légende reste une légende (pastilles,
+  `legende-semaine`), jamais une phrase ; une explication tient en une phrase ; le calcul s'explique
+  une fois, sur `methode.html`, et les autres pages y renvoient (« Calculé le … », sans redire sur
+  quoi). Pas de 46° N ni de Hopkins hors de la méthode : « au centre de la France ; au sud, plus tôt
+  au printemps et plus tard à l'automne » (`pages_especes.CENTRE`, `SUD`).
+
 - **Images de partage** (`partage.py` → `data/partage/`) : l'aperçu des liens dans les
   messageries (`og:image`, 1200 × 630), la carte du jour (la meilleure espèce de chaque pixel
   de 1,15 km, jamais plus fin) et la semaine. Leur adresse change à chaque export

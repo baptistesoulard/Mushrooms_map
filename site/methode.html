@@ -43,14 +43,10 @@
   <header class="bandeau">
   <p class="sur-titre">Méthode</p>
   <h1>Comment la carte est calculée</h1>
-  <p>Chaque matin, le site publie la météo du jour ; votre navigateur en déduit, pour chaque
-  espèce, un indice entre 0 et 1 sur les forêts de France métropolitaine, pour aujourd'hui et
-  les sept jours suivants. Les forêts sont décrites case par case (50 m) ; la carte publique les
-  réunit en zones de 250 m : chaque zone prend l'habitat le plus favorable de ses forêts, et la
-  météo à leur altitude moyenne. Elle dit où chercher sans envoyer tout le monde au même arbre.
-  En vue large, chaque pixel résume environ 1 km² ; en vous approchant, la carte affiche les
-  zones. Leur précision est celle des données qui les décrivent : fine pour le relief et les
-  contours de forêt, plus grossière pour la météo, grossière pour la roche (voir plus bas).</p>
+  <p>Chaque matin, pour chaque espèce, un indice de 0 à 1 sur les forêts de France, aujourd'hui
+  et pour les sept jours suivants. Les forêts sont décrites par cases de 50 m, que la carte
+  publique réunit en zones de 250 m : de quoi dire où chercher, sans envoyer tout le monde au
+  même arbre.</p>
   </header>
 
   <h2>Un produit de deux familles de facteurs</h2>
@@ -58,55 +54,42 @@
   peut à lui seul fermer la porte. Une forêt idéale sous une gelée ne donne rien, une semaine
   idéale dans un pré non plus.</p>
   <ul>
-    <li><strong>Habitat</strong> (ne change pas d'un jour à l'autre) : affinité de l'espèce pour
-    l'essence dominante de la forêt, pour la roche (ou pour le pH du sol, voir plus bas), pour
-    l'altitude, et une pénalité pour les pentes fortes, où le sol est mince et le terrain
-    dangereux. Les bois en zone urbanisée (parcs, quartiers, zones d'activités, d'après Corine
-    Land Cover) ne comptent pas comme forêt : ils n'ont pas d'indice.</li>
-    <li><strong>Météo</strong> (recalculée chaque jour) : la saison de l'espèce, la pluie tombée
-    pendant une fenêtre de quelques jours à trois semaines avant (la pousse suit la pluie avec un
-    délai), la température moyenne du sol sur la semaine précédente, et le nombre de jours de
+    <li><strong>Habitat</strong>, fixe : l'essence de la forêt, la roche (ou le pH du sol),
+    l'altitude, et une pénalité pour les pentes fortes. Les bois des zones urbanisées n'ont pas
+    d'indice.</li>
+    <li><strong>Météo</strong>, chaque jour : la saison, la pluie tombée une à trois semaines
+    avant (la pousse suit la pluie avec un délai), la température du sol de la semaine, le
     gel.</li>
   </ul>
-  <p>Ce n'est pas une probabilité. Personne ne recense les endroits où les champignons ne
-  poussent pas, et aucune base de données ne permettrait d'en calibrer une. L'indice classe les
-  forêts entre elles et d'un jour à l'autre ; la page <a href="validation.html">Face aux
-  observations</a> mesure s'il le fait mieux que le hasard.</p>
+  <p>Ce n'est pas une probabilité : personne ne recense les endroits où les champignons ne
+  poussent pas. L'indice classe les forêts entre elles et les jours entre eux ; la page
+  <a href="validation.html">Face aux observations</a> mesure s'il le fait mieux que le hasard.</p>
 
   <h2 id="habituel">Ce qui est habituel à cette date</h2>
-  <p>Un verdict ne dit pas s'il sort de l'ordinaire. Début novembre, le pied-de-mouton est en
-  bonnes conditions presque partout la plupart des années ; le cèpe, rarement. À côté du verdict,
-  le site donne donc la part des jours où la météo de l'espèce (saison, pluie, sol et gel, sans
-  l'habitat) lui est favorable à la même époque de l'année : assez pour rendre « bonne » une forêt
-  qui lui convient bien. Elle est mesurée sur la météo passée, aux lieux où ont été observés les
-  champignons de la <a href="validation.html">vérification</a> (le détail est dans le tableau des
-  paramètres communs, plus bas). Aucune règle n'en dépend : c'est un repère pour lire le jour, pas
-  un réglage.</p>
+  <p>Début novembre, le pied-de-mouton est en bonnes conditions presque partout la plupart des
+  années ; le cèpe, rarement. À côté du verdict, le site donne donc la part des années où la
+  météo de l'espèce (sans l'habitat) lui est favorable à cette date, mesurée sur la météo passée
+  des lieux de la <a href="validation.html">vérification</a>. Un repère pour lire le jour :
+  aucune règle n'en dépend.</p>
 
   <h2>Le relief corrige la météo</h2>
-  <p>La météo vient du modèle AROME de Météo-France, sur une grille de 2,5 km, pour les jours
-  passés et les deux prochains ; au-delà, des modèles ARPEGE (environ 10 km) et de l'ECMWF
-  (environ 25 km), qui fournit aussi la température du sol. En montagne, deux forêts séparées
-  de 2 km peuvent avoir 1 000 m d'écart d'altitude : la température y est donc recalculée case
-  par case, avec la baisse habituelle de la température avec l'altitude.
-  L'exposition compte aussi : un versant sud a un sol un peu plus chaud et sèche plus vite, un
-  versant nord reste frais et humide. C'est ce qui fait « descendre » la zone de pousse à mesure
-  que l'automne avance, et la fait remonter en été quand le sol de plaine est trop chaud.</p>
-  <p>Grâce au délai entre la pluie et la pousse, la carte des jours suivants repose surtout sur
-  la pluie déjà tombée : la prévision ne pèse vraiment que sur la température et le gel.</p>
-  <p>Comparée à 1 801 pluviomètres de Météo-France (automne 2025 et printemps 2026), la pluie
-  d'AROME n'est pas biaisée en moyenne : elle est utilisée telle quelle.</p>
+  <p>La météo vient d'AROME (Météo-France, 2,5 km) pour les jours passés et les deux prochains,
+  puis d'ARPEGE (10 km) et de l'ECMWF (25 km), qui donne aussi la température du sol. En
+  montagne, deux forêts à 2 km l'une de l'autre peuvent avoir 1 000 m d'écart : la température
+  est recalculée case par case selon l'altitude, puis selon l'exposition (un versant sud est plus
+  chaud et plus sec).</p>
+  <p>La pousse suit la pluie avec un délai : les jours à venir reposent surtout sur la pluie déjà
+  tombée. Face à 1 801 pluviomètres de Météo-France, la pluie d'AROME n'est pas biaisée : elle
+  est utilisée telle quelle.</p>
 
   <h2>Du nord au sud</h2>
-  <p>Les saisons et les plafonds d'altitude ont été écrits pour la Haute-Savoie (46° N). Ailleurs,
-  ils suivent la loi bioclimatique de Hopkins : par degré de latitude vers le sud, le printemps
-  arrive environ 4 jours plus tôt, l'automne finit 4 jours plus tard, et la forêt monte de
-  122 m. Il n'y a pas d'altitude minimale : toutes ces espèces poussent jusqu'au bord de la mer.</p>
+  <p>Saisons et altitudes sont écrites pour la Haute-Savoie (46° N, à peu près le milieu de la
+  France). Ailleurs, elles suivent la loi de Hopkins : par degré vers le sud, le printemps
+  arrive 4 jours plus tôt, l'automne finit 4 jours plus tard, et la forêt monte de 122 m.</p>
 
   <h2>Les règles, espèce par espèce</h2>
-  <p>Les seuils sont des ordres de grandeur tirés des guides de terrain et de la littérature sur
-  la fructification. Ils n'ont pas été ajustés sur les observations, qui sont trop peu
-  nombreuses pour cela : elles servent à vérifier, pas à régler.</p>
+  <p>Des ordres de grandeur tirés des guides de terrain et de la littérature. Les observations,
+  trop peu nombreuses, servent à les vérifier, pas à les régler.</p>
   <div id="especes"><p class="muet">Chargement des règles…</p></div>
 
   <h2>Communs à toutes les espèces</h2>
@@ -114,26 +97,19 @@
 
   <h2>Ce que la carte ne sait pas</h2>
   <ul>
-    <li><strong>L'essence est souvent floue.</strong> La BD Forêt de l'IGN ne nomme une essence
-    que lorsqu'elle domine nettement. Beaucoup de forêts sont « feuillus en mélange » ou
-    « mixtes » : le hêtre, si important pour la trompette, n'est souvent pas identifié.</li>
-    <li><strong>Les règles viennent des Alpes.</strong> Les affinités des espèces pour les
-    essences du Midi (pin d'Alep, chênes verts, pin maritime) sont des ordres de grandeur moins
-    sûrs. Elles sont vérifiées à part sur le pourtour méditerranéen
-    (<a href="validation.html">face aux observations</a>) ; les Landes de Gascogne sont trop peu
-    observées pour être jugées.</li>
-    <li><strong>La roche est grossière.</strong> La carte géologique utilisée est au
-    1/1 000 000 : elle distingue les grands ensembles (massifs calcaires, cristallin, molasse),
-    pas les variations locales du sol, ni l'acidification de l'humus sous les résineux.</li>
-    <li><strong>Le pH du sol est une estimation.</strong> Il vient de SoilGrids (ISRIC), qui le
-    prédit à environ 250 m à partir du climat, du relief, de la géologie et de la végétation,
-    surtout appris sur des sols agricoles. Il distingue bien les sols acides mais ramène les sols
-    calcaires vers 6 : il remplace donc la roche pour les espèces des sols acides (cèpe, bolet
-    bai, girolle), où il améliore nettement l'habitat face aux observations, et pas pour les
-    espèces des sols calcaires, où il le dégradait (trompette).</li>
-    <li><strong>Les zones urbanisées sont grossières.</strong> Corine Land Cover ne délimite rien
-    sous 25 ha : un petit bois de village peut être exclu avec le village, un grand bois enclavé
-    dans une ville reste une forêt.</li>
+    <li><strong>L'essence est souvent floue.</strong> Beaucoup de forêts de la BD Forêt sont
+    « feuillus en mélange » ou « mixtes » : le hêtre, si important pour la trompette, y est
+    souvent invisible.</li>
+    <li><strong>Les règles viennent des Alpes.</strong> Les essences du Midi (pin d'Alep, chênes
+    verts, pin maritime) sont moins sûres, vérifiées à part sur le pourtour méditerranéen ; les
+    Landes de Gascogne, trop peu observées, ne se jugent pas.</li>
+    <li><strong>La roche est grossière.</strong> Au 1/1 000 000 : les grands ensembles, pas le
+    sol de chaque versant.</li>
+    <li><strong>Le pH du sol est une estimation</strong> (SoilGrids, 250 m). Juste pour les sols
+    acides, il tasse les sols calcaires vers 6 : il ne remplace la roche que pour le cèpe, le
+    bolet bai et la girolle.</li>
+    <li><strong>Les zones urbanisées sont grossières.</strong> Rien sous 25 ha : un petit bois
+    de village peut disparaître avec le village.</li>
     <li><strong>La forêt n'est pas datée finement.</strong> Coupes récentes, chablis, plantations :
     la BD Forêt date de plusieurs années.</li>
     <li><strong>Ni la mousse, ni le bois mort, ni l'âge des arbres</strong>, qui comptent pour

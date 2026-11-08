@@ -82,8 +82,7 @@ def rediger(esp: dict, faits: dict) -> dict:
 
     meilleure = faits.get("meilleure_tranche")
     if meilleure and n >= 2:
-        phrases.append(f"Les meilleures conditions se situent entre {altitude(meilleure[0])} et "
-                       f"{altitude(meilleure[1])}.")
+        phrases.append(f"Surtout entre {altitude(meilleure[0])} et {altitude(meilleure[1])} d'altitude.")
 
     lim = faits["limitant"]
     j_min, j_max = esp["pluie_jours"]
@@ -117,7 +116,7 @@ def rediger(esp: dict, faits: dict) -> dict:
         phrases.append("Début de saison : les premières pousses restent rares." if faits["debut_saison"]
                        else "Fin de saison : les pousses se raréfient.")
     else:
-        phrases.append("La pluie des dernières semaines et la température du sol sont favorables.")
+        phrases.append("Pluie et température du sol favorables.")
 
     return {"niveau": n, "verdict": NIVEAUX[n], "phrases": phrases}
 

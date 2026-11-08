@@ -93,8 +93,8 @@ def test_preuve_chiffres_de_la_validation():
         "morille": {"observations": 500, "habitat": {"n": 12},
                     "meteo": {"auc_saison": 0.678, "auc_calendrier": 0.701, "ic_ecart": [-0.06, 0.02]}}}}}}
     html = "\n".join(A.preuve(ESPECES, v))
-    assert "vérifiées sur 1\u00a0700 observations datées de toute la France (GBIF, 1995 à 2026)" in html
-    assert "Pour 1 espèce sur 2, la météo" in html and "pour 1 sur 1 (les espèces de forêt" in html
+    assert "vérifiées sur 1 700 observations (GBIF, 1995 à 2026)" in html
+    assert "que le calendrier pour 1 espèce sur 2" in html and "présence de forêt pour 1 sur 1." in html
     assert "63 % (forêt seule : 61 %)" in html and "65 % (calendrier seul : 58 %)" in html
     assert "trop peu de cas" in html                            # la morille, sans test d'habitat
     assert A.preuve(ESPECES, None) == ["  <p>La vérification face aux observations n'est pas encore publiée.</p>"]
@@ -129,7 +129,7 @@ def test_carte_de_la_une():
     contours = carte_departements.charger()
     page = A.page_accueil(DEPS, ESPECES, nat, {}, JOURS, None, GENERE_LE, contours=contours)
     assert A.carre_km() == 6
-    assert f"le verdict des forêts de chaque carré de 6{NBSP}km, comme pour les départements." in page
+    assert f"par carrés de 6{NBSP}km." in page
     assert re.findall(r'<span class="pastille n(\d)"></span>', page.split('class="une-carte"')[1])[:5] == list("43210")
     une = page.split('<figure class="une-carte">')[1].split("</figure>")[0]
     assert re.findall(r'data-une="(\w+)" aria-pressed="(\w+)"', une) == [
@@ -203,7 +203,7 @@ def test_ce_qui_est_habituel_a_cote_du_verdict():
     assert '<p class="habituel">Météo favorable 7 années sur 10 à cette date.</p>' in accueil
     cepe = next(x for x in especes if x["code"] == "cepe")
     fiche = pages_especes.page_espece(cepe, REGLES["communs"], LEGENDES, nat["cepe"], JOURS, NOMS, None, GENERE_LE)
-    assert "Météo favorable 1 année sur 10 à cette date, d'après trente ans de météo passée" in fiche
+    assert "Météo favorable 1 année sur 10 à cette date (" in fiche
     assert 'href="../../methode.html#habituel"' in fiche
     assert "habituel" not in pages_especes.page_index(ESPECES, nat, JOURS, NOMS, GENERE_LE)
 
@@ -216,7 +216,7 @@ def test_fiche_d_une_espece_des_pres():
     page = pages_especes.page_espece(rose, REGLES["communs"], LEGENDES, nat["rose_pres"], JOURS, NOMS, None, GENERE_LE)
     assert "../carte/?espece=rose_pres" not in page and "Forêts favorables" not in page
     assert "Milieux favorables : prairies." in page and "Pas de carte des prés" in page
-    assert "le plus de prés favorables d'abord" in page and "demandez son accord" in page
+    assert "demandez son accord" in page
     assert '<a class="bouton principal" href="../../en-ce-moment.html#rose_pres">' in page
     oronge = next(x for x in ESPECES if x["code"] == "oronge")
     assert pages_especes.pronom(oronge) == "elle"

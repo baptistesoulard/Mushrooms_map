@@ -195,9 +195,8 @@ def section_forets(forets: list[dict], especes: list[dict], jours: list[date], l
         lignes.append(f'    <tr><th scope="row">{e(f["nom"])}<span class="cl">{nombre(f["ha"])} ha{statut}</span></th>'
                       f"<td>{e(auj)}</td><td>{e(semaine)}</td></tr>")
     lignes += ["  </tbody></table></div>",
-               '  <p class="muet">Une forêt publique peut abriter une réserve ou relever d\'un arrêté local : la '
-               "carte hachure les zones protégées, sans indice ; renseignez-vous auprès de l'ONF ou de la mairie. "
-               "Forêts : IGN, BD TOPO (d'après l'ONF).</p>"]
+               '  <p class="muet">Une forêt publique peut avoir sa réserve ou son arrêté : renseignez-vous auprès '
+               "de l'ONF ou de la mairie. Forêts : IGN, BD TOPO.</p>"]
     return lignes
 
 
@@ -210,11 +209,10 @@ def questions(dep: dict, especes: list[dict], resumes: dict, jours: list[date], 
     r0 = resumes[x["code"]][0] if x else None
     y, k = meilleur_moment(especes, resumes, len(jours))
     sortie = [(f"Y a-t-il des champignons en ce moment {lieu} ?",
-               f"{' '.join(synthese(especes, resumes, jours))} Calculé le {instant_paris(genere_le)}, d'après la "
-               "pluie des dernières semaines, la température du sol et la saison, sur les forêts du département.")]
+               f"{' '.join(synthese(especes, resumes, jours))} Calculé le {instant_paris(genere_le)}.")]
 
-    carte = (f"La carte montre chaque zone de 250{NBSP}m de forêt ; son filtre « Forêts publiques seulement » "
-             "garde les forêts domaniales et communales, où une cueillette familiale est en général tolérée.")
+    carte = ("Sur la carte, le filtre « Forêts publiques seulement » garde les forêts où une cueillette "
+             "familiale est en général tolérée.")
     bonnes = [(f, z, n) for f, z, n in classer_forets(forets or [], especes) if n >= 2][:3]
     if bonnes:
         carte = ("Parmi les forêts publiques, les mieux placées aujourd'hui sont "
@@ -227,7 +225,7 @@ def questions(dep: dict, especes: list[dict], resumes: dict, jours: list[date], 
                       f"{enumerer([c['nom'] for c in r0['communes'][:4]])}.")
         if r0.get("meilleure_tranche"):
             a, b = r0["meilleure_tranche"]
-            ou.append(f"Les meilleures conditions se situent entre {altitude(a)} et {altitude(b)}.")
+            ou.append(f"Surtout entre {altitude(a)} et {altitude(b)} d'altitude.")
         if x.get("milieu") == "pre":
             ou.append("Les prés sont presque tous privés : la carte les montre commune par commune, jamais pré par pré.")
         sortie.append((f"Où chercher des champignons {lieu} ?", " ".join(ou + [carte])))
@@ -254,12 +252,10 @@ def questions(dep: dict, especes: list[dict], resumes: dict, jours: list[date], 
     sortie.append((f"Quels champignons chercher {lieu} cette semaine ?", reponse))
 
     sortie.append((f"A-t-on le droit de ramasser des champignons {lieu} ?",
-                   "Les champignons appartiennent au propriétaire du terrain. En forêt publique (domaniale ou "
-                   "communale), une cueillette familiale est en général tolérée, dans la limite des règles "
-                   "locales ; en forêt privée, il faut l'accord du propriétaire. Ramasser sans autorisation est "
-                   "une contravention en dessous de 10 litres, un délit au-delà (Code forestier). Beaucoup de "
-                   "préfectures limitent la cueillette par un arrêté : renseignez-vous en préfecture, en mairie ou "
-                   "auprès de l'ONF avant une sortie."))
+                   "Les champignons appartiennent au propriétaire du terrain : en forêt publique, une cueillette "
+                   "familiale est en général tolérée ; en forêt privée, il faut son accord. Sans autorisation, "
+                   "c'est une contravention sous 10 litres, un délit au-delà. Beaucoup de préfectures limitent la "
+                   "cueillette par arrêté : renseignez-vous en mairie ou auprès de l'ONF."))
     return sortie
 
 
@@ -294,11 +290,10 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
     phrases = synthese(especes, resumes, jours)
     lignes = bandeau(
         f"Département · {code}", f"Où trouver des champignons {e(lieu)} cette semaine",
-        [f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}, pour aujourd\'hui '
-         "et les sept jours suivants, sur les forêts du département (sur ses prés, pour les espèces des "
-         "champs).</p>",
+        [f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}.</p>',
          f'  <p class="en-bref">{e(phrases[0])}</p>']
-        + [f"  <p>{e(p)}</p>" for p in phrases[1:]]
+        # Les espèces hors saison : en bas de page, avec celles qui n'ont aucun jour favorable.
+        + [f"  <p>{e(p)}</p>" for p in phrases[1:] if not p.startswith("Hors saison")]
         + [f'  <p class="actions"><a class="bouton principal" href="{carte}">Voir sur la carte</a>{PARTAGER}</p>'],
         fil=f'<p class="fil"><a href="../">Départements</a> › {e(nom)}</p>')
     if (cles := chiffres(especes, resumes, jours)):
@@ -328,9 +323,7 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
                f"  <thead><tr><th></th>{colonnes}</tr></thead>",
                f"  <tbody>{''.join(corps)}</tbody>",
                "  </table></div>", LEGENDE.rstrip("\n"),
-               '  <p class="muet">Chaque case résume les forêts du département ce jour-là, ou ses prés pour '
-               "les espèces des champs. Un clic l'affiche sur la carte, forêt par forêt ; les prés n'ont pas "
-               "de carte fine, ils sont presque tous privés.</p>"]
+               '  <p class="muet">Un clic ouvre ce jour sur la carte.</p>']
 
     # Un bloc par espèce qui a au moins un jour favorable ; les autres tiennent en une phrase (le
     # tableau de la semaine les montre toutes).
@@ -350,12 +343,14 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
         lignes.append(f'  <section class="carte-espece"><h3><a href="{R}{chemin_espece(x["code"])}">{e(x["nom"])}</a> '
                       f'<span class="latin">{e(x["latin"])}</span></h3>')
         r0 = jours_x[0]
-        lignes.append(f"  <p><strong>Aujourd'hui : {e(r0['verdict'])}.</strong> {e(' '.join(r0['phrases']))}</p>")
         k = max(range(len(jours_x)), key=lambda k: (jours_x[k]["niveau"], jours_x[k]["indice_moyen"], -k))
-        lignes.append(f"  <p>Meilleur jour de la semaine : {date_longue(jours[k])} "
-                      f"({NIVEAUX_COURTS[jours_x[k]['niveau']]}).</p>")
+        # Le meilleur jour, seulement s'il n'est pas aujourd'hui.
+        mieux = (f" Meilleur jour : {date_longue(jours[k])} ({NIVEAUX_COURTS[jours_x[k]['niveau']]})."
+                 if k > 0 and jours_x[k]["niveau"] > r0["niveau"] else "")
+        lignes.append(f"  <p><strong>Aujourd'hui : {e(r0['verdict'])}.</strong> {e(' '.join(r0['phrases']))}"
+                      f"{e(mieux)}</p>")
         if r0["niveau"] >= 2 and r0["communes"]:
-            lignes.append("  <p>Communes les mieux placées aujourd'hui : "
+            lignes.append("  <p>Communes les mieux placées : "
                           f"{e(enumerer([c['nom'] for c in r0['communes'][:4]]))}.</p>")
         lignes.append("  </section>")
     for liste, quoi in ((rien, "Aucun jour favorable cette semaine"), (hors, "Hors saison toute la semaine"),
@@ -366,8 +361,7 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
     lignes += ['  <section class="faq">', "  <h2>Questions fréquentes</h2>"]
     for q, r in qr:
         lignes += [f"  <h3>{e(q)}</h3>", f"  <p>{e(r)}</p>"]
-    lignes += ['  <p class="muet">Les règles de la cueillette, les sosies dangereux et les centres antipoison : '
-               f'<a href="{R}avant-de-partir.html">avant de partir</a>.</p>', "  </section>"]
+    lignes += ["  </section>"]
 
     if voisins:
         lignes += ["  <h2>Les départements voisins</h2>", '  <ul class="voisins">']
@@ -399,9 +393,9 @@ def page_index(departements: list[dict], especes: list[dict], resumes: dict, jou
         return "x" if n is None else str(n)
 
     lignes = bandeau("Départements", "Champignons par département", [
-        '  <p class="chapeau">Choisissez une espèce et un jour : chaque département prend la couleur de '
-        "ses conditions, d'après ses forêts (ses prés pour les espèces des champs). Un clic ouvre sa "
-        "page, avec la semaine de chaque espèce.</p>",
+        '  <p class="chapeau">Choisissez une espèce et un jour ; un clic sur un département ouvre sa '
+        "semaine.</p>",
+
         f'  <p class="muet"{calcule_pour(jours)}>Calculé le {instant_paris(genere_le)}.</p>'])
     if contours:
         # Les choix (cachés sans JavaScript : la carte montre alors l'espèce du moment, aujourd'hui).

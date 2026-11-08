@@ -572,6 +572,7 @@ figure.dessin { display: grid; place-items: center; background: var(--surface-2)
 .mois .possible, .calendrier td.possible, .pastille.cal-possible { background: var(--classe-1); }
 .mois .plein, .calendrier td.plein, .pastille.cal-plein { background: var(--classe-3); color: #fff; }
 .mois .actuel { outline: 2px solid var(--texte); outline-offset: 0; }
+.pastille.cal-actuel { background: transparent; border: 2px solid var(--texte); }
 .legende-mois span { width: 14px; height: 14px; line-height: 14px; }
 .saison-mois { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 /* Toutes les espèces : l'espèce du moment, puis une fiche par espèce. */

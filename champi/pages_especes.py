@@ -17,9 +17,14 @@ from .pages import (MOIS_COURTS, NIVEAUX_COURTS, PARTAGER, calendrier_mois, cred
 from .photos import charger as charger_photos
 from .pages_accueil import etat_espece
 from .prairies import NOMS_MILIEUX
-from .redaction import NBSP, fiabilite, lieux, nombre
+from .redaction import NBSP, fiabilite, nombre
 
 DOSSIER = "especes"
+# Saisons et altitudes sont écrites à la latitude de référence (46° N, à peu près le milieu de la
+# France) et décalées ailleurs par la loi de Hopkins : la page le dit en quelques mots, la méthode
+# donne les chiffres.
+CENTRE = "au centre de la France"
+SUD = "au sud, plus tôt au printemps et plus tard à l'automne"
 
 
 def fr(x: float) -> str:
@@ -42,8 +47,7 @@ def essences_entre(x: dict, noms: dict, mini: float, maxi: float, cle: str = "es
 
 def sol(x: dict, roches: dict) -> str:
     if x["sol_ph"]:
-        return (f"Sol acide de préférence, pH de {fr(x['ph'][1])} à {fr(x['ph'][2])} au mieux : pour cette "
-                "espèce, la carte lit le pH du sol (SoilGrids) plutôt que la roche, là où il est connu.")
+        return f"Sol acide, pH de {fr(x['ph'][1])} à {fr(x['ph'][2])} au mieux."
     groupes: dict[str, list[str]] = {"favorable": [], "possible": [], "plus rare": []}
     for k in sorted(x["roches"], key=int):
         if int(k) > 0:
@@ -104,7 +108,6 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
     p0, p1 = x["pluie_mm"]
     t0, t1, t2, t3 = x["sol"]
     a1, a2 = x["altitude"]
-    lat = fr(communs["latitude_ref"])
     haut = tete(f"{nom} ({x['latin']}) : où et quand le chercher en France",
                 f"{nom} : les forêts, l'altitude, la saison et la météo qui lui conviennent, à quoi "
                 f"{il} ressemble et ses sosies, et les départements où les conditions sont bonnes "
@@ -120,7 +123,7 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
          '  <p class="muet">Une photo aide à chercher, jamais à identifier.</p></div></div>'],
         fil=f'<p class="fil"><a href="../">Les espèces</a> › {e(nom)}</p>')
     lignes += ["  <h2>En ce moment</h2>",
-              f'  <p class="muet">Calculé le {instant_paris(genere_le)}, sur {lieux(x)} de chaque département.</p>']
+              f'  <p class="muet">Calculé le {instant_paris(genere_le)}.</p>']
     j0 = niv[0]
     if meilleur_niveau(j0) in (0, None):
         lignes.append(f"  <p>Hors saison partout aujourd'hui : la saison {e(x['de'])} court en gros du "
@@ -131,13 +134,12 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
     else:
         for n, quoi in ((4, "Bonnes conditions aujourd'hui"), (3, "Bonnes conditions par endroits")):
             if j0[n]:
-                lignes.append(f"  <p><strong>{quoi}</strong> ({departements_de(len(j0[n]))}, le plus de "
-                              f"{'prés favorables' if pre else 'forêt favorable'} d'abord) : "
+                lignes.append(f"  <p><strong>{quoi}</strong> ({departements_de(len(j0[n]))}) : "
                               + ", ".join(f'<a href="{R}{chemin_departement(c, noms.get(c, c))}">{e(noms.get(c, c))}</a>'
                                           for c in j0[n]) + ".</p>")
     if meilleur_niveau(j0) not in (0, None) and habituel(x):
-        lignes.append(f'  <p class="habituel">{e(habituel(x))}, d\'après trente ans de météo passée : de quoi '
-                      f'dire si le jour est ordinaire (<a href="{R}methode.html#habituel">ce que cela mesure</a>).</p>')
+        lignes.append(f'  <p class="habituel">{e(habituel(x))} '
+                      f'(<a href="{R}methode.html#habituel">ce que cela mesure</a>).</p>')
     # Une espèce des champs n'a pas de carte fine : la semaine en France d'abord.
     semaine = f'<a class="bouton{" principal" if pre else ""}" href="{R}en-ce-moment.html#{code}">La semaine en France</a>'
     voir = "" if pre else f'<a class="bouton principal" href="{carte}">Voir la carte {e(x["de"])}</a>'
@@ -159,18 +161,13 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
     b0, b1 = x["plancher"]
     if b1 > 0:      # une espèce de montagne
         altitude = (f"    <li>Altitude : favorable de {nombre(b1)} à {nombre(a1)}{NBSP}m, plus du tout sous "
-                    f"{nombre(b0)}{NBSP}m ni au-dessus de {nombre(a2)}{NBSP}m, à {lat}°{NBSP}N (la Haute-Savoie) ; "
-                    f"plancher et plafond montent d'environ {nombre(communs['hopkins_metres'])}{NBSP}m par degré "
-                    "vers le sud.</li>")
+                    f"{nombre(b0)}{NBSP}m ni au-dessus de {nombre(a2)}{NBSP}m ({CENTRE}, plus haut au sud).</li>")
     else:
         altitude = (f"    <li>Altitude : favorable jusqu'à {nombre(a1)}{NBSP}m, plus du tout au-dessus de "
-                    f"{nombre(a2)}{NBSP}m à {lat}°{NBSP}N (la Haute-Savoie) ; ce plafond monte d'environ "
-                    f"{nombre(communs['hopkins_metres'])}{NBSP}m par degré vers le sud. Pas de plancher : {il} "
-                    "pousse jusqu'au niveau de la mer.</li>")
+                    f"{nombre(a2)}{NBSP}m ({CENTRE}, plus haut au sud).</li>")
     if pre:
-        lignes += [altitude, "    <li>Pas de carte des prés, case par case : ils sont presque tous privés. Les "
-                   "conditions se lisent par département et par commune, d'après les prairies et pelouses "
-                   "de Corine Land Cover.</li>", "  </ul>"]
+        lignes += [altitude, "    <li>Pas de carte des prés un par un, presque tous privés : les conditions "
+                   "se lisent par département et par commune.</li>", "  </ul>"]
     else:
         lignes += [f"    <li>{e(sol(x, legendes['roches']))}</li>", altitude, "  </ul>"]
     if x.get("repere"):
@@ -179,19 +176,15 @@ def page_espece(x: dict, communs: dict, legendes: dict, niv: list[dict], jours: 
                f"  <p>{e(x['meteo_texte'])}</p>",
                "  <ul>",
                f"    <li>Saison : pleine du {date_courte(s1)} au {date_courte(s2)}, possible du {date_courte(s0)} "
-               f"au {date_courte(s3)}, à {lat}°{NBSP}N. Plus au sud, les dates de printemps avancent et celles "
-               f"d'automne reculent d'environ {fr(communs['hopkins_jours'])} jours par degré.</li>",
-               f"    <li>Pluie : la carte compte la pluie tombée du {jmax}e au {jmin}e jour avant : rien sous "
-               f"{fr(p0)}{NBSP}mm, pleine pousse au-delà de {fr(p1)}{NBSP}mm.</li>",
+               f"au {date_courte(s3)} ({CENTRE} ; {SUD}).</li>",
+               f"    <li>Pluie, du {jmax}e au {jmin}e jour avant : rien sous {fr(p0)}{NBSP}mm, pleine pousse "
+               f"dès {fr(p1)}{NBSP}mm.</li>",
                f"    <li>Sol : au mieux entre {fr(t1)} et {fr(t2)}{NBSP}°C en moyenne sur les 7 jours "
                f"précédents ; rien sous {fr(t0)}{NBSP}°C ni au-dessus de {fr(t3)}{NBSP}°C.</li>",
                f"    <li>Gel : chaque jour de gel de la semaine multiplie l'indice par {fr(x['gel'])}.</li>",
                "  </ul>",
                "  <h2>À quoi " + il + " ressemble</h2>",
-               '  <div class="alerte"><p><strong>Ces lignes aident à chercher, jamais à identifier.</strong> Ne '
-               "consommez jamais un champignon sans identification certaine : faites contrôler votre récolte "
-               f'par un pharmacien ou une société mycologique. <a href="{R}avant-de-partir.html">Avant de '
-               "partir</a>.</p></div>",
+               '  <p class="muet"><strong>Ces lignes aident à chercher, jamais à identifier.</strong></p>',
                f"  <p>{e(x['description'])}</p>"]
     if x.get("confusions"):
         lignes.append(f"  <p><strong>Sosies.</strong> {e(x['confusions'])}</p>")
@@ -259,11 +252,9 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
                 f'{calendrier_mois(x["saison"], mois)}</a></li>')
 
     lignes += ["  <h2>Toutes les espèces</h2>",
-               '  <p class="muet">Les mieux placées aujourd\'hui d\'abord. Sous chaque nom, ses mois : '
-               '<span class="mois legende-mois"><span class="plein">J</span></span> pleine saison, '
-               '<span class="mois legende-mois"><span class="possible">J</span></span> possible, le mois en cours '
-               "entouré (à 46° N, la Haute-Savoie : plus au sud, le printemps avance et l'automne recule "
-               "d'environ quatre jours par degré).</p>",
+               '  <div class="legende-semaine"><span><span class="pastille cal-plein"></span>pleine saison</span>'
+               '<span><span class="pastille cal-possible"></span>possible</span>'
+               '<span><span class="pastille cal-actuel"></span>ce mois-ci</span></div>',
                # Les filtres : cachés sans JavaScript (toutes les fiches restent visibles).
                '  <p class="filtres" data-filtres hidden>'
                '<button type="button" data-filtre="tout" aria-pressed="true">Toutes</button>'
@@ -282,9 +273,9 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
         rangs.append(f'<tr><th scope="row"><a href="{x["code"].replace("_", "-")}/">{icone("../", x["code"], 24)}'
                      f'{e(x["nom"])}</a></th>{cases}</tr>')
     lignes += ["  <h2>Le calendrier des saisons</h2>",
-               '  <p class="muet">Dans l\'ordre où les saisons commencent ; les espèces des prés à la fin. '
-               "La carte suit chaque jour la pluie et la température du sol : une saison dit quand chercher, "
-               "pas si ça pousse.</p>",
+               f'  <p class="muet">Dates {CENTRE} ; {SUD}. Une saison dit quand chercher, pas si ça '
+               "pousse.</p>",
+
                '  <div class="tableau"><table class="calendrier">',
                f"  <thead><tr><th></th>{tete_mois}</tr></thead>",
                f"  <tbody>{''.join(rangs)}</tbody>",

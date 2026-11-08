@@ -43,33 +43,27 @@
   <header class="bandeau">
   <p class="sur-titre">Vérification</p>
   <h1>Le modèle face aux observations</h1>
-  <p>Les règles de la carte ont été écrites avant de regarder les observations. Cette page
-  mesure si elles tiennent, avec les observations publiques de champignons de toute la France
-  (GBIF, qui rassemble notamment iNaturalist, Observation.org, l'application INPN Espèces et
-  des inventaires naturalistes). Rien n'a été réglé sur ces données : ajuster des seuils sur
-  quelques centaines d'observations reviendrait à apprendre le bruit par cœur.</p>
+  <p>Les règles ont été écrites avant de regarder les observations publiques de champignons
+  (GBIF : iNaturalist, Observation.org, INPN Espèces, inventaires). Cette page mesure si elles
+  tiennent ; rien n'a été réglé sur ces données, trop peu nombreuses.</p>
   </header>
-  <p>Les règles sont nées dans les Alpes. Celles des forêts du Midi (pin d'Alep, chênes verts,
-  pin maritime) sont les moins sûres : le pourtour méditerranéen et les Landes de Gascogne sont
-  donc vérifiés à part, chacun face à ses propres observations. La Haute-Savoie, où la carte
-  est née, reste comme point de comparaison.</p>
+  <p>Le pourtour méditerranéen et les Landes de Gascogne, aux forêts les moins sûres, sont
+  vérifiés à part ; la Haute-Savoie, où la carte est née, sert de comparaison.</p>
 
   <h2>Comment lire les chiffres</h2>
-  <p>Chaque test oppose des <em>cas</em> (une observation de l'espèce) à des <em>témoins</em>
-  et donne la probabilité qu'un cas soit mieux noté qu'un témoin. 50 % : le modèle ne fait pas
-  mieux que le hasard. 100 % : il les sépare parfaitement. Entre crochets, l'intervalle à 95 % :
-  s'il contient 50 %, le test ne conclut pas.</p>
+  <p>Chaque test oppose des <em>cas</em> (une observation de l'espèce) à des <em>témoins</em> :
+  le chiffre est la part des paires où le cas est le mieux noté. 50 % : le hasard ; 100 % :
+  toujours le bon. Entre crochets, l'intervalle à 95 % : s'il contient 50 %, le test ne conclut
+  pas.</p>
   <ul>
-    <li><strong>Habitat</strong> : les zones où l'espèce a été vue, contre les zones où
-    <em>d'autres</em> champignons ont été vus. Mêmes observateurs, mêmes sentiers : ce fond
-    neutralise le fait qu'on observe surtout près des chemins. Référence naïve : la seule part
-    de forêt de la zone.</li>
-    <li><strong>Météo, à mois égal</strong> : l'indice météo le jour de l'observation, contre les
-    autres jours du même mois, au même endroit et le même jour de la semaine (on sort surtout
-    le week-end). La saison ne joue plus : seule la météo peut faire la différence.</li>
-    <li><strong>Météo, sur la saison</strong> : même comparaison sur toute la saison de
-    l'espèce, pour l'indice complet et pour le seul calendrier. Si l'indice ne bat pas le
-    calendrier, la météo n'apporte rien de plus que « c'est la saison ».</li>
+    <li><strong>Habitat</strong> : les zones où l'espèce a été vue, contre celles où
+    <em>d'autres</em> champignons l'ont été (mêmes observateurs, mêmes sentiers). Référence :
+    la seule part de forêt.</li>
+    <li><strong>Météo, à mois égal</strong> : le jour de l'observation contre les autres jours
+    du même mois, au même endroit et le même jour de la semaine. Seule la météo joue.</li>
+    <li><strong>Météo, sur la saison</strong> : la même chose sur toute la saison, face au seul
+    calendrier. Si l'indice ne le bat pas, la météo n'apporte rien de plus que « c'est la
+    saison ».</li>
   </ul>
 
   <div id="resultats"><p class="muet">Chargement des résultats…</p></div>
