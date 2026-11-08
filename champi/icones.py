@@ -47,7 +47,9 @@ SOUS_BOIS_COULEURS = {"sous-bois.svg": ("#f1e6d8", "#e8d6c1", "#dcc3a6", "#9c351
 
 def sous_bois(colline: str, arbre: str, sol: str, champi: str) -> str:
     """Une bande de 1200 × 74 : collines, sapins et feuillus, sol, quelques champignons. Posée en
-    fond par style.css (`--sous-bois`), répétée en largeur ; toujours le même dessin, décoratif."""
+    fond par style.css (`--sous-bois`), répétée en largeur ; toujours le même dessin, décoratif.
+    Les courbes se raccordent d'une bande à l'autre : même hauteur aux deux bords, et la même
+    pente (le premier point de contrôle et le dernier sont symétriques), sinon une marche."""
     sapins, feuillus, champis = [], [], []
     for x, h in ((60, 30), (92, 24), (182, 34), (318, 28), (350, 22), (522, 32), (700, 26), (732, 34),
                  (884, 28), (1012, 32), (1044, 24), (1152, 30)):
@@ -62,9 +64,10 @@ def sous_bois(colline: str, arbre: str, sol: str, champi: str) -> str:
                        f'{x + 6 * t:g} {61 - 4 * t:g}Z"/><rect x="{x - 1.6 * t:g}" y="{61 - 4.5 * t:g}" '
                        f'width="{3.2 * t:g}" height="{5 * t:g}" rx="{t:g}"/>')
     return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 74" width="1200" height="74">'
-            f'<path fill="{colline}" d="M0 44C140 30 260 40 400 34C540 28 660 42 800 34C940 26 1060 38 1200 30L1200 74L0 74Z"/>'
+            f'<path fill="{colline}" d="M0 38C140 30 260 40 400 34C540 28 660 42 800 34C940 26 1060 46 1200 38L1200 74L0 74Z"/>'
             f'<g fill="{arbre}"><path d="{"".join(sapins)}"/>{"".join(feuillus)}</g>'
-            f'<path fill="{sol}" d="M0 62C200 54 380 60 600 57C820 54 1000 62 1200 55L1200 74L0 74Z"/>'
+            f'<path fill="{sol}" d="M0 58C200 54 380 60 600 57C820 54 1000 62 1200 58L1200 74L0 74Z"/>'
+
             f'<g fill="{champi}" fill-opacity=".5">{"".join(champis)}</g></svg>\n')
 
 
