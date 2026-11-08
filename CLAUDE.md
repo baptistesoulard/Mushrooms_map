@@ -290,7 +290,12 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 - **Le site ne dit jamais quoi manger.** Avertissement d'identification sur chaque page
   utile ; les huit centres antipoison (`avant-de-partir.html`, `carte.js` pour le plus
   proche), vérifiés sur centres-antipoison.net.
-- **Aucun script tiers** : Leaflet est servi depuis `site/vendor/`. Seuls les fonds de carte
+- **Le site ne renvoie pas vers son dépôt (2026-11-08)** : les sources de données restent citées
+  (`a-propos.html`, les licences l'exigent), le code non ; pas de contact par les tickets GitHub.
+  Le code servi est minifié au déploiement (étape « Minifier le code servi » de `carte.yml`,
+  esbuild) : la source reste lisible dans le dépôt, les tests tournent sur elle.
+- **Aucun script tiers** :
+ Leaflet est servi depuis `site/vendor/`. Seuls les fonds de carte
   IGN sont appelés depuis le navigateur, plus `api.github.com` si la synchro des coins est
   active (déclarés dans `a-propos.html`). Toute nouvelle clé `localStorage` se déclare dans
   `a-propos.html` (test).

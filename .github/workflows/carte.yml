@@ -102,6 +102,18 @@ jobs:
           ALERTES_JETON: ${{ secrets.ALERTES_JETON }}
           VAPID_PRIVEE: ${{ secrets.VAPID_PRIVEE }}
         run: python -m champi.alertes ${{ inputs.essai_alertes && '--essai' || '' }}
+      # Le code servi, minifié : sans commentaires ni noms parlants (les tests ont tourné sur la
+      # source, qui reste telle quelle dans le dépôt). Les modules ES gardent leurs exports ; sw.js,
+      # script classique, ne perd que les blancs. Leaflet (vendor/) n'est pas touché.
+      - name: Minifier le code servi
+        run: |
+          cd site
+          npx --yes esbuild@0.24.2 $(ls *.js | grep -vx sw.js) \
+            --minify --format=esm --charset=utf8 --legal-comments=none --outdir=. --allow-overwrite
+          npx --yes esbuild@0.24.2 sw.js --minify-whitespace --minify-syntax --charset=utf8 \
+            --legal-comments=none --outdir=. --allow-overwrite
+          npx --yes esbuild@0.24.2 style.css --minify --charset=utf8 --outdir=. --allow-overwrite
+          ls -l *.js style.css
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
