@@ -60,8 +60,12 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   retirées en clair, secret ou non ; la couche c (communes, zones protégées) reste en clair. Le
   navigateur déchiffre (`site/fin.js`, WebCrypto) et garde la clé (`champi-carte-fine`), pas le
   mot de passe. Un seul mot de passe partagé : le changer = changer le secret, l'adresse des
-  fichiers change (`habitat/fin/<id>/`), chacun le redonne. Exploration et fenêtre d'une case
-  (essence, roche, pente) : carte fine seulement. Limite assumée : la release « habitat » (données
+  fichiers change (`habitat/fin/<id>/`), chacun le redonne. **Lien d'accès (2026-11-08)**, pour un
+  proche peu à l'aise avec l'informatique : `carte/#fine=<clé en hexadécimal>` (`fin.lienAcces`,
+  `chiffre.lien`), envoyé par « Envoyer le lien d'accès » une fois la carte fine ouverte ; la carte
+  garde la clé et la retire de l'adresse (un lien de groupe à côté reste pour `coins.js`). Il vaut
+  le mot de passe sans le révéler, et meurt avec lui. « Revenir aux zones » demande confirmation.
+  Exploration et fenêtre d'une case (essence, roche, pente) : carte fine seulement. Limite assumée : la release « habitat » (données
   ouvertes retraitées) et le code restent publics ; la protection vise la carte affichée, pas un
   développeur décidé. Aucune observation publique ponctuelle n'est affichée. Un passage éventuel
   en service payant est décidé ailleurs : voir `CLAUDE.local.md` s'il existe.
@@ -382,6 +386,7 @@ python -m champi.depot                  # réseau ~3 min ; gardé 3 h dans cache
 python -m champi.export_france          # demande site/habitat/ (asset de la release « habitat »)
 python -m champi.zones                  # après l'export : data/zones/ (carte publique, 250 m)
 python -m champi.chiffre                # ensuite : chiffre a, b, d (CARTE_FINE_MOT_DE_PASSE), retire le clair
+python -m champi.chiffre lien           # le lien d'accès à la carte fine (mot de passe demandé, jamais affiché)
 python -m champi.france bloc 18_156     # un bloc, pour essayer (habitat/)
 python -m champi.validation meteo       # réseau ; la météo passée des cas, sans attendre le fond
 python -m champi.validation             # réseau (~1 h la 1re fois) ; demande site/habitat/ ; caches dans cache/validation/

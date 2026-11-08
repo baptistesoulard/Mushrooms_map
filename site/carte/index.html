@@ -61,6 +61,7 @@
 
 
     <div id="perime" class="alerte perime" hidden></div>
+    <div id="annonce-fine" class="alerte annonce" role="status" hidden></div>
 
     <!-- Les choix : l'espèce (la liste illustrée s'ouvre au toucher), puis le jour. -->
     <button type="button" class="choix-espece-bouton" id="choix-espece-bouton" aria-haspopup="dialog"
@@ -154,6 +155,10 @@
             <input type="password" id="fine-mot" autocomplete="current-password" required></label>
           <button type="submit">Déverrouiller</button>
         </form>
+        <div class="fine-lien" id="fine-lien" hidden>
+          <button type="button" class="bouton" id="fine-envoyer">Envoyer le lien d'accès</button>
+          <p class="muet">Il ouvre la carte fine d'un toucher, sans mot de passe : ne l'envoyez qu'à vos proches.</p>
+        </div>
         <button type="button" class="lien" id="fine-oublier" hidden>Revenir aux zones de 250 m sur cet appareil</button>
         <p class="muet" id="fine-message" aria-live="polite"></p>
       </div>

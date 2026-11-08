@@ -164,11 +164,11 @@ def test_une_hors_saison_partout():
 
 def test_renvoi_des_anciens_liens():
     """La règle du script de l'accueil, rejouée : les paramètres de la carte et le lien de
-    groupe partent vers carte/, pas un paramètre ajouté par un réseau social."""
+    groupe ou d'accès à la carte fine partent vers carte/, pas un paramètre ajouté par un réseau social."""
     script = A.RENVOI
     carte = re.search(r"/\[\?&\]\((.+?)\)=/", script).group(1).split("|")
     groupe = re.search(r"/\(\^#\|&\)\((.+?)\)=/", script).group(1).split("|")
-    assert set(carte) == {"departement", "espece", "jour"} and set(groupe) == {"depot", "jeton"}
+    assert set(carte) == {"departement", "espece", "jour"} and set(groupe) == {"depot", "jeton", "fine"}
 
 
 def test_fiches_especes():

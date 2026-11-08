@@ -177,7 +177,7 @@ p { margin: 0 0 .7em; }
     margin: 0 -14px; padding: 10px 0 9px; border: 0; background: var(--surface); cursor: grab; touch-action: none;
   }
   .barre-poignee { width: 42px; height: 5px; border-radius: 3px; background: var(--texte-3); opacity: .55; }
-  .panneau > .perime { order: -2; margin-top: 0; }
+  .panneau > .perime, .panneau > .annonce { order: -2; margin-top: 0; }
   .panneau > .case-panneau { order: -1; position: relative; padding: 2px 0 12px; border-bottom: 1px solid var(--trait); }
   .case-panneau .fermer {
     display: block; position: absolute; top: 0; right: -4px; width: 36px; height: 36px; border: 0; border-radius: 50%;
@@ -370,6 +370,8 @@ label.case { display: flex; gap: 6px; align-items: center; font-size: .85rem; co
 .explorer summary h3, .alertes summary h3 { display: inline; }
 .alertes form { display: grid; gap: 8px; margin-top: 8px; }
 .fine form:not([hidden]) { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-top: 8px; }
+.fine-lien { margin: 8px 0 10px; }
+.fine-lien p { margin: 6px 0 0; }
 .mot-de-passe { display: grid; gap: 4px; flex: 1 1 160px; font-size: .85rem; font-weight: 600; color: var(--texte-2); }
 .mot-de-passe input { font: inherit; font-weight: 400; padding: 6px 8px; border: 1px solid var(--trait);
   border-radius: 6px; background: var(--surface); color: var(--texte); }

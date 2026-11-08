@@ -6,7 +6,7 @@
 import { installerAlertes } from "./alertes.js";
 import { installerCoins } from "./coins.js";
 import { installerFeuille } from "./feuille.js";
-import { cleGardee, dechiffrer, deriver, garder, importer, oublier } from "./fin.js";
+import { cleDuLien, cleGardee, dechiffrer, deriver, garder, importer, lienAcces, lireLien, oublier } from "./fin.js";
 import { installerGuide } from "./guide.js";
 import { niveau as niveauZone, partsZone } from "./ici.js";
 import { liensItineraire } from "./itineraire.js";
@@ -118,6 +118,12 @@ function classeDe(v, classes) {
 }
 
 async function demarrer() {
+  // Le lien d'accès à la carte fine (#fine=…) : lu avant tout, et retiré aussitôt de la barre
+  // d'adresse (le reste, un lien de groupe, est laissé à coins.js).
+  const lien = lireLien(location.hash);
+  if (lien.cle !== null) {
+    history.replaceState(null, "", location.pathname + location.search + (lien.reste ? `#${lien.reste}` : ""));
+  }
   const [carte, regles] = await Promise.all([
     fetch("data/carte.json").then((r) => r.json()),
     fetch("data/especes.json").then((r) => r.json()),
@@ -134,7 +140,21 @@ async function demarrer() {
   // qui a la clé (carte.fine : ses couches sont chiffrées). Sans carte.zones (un essai sur le
   // poste, habitat en clair), la carte fine est la seule.
   const Z = carte.zones;
-  let cleFine = await cleGardee(carte.fine);
+  const gardee = await cleGardee(carte.fine);
+  let cleFine = gardee?.cle ?? null, brutFine = gardee?.brut ?? null;
+  const ouvrirFine = async (brut) => {
+    cleFine = await importer(brut);
+    brutFine = brut;
+    garder(carte.fine.id, brut);
+  };
+  // Venu par le lien d'accès : la carte s'ouvre d'emblée aux cases de 50 m (installerFine le dit).
+  // Un appareil qui a déjà la clé n'en a pas besoin : rien à annoncer.
+  let parLien = null;
+  if (lien.cle !== null && Z && !cleFine) {
+    const brut = await cleDuLien(lien.cle, carte.fine);
+    parLien = brut ? "ouverte" : carte.fine ? "refuse" : "absente";
+    if (brut) await ouvrirFine(brut);
+  }
   const modeFin = () => !Z || cleFine !== null;
   const leg = carte.legendes;
   const pal = couleurs(carte.classes.length);
@@ -1197,9 +1217,28 @@ async function demarrer() {
       (modeFin() ? "les cases de 50 m." : "les zones de 250 m (l'habitat le plus favorable de chacune).")));
   }
 
-  // La carte fine : le mot de passe donne la clé, gardée sur l'appareil ; la carte passe des
-  // zones de 250 m aux cases de 50 m. « Revenir aux zones » oublie la clé.
+  // Venu par un lien d'accès : une annonce en tête du panneau (visible sur la feuille repliée),
+  // qui s'efface d'elle-même une fois les cases de 50 m à l'écran.
+  function annoncerLien() {
+    if (!parLien) return;
+    const z = $("annonce-fine");
+    const fermer = () => { z.hidden = true; map.off("zoomend", vu); };
+    const vu = () => { if (map.getZoom() >= DETAIL) fermer(); };
+    z.replaceChildren({
+      ouverte: "Carte fine ouverte sur cet appareil : zoomez sur une forêt pour voir ses cases de 50 m.",
+      refuse: "Ce lien n'ouvre plus la carte fine : il est incomplet, ou le mot de passe a changé depuis. " +
+        "Demandez un nouveau lien.",
+      absente: "La carte fine n'est pas publiée en ce moment : la carte montre des zones de 250 m.",
+    }[parLien], " ", el("button", { type: "button", class: "lien", onclick: fermer }, "OK"));
+    z.hidden = false;
+    if (parLien === "ouverte") map.on("zoomend", vu);
+  }
+
+  // La carte fine : le mot de passe (ou le lien d'accès) donne la clé, gardée sur l'appareil ; la
+  // carte passe des zones de 250 m aux cases de 50 m. Une fois ouverte, elle envoie le lien
+  // d'accès à un proche. « Revenir aux zones » oublie la clé.
   function installerFine() {
+    annoncerLien();
     if (!Z || !carte.fine) return;          // pas de carte fine publiée, ou essai sur le poste
     $("fine").hidden = false;
     const afficher = () => {
@@ -1207,6 +1246,7 @@ async function demarrer() {
         ? "Cases de 50 m sur cet appareil. La clé y reste gardée : le mot de passe ne se redemande pas."
         : "La carte montre des zones de 250 m. Avec le mot de passe, elle passe aux cases de 50 m, sur cet appareil.";
       $("fine-form").hidden = Boolean(cleFine);
+      $("fine-lien").hidden = !cleFine;
       $("fine-oublier").hidden = !cleFine;
     };
     const basculer = () => {
@@ -1228,8 +1268,7 @@ async function demarrer() {
           $("fine-message").textContent = "Ce n'est pas le bon mot de passe.";
           return;
         }
-        cleFine = await importer(brut);
-        garder(id, brut);
+        await ouvrirFine(brut);
         $("fine-mot").value = "";
         $("fine-message").textContent = "";
         basculer();
@@ -1240,8 +1279,13 @@ async function demarrer() {
         bouton.disabled = false;
       }
     });
+    $("fine-envoyer").addEventListener("click", (ev) => partager({ titre: "Champimétéo, la carte fine",
+      url: lienAcces(location.origin + location.pathname, brutFine) }, ev.currentTarget));
     $("fine-oublier").addEventListener("click", () => {
+      if (!confirm("Revenir aux zones de 250 m sur cet appareil ? Les cases de 50 m redemanderont le mot de passe " +
+        "ou le lien d'accès.")) return;
       cleFine = null;
+      brutFine = null;
       oublier();
       basculer();
     });

@@ -4,7 +4,7 @@ L'accueil répond d'abord à la question du visiteur, où chercher cette semaine
 la carte calcule, ce que vaut sa vérification, ce qu'on peut y faire, les espèces et les
 départements. La carte est sous /carte/ depuis le 2026-11-01 ; les anciens liens de la racine
 (`?departement=…`, lien de groupe `#depot=…`, appli installée avant cette date) y sont renvoyés
-par un script en tête de page, avant tout affichage.
+par un script en tête de page, avant tout affichage, comme un lien d'accès (`#fine=…`) mal recopié.
 
 Ne lit aucune donnée : reçoit les résumés (`export_france`) et la validation, rend du HTML.
 """
@@ -32,7 +32,7 @@ RENVOI = """
 <script>
   (function () {
     var l = location, appli = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-    if (/[?&](departement|espece|jour)=/.test(l.search) || /(^#|&)(depot|jeton)=/.test(l.hash)
+    if (/[?&](departement|espece|jour)=/.test(l.search) || /(^#|&)(depot|jeton|fine)=/.test(l.hash)
         || (appli && document.referrer.indexOf(l.origin + "/") !== 0)) {
       l.replace("carte/" + l.search + l.hash);
     }

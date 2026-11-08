@@ -21,20 +21,27 @@ Sans mot de passe (secret absent), les couches en clair sont retirées quand mê
 carte fine, jamais de 50 m en clair. Le mot de passe se devine hors ligne si on le prend court :
 une longue phrase.
 
+Le lien d'accès (`lien`) : la carte suivie de `#fine=` et de la clé en hexadécimal, pour un proche
+qui ne taperait pas le mot de passe. Il le vaut sans le révéler, et meurt avec lui. La carte
+l'envoie d'elle-même une fois déverrouillée (« Envoyer le lien d'accès », `site/fin.js`).
+
     python -m champi.chiffre        # après `python -m champi.zones`, avant la mise en ligne
+    python -m champi.chiffre lien   # le lien d'accès (le mot de passe est demandé, jamais affiché)
 """
 from __future__ import annotations
 
+import getpass
 import hashlib
 import hmac
 import json
 import os
 import shutil
+import sys
 from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from .config import FINE_ITERATIONS, FINE_SEL, SITE, SITE_DATA
+from .config import ADRESSE, FINE_ITERATIONS, FINE_SEL, SITE, SITE_DATA
 from .sources import ecrire_json
 
 HABITAT = SITE / "habitat"
@@ -47,6 +54,12 @@ def deriver(mot_de_passe: str, sel: str = FINE_SEL, iterations: int = FINE_ITERA
 
 def identifiant(cle: bytes) -> str:
     return hashlib.sha256(cle).hexdigest()[:12]
+
+
+def lien(cle: bytes, adresse: str = ADRESSE) -> str:
+    """Le lien d'accès à la carte fine. Ce qui suit # ne part à aucun serveur ; la carte garde la
+    clé et la retire de la barre d'adresse (`fin.lireLien`, `fin.cleDuLien`)."""
+    return f"{adresse}carte/#fine={cle.hex()}"
 
 
 def chiffrer(cle: bytes, nom: str, donnees: bytes) -> bytes:
@@ -91,4 +104,8 @@ def tout(mot_de_passe: str | None) -> dict | None:
 
 
 if __name__ == "__main__":
-    tout(os.environ.get("CARTE_FINE_MOT_DE_PASSE") or None)
+    if sys.argv[1:] == ["lien"]:
+        print(lien(deriver(os.environ.get("CARTE_FINE_MOT_DE_PASSE")
+                           or getpass.getpass("Mot de passe de la carte fine : "))))
+    else:
+        tout(os.environ.get("CARTE_FINE_MOT_DE_PASSE") or None)

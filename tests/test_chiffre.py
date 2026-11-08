@@ -92,3 +92,49 @@ def test_le_navigateur_dechiffre(tmp_path):
     bon = res["Cèpes sous les hêtres, 2026 !"]
     assert bon["id"] == fine["id"] and base64.b64decode(bon["clair"]) == contenu
     assert res["cèpes"]["id"] != fine["id"] and res["cèpes"]["clair"] is None
+
+
+LIEN = """
+import { readFileSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
+const [, , module, entree, sortie] = process.argv;
+const F = await import(pathToFileURL(module).href);
+const f = JSON.parse(readFileSync(entree, "utf8"));
+const res = { lus: [], cles: [] };
+for (const adresse of f.adresses) {
+  const u = new URL(adresse);
+  const lu = F.lireLien(u.hash);
+  const brut = await F.cleDuLien(lu.cle, f.fine);
+  res.lus.push({ reste: lu.reste, cle: brut && Buffer.from(brut).toString("hex"),
+                 refait: brut && F.lienAcces(u.origin + u.pathname, brut) });
+}
+for (const t of f.textes) res.cles.push(await F.cleDuLien(t, f.fine) !== null);
+writeFileSync(sortie, JSON.stringify(res));
+"""
+
+
+@pytest.mark.skipif(NODE is None, reason="Node absent")
+def test_le_lien_d_acces(tmp_path):
+    """Le lien que fait Python (chiffre.lien), la carte le lit et le refait à l'identique ; elle
+    laisse le lien de groupe en place, et refuse un lien coupé ou d'un autre mot de passe."""
+    fine = {"sel": "champimeteo/essai", "iterations": 2000}
+    cle = C.deriver("Cèpes sous les hêtres, 2026 !", fine["sel"], fine["iterations"])
+    fine["id"] = C.identifiant(cle)
+    autre = C.deriver("Girolles", fine["sel"], fine["iterations"])
+    lien = C.lien(cle, "https://champimeteo.fr/")
+    assert lien == f"https://champimeteo.fr/carte/#fine={cle.hex()}"
+    adresses = [lien, f"{lien}&depot=moi/champi-coins&jeton=github_pat_x1",
+                "https://champimeteo.fr/carte/#depot=moi/champi-coins&jeton=github_pat_x1"]
+    textes = [cle.hex().upper(), cle.hex()[:-2], autre.hex(), "", None]
+    entree = {"fine": fine, "adresses": adresses, "textes": textes}
+    (tmp_path / "entree.json").write_text(json.dumps(entree), encoding="utf-8")
+    (tmp_path / "lien.mjs").write_text(LIEN, encoding="utf-8")
+    subprocess.run([NODE, str(tmp_path / "lien.mjs"), str(SITE / "fin.js"), str(tmp_path / "entree.json"),
+                    str(tmp_path / "sortie.json")], check=True)
+    res = json.loads((tmp_path / "sortie.json").read_text(encoding="utf-8"))
+    seul, avec_groupe, groupe = res["lus"]
+    assert seul == {"reste": "", "cle": cle.hex(), "refait": lien}
+    assert avec_groupe["cle"] == cle.hex()
+    assert avec_groupe["reste"] == "depot=moi%2Fchampi-coins&jeton=github_pat_x1"   # coins.js le relit
+    assert groupe["cle"] is None and groupe["reste"] == "depot=moi%2Fchampi-coins&jeton=github_pat_x1"
+    assert res["cles"] == [True, False, False, False, False]
