@@ -111,7 +111,7 @@ def test_accueil():
     nat = pages.national(ESPECES, DEPS, r, 8)
     page = A.page_accueil(DEPS, ESPECES, nat, {}, JOURS, None, GENERE_LE)
     assert f'<meta name="robots" content="{ROBOTS}">' in page
-    assert "<h1>Où chercher les champignons cette semaine</h1>" in page
+    assert "<h1>Où trouver des champignons cette semaine</h1>" in page
     tete, corps = page.split("</head>")
     assert "l.replace(\"carte/\" + l.search + l.hash)" in tete           # anciens liens : vers la carte
     assert '<link rel="manifest" href="manifest.webmanifest">' in tete

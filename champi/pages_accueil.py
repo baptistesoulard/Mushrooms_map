@@ -369,12 +369,15 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
                  contours: dict | None = None) -> str:
     noms = {d["code"]: d["nom"] for d in departements}
     photos = photos or {}
-    haut = tete(f"{NOM} : où chercher cette semaine",
-                f"Où les conditions sont favorables aux champignons ({noms_especes(especes)}), aujourd'hui "
-                "et pour les sept prochains jours, forêt par forêt, d'après la pluie, la température du sol "
-                "et la saison.",
+    # Le titre répond à la recherche qu'on tape (« où trouver des champignons ») ; la carte, elle,
+    # porte « carte des champignons » : chacune sa recherche, la marque à la fin.
+    titre = f"Où trouver des champignons cette semaine : la carte | {NOM}"
+    haut = tete(titre,
+                f"La carte des champignons en France, mise à jour chaque matin : où les conditions sont "
+                f"bonnes ({noms_especes(especes)}), aujourd'hui et pour 7 jours, forêt par forêt.",
+
                 "", "", image=image_partage("france", genere_le), plus=APPLI + RENVOI, large=True,
-                ld=[site_web(), page_web(f"{NOM} : où chercher cette semaine", "", genere_le)])
+                ld=[site_web(), page_web(titre, "", genere_le)])
     par_numero = sorted(departements, key=lambda d: cle_departement(d["code"]))
     choix = "".join(f'<option value="{d["code"]}" data-page="{chemin_departement(d["code"], d["nom"])}">'
                     f'{d["code"]} – {e(d["nom"])}</option>' for d in par_numero)
@@ -385,7 +388,8 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
               '  <section class="une">',
               '  <div class="une-texte">',
               f'  <p class="sur-titre">Ce matin, {date_longue(jours[0])}</p>',
-              "  <h1>Où chercher les champignons cette semaine</h1>",
+              "  <h1>Où trouver des champignons cette semaine</h1>",
+
               '  <p class="chapeau">Les forêts de France case par case, et les prés commune par commune, selon '
               "la pluie des dernières semaines et la météo des 7 prochains jours.</p>",
               f'  <p class="en-bref">{e(en_bref(especes, nat))}</p>',
