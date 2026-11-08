@@ -352,7 +352,7 @@ def pied_site(racine: str) -> str:
   <div class="pied-contenu">
     <a class="marque" href="{lien(racine, "./")}" aria-label="{NOM}, l'accueil">{svg_marque(34)}<span class="marque-nom">Champi<span>météo</span></span></a>
     <p class="pied-devise">Où les conditions sont réunies pour les champignons, forêt par forêt, d'après la
-    pluie, le sol et la saison. Le site dit où chercher, jamais quoi manger.</p>
+    pluie, le sol et la saison. Le site dit où chercher, jamais si votre récolte se mange.</p>
     <p class="pied-cafe">Sans publicité : <a href="{CAFE}">offrir un café</a> à son auteur.</p>
     <nav class="pied-plan" aria-label="Plan du site">
 {plan}

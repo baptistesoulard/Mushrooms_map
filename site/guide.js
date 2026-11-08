@@ -18,7 +18,7 @@ const ETAPES = (etroit) => [
     `${etroit ? "Un appui long" : "Un clic droit"} sur la carte note une trouvaille, gardée dans ce navigateur. ` +
     "Vous pouvez les sauvegarder, les envoyer à un proche, ou les partager avec un groupe par un lien privé."],
   ["Avant de cueillir",
-    "La carte dit où chercher, jamais quoi manger : faites contrôler toute récolte par un pharmacien ou " +
+    "La carte dit où chercher, jamais si votre récolte se mange : faites-la contrôler par un pharmacien ou " +
     "une société mycologique. En forêt privée, les champignons appartiennent au propriétaire."],
 ];
 

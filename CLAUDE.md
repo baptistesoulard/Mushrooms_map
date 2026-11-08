@@ -44,7 +44,7 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 - **Ce qui est habituel à cette date** (`climatologie.py` → `data/climatologie.json`, versionné,
   recalculé à la main après la validation) : par espèce et par décade, la part des jours où sa
   météo (indice sans l'habitat) atteint 0,5, sur la météo passée de la validation. Affiché à côté
-  du verdict (vignettes, accueil, fiches : « météo favorable 7 années sur 10 à cette date »), parce
+  du verdict (vignettes, accueil : « météo favorable 7 années sur 10 à cette date »), parce
   qu'un verdict ne dit pas s'il est ordinaire (le pied-de-mouton « bon » dans 95 départements début
   novembre, question de l'utilisateur du 2026-11-02). Un repère pour le lecteur : aucune règle ni
   aucun seuil n'en dépend.
@@ -131,6 +131,11 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   courte par espèce en saison (`pages_accueil.carte_moment` : étiquette, cinq départements, les autres
   repliés mais liés) ; une page département ne détaille que les espèces qui ont au moins un jour
   favorable, les autres tiennent en une phrase (le tableau de la semaine les montre toutes).
+- **Fiches espèces (2026-11-08)** : plus de liste des départements du jour (l'accueil et « en ce
+  moment » la donnent, la fiche renvoie à la carte) ; « Où il pousse », « Astuces pour le trouver »,
+  la saveur en étoiles (en tête, et sur la liste des espèces) et « En cuisine » à la fin, tirés de
+  `portraits.py` (un portrait par espèce, test ; rien pour le calcul, rien dans `especes.json`).
+  Exception assumée aux textes courts : c'est ce qu'on vient y lire.
 - **Textes courts (2026-11-08), sur tout le site** : une légende reste une légende (pastilles,
   `legende-semaine`), jamais une phrase ; une explication tient en une phrase ; le calcul s'explique
   une fois, sur `methode.html`, et les autres pages y renvoient (« Calculé le … », sans redire sur
@@ -295,8 +300,14 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   nationaux). Leur règlement varie ; le site ne dit jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur
   des faits fabriqués. Typographie : espace insécable avant les unités, jamais de « -0 ».
-- **Le site ne dit jamais quoi manger.** Avertissement d'identification sur chaque page
-  utile ; les huit centres antipoison (`avant-de-partir.html`, `carte.js` pour le plus
+- **Le site ne dit jamais si une récolte se mange** (décision du 2026-11-08, remplace « jamais quoi
+  manger » ; devise du pied de page : « Le site dit où chercher, jamais si votre récolte se mange »).
+  Les fiches donnent la réputation d'une espèce en cuisine (saveur de 1 à 5, d'après les guides) et
+  une recette, toujours APRÈS l'avertissement « Avant de cuisiner » (`pages_especes.AVANT_DE_CUISINER` :
+  récolte contrôlée, exemplaires sains, jamais cru, pas pour les jeunes enfants, photo avant cuisson)
+  et le geste propre à l'espèce (morille : 20 minutes de cuisson au moins). Ni note ni recette pour
+  l'oronge : une amanite, on n'y pousse pas un débutant (test). Avertissement d'identification sur
+  chaque page utile ; les huit centres antipoison (`avant-de-partir.html`, `carte.js` pour le plus
   proche), vérifiés sur centres-antipoison.net.
 - **Le site ne renvoie pas vers son dépôt (2026-11-08)** : les sources de données restent citées
   (`a-propos.html`, les licences l'exigent), le code non ; le contact est contact@champimeteo.fr

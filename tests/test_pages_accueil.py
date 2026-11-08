@@ -171,26 +171,60 @@ def test_renvoi_des_anciens_liens():
     assert set(carte) == {"departement", "espece", "jour"} and set(groupe) == {"depot", "jeton", "fine"}
 
 
+def fiche(code):
+    return pages_especes.page_espece(next(x for x in ESPECES if x["code"] == code), LEGENDES, JOURS, None, GENERE_LE)
+
+
 def test_fiches_especes():
-    r = resumes({"85": {"cepe": [4] * 8}})
-    nat = pages.national(ESPECES, DEPS, r, 8)
-    cepe = next(x for x in ESPECES if x["code"] == "cepe")
-    page = pages_especes.page_espece(cepe, REGLES["communs"], LEGENDES, nat["cepe"], JOURS, NOMS, None, GENERE_LE)
+    page = fiche("cepe")
     assert "<title>Cèpe (Boletus edulis et cèpes proches) : où et quand le chercher en France</title>" in page
     assert "Ces lignes aident à chercher, jamais à identifier." in page
     assert "pleine du 15 juillet au 20 octobre, possible du 1er juin au 30 novembre" in page
     assert "du 20e au 6e jour avant" in page and "pH de 4 à 6,5 au mieux" in page
-    assert 'href="../../carte/?espece=cepe"' in page and 'href="../../departements/vendee/"' in page
-    trompette = next(x for x in ESPECES if x["code"] == "trompette")
-    page = pages_especes.page_espece(trompette, REGLES["communs"], LEGENDES, nat["trompette"], JOURS, NOMS, None,
-                                     GENERE_LE)
-    assert "Roche favorable : calcaire" in page and "Hors saison partout aujourd'hui" in page
-    assert "Forêts favorables : hêtre." in page
+    # Où les conditions sont bonnes : la carte le montre, la fiche n'énumère plus les départements.
+    assert 'href="../../carte/?espece=cepe"' in page and "departements/vendee/" not in page
+    assert "Bonnes conditions" not in page and "Calculé le" not in page
+    assert "<h2>Où il pousse</h2>" in page and "<h2>Astuces pour le trouver</h2>" in page
+    page = fiche("trompette")
+    assert "Roche favorable : calcaire" in page and "Forêts favorables : hêtre." in page
+    assert "<h2>Astuces pour la trouver</h2>" in page
+
+
+def test_saveur_et_recette_apres_l_avertissement():
+    """La saveur en tête et sur la liste, la recette à la fin, toujours après l'avertissement ;
+    ni note ni recette pour l'oronge (une amanite)."""
+    page = fiche("cepe")
+    assert 'aria-label="5 sur 5">★★★★★</span> excellent' in page
+    assert page.index("Avant de cuisiner") < page.index("<h3>Cèpes à la bordelaise</h3>")
+    assert "jamais crus" in page and "contrôlée par un pharmacien" in page
+    assert page.index("Ce que la carte en sait") < page.index('id="cuisine"')
+    assert "sa saveur et une recette." in page
+    assert "Au moins 20 minutes de cuisson".lower() in fiche("morille").lower()
+    oronge = fiche("oronge")
+    assert "Pas de note ni de recette" in oronge and "recette" not in oronge.split('id="cuisine"')[1].replace(
+        "Pas de note ni de recette", "")
+    assert "étoiles" not in oronge and "Avant de cuisiner" not in oronge
+    nat = pages.national(ESPECES, DEPS, resumes({}), 8)
+    index = pages_especes.page_index(ESPECES, nat, JOURS, NOMS, GENERE_LE)
+    assert index.count('<span class="saveur">') == len(ESPECES) - 1
+
+
+def test_portraits_complets():
+    """Chaque espèce a son portrait (où, astuces, cuisine) ; une note de saveur va avec une recette,
+    sauf pour l'oronge, qui n'a ni l'une ni l'autre. Jamais « probabilité » ni « chance de trouver »."""
+    from champi.portraits import PORTRAITS, SAVEURS
+    assert set(PORTRAITS) == {x["code"] for x in ESPECES}
+    for code, p in PORTRAITS.items():
+        assert p.ou_pousse and len(p.astuces) >= 3 and p.cuisine, code
+        assert (p.recette is None) == (p.saveur == 0) == (code == "oronge"), code
+        assert p.saveur == 0 or (p.saveur in SAVEURS and p.saveur_texte and p.recette.etapes), code
+        texte = repr(p).lower()
+        assert "probabilit" not in texte and "chance" not in texte, code
 
 
 def test_ce_qui_est_habituel_a_cote_du_verdict():
-    """« Météo favorable 7 années sur 10 à cette date » sur la vignette, l'accueil et la fiche ;
-    rien pour une espèce hors saison, ni sans mesure."""
+    """« Météo favorable 7 années sur 10 à cette date » sur la vignette et l'accueil ; rien pour une
+    espèce hors saison, ni sans mesure."""
     r = resumes({"85": {"cepe": [4] * 8, "pied_de_mouton": [4] * 8}})
     nat = pages.national(ESPECES, DEPS, r, 8)
     mesure = {"cepe": 0.14, "pied_de_mouton": 0.74, "morille": 0.0}
@@ -202,9 +236,8 @@ def test_ce_qui_est_habituel_a_cote_du_verdict():
     accueil = A.page_accueil(DEPS, especes, nat, {}, JOURS, None, GENERE_LE)
     assert '<p class="habituel">Météo favorable 7 années sur 10 à cette date.</p>' in accueil
     cepe = next(x for x in especes if x["code"] == "cepe")
-    fiche = pages_especes.page_espece(cepe, REGLES["communs"], LEGENDES, nat["cepe"], JOURS, NOMS, None, GENERE_LE)
-    assert "Météo favorable 1 année sur 10 à cette date (" in fiche
-    assert 'href="../../methode.html#habituel"' in fiche
+    page = pages_especes.page_espece(cepe, LEGENDES, JOURS, None, GENERE_LE)
+    assert "Météo favorable" not in page                       # la fiche renvoie à la carte (2026-11-08)
     assert "habituel" not in pages_especes.page_index(ESPECES, nat, JOURS, NOMS, GENERE_LE)
 
 
@@ -213,7 +246,7 @@ def test_fiche_d_une_espece_des_pres():
     r = resumes({"85": {"rose_pres": [4] * 8}})
     nat = pages.national(ESPECES, DEPS, r, 8)
     rose = next(x for x in ESPECES if x["code"] == "rose_pres")
-    page = pages_especes.page_espece(rose, REGLES["communs"], LEGENDES, nat["rose_pres"], JOURS, NOMS, None, GENERE_LE)
+    page = pages_especes.page_espece(rose, LEGENDES, JOURS, None, GENERE_LE)
     assert "../carte/?espece=rose_pres" not in page and "Forêts favorables" not in page
     assert "Milieux favorables : prairies." in page and "Pas de carte des prés" in page
     assert "demandez son accord" in page
@@ -221,8 +254,7 @@ def test_fiche_d_une_espece_des_pres():
     oronge = next(x for x in ESPECES if x["code"] == "oronge")
     assert pages_especes.pronom(oronge) == "elle"
     hygrophore = next(x for x in ESPECES if x["code"] == "hygrophore_mars")
-    page = pages_especes.page_espece(hygrophore, REGLES["communs"], LEGENDES, nat["hygrophore_mars"], JOURS, NOMS,
-                                     None, GENERE_LE)
+    page = pages_especes.page_espece(hygrophore, LEGENDES, JOURS, None, GENERE_LE)
     assert "plus du tout sous 300" in page and "Pas de plancher" not in page
 
 
