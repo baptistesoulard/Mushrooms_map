@@ -303,7 +303,7 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 - **Le site ne dit jamais si une récolte se mange** (décision du 2026-11-08, remplace « jamais quoi
   manger » ; devise du pied de page : « Le site dit où chercher, jamais si votre récolte se mange »).
   Les fiches donnent la réputation d'une espèce en cuisine (saveur de 1 à 5, d'après les guides) et
-  une recette VÉGÉTARIENNE (ni viande, ni poisson, ni fromage à présure animale, accompagnements
+  une recette VÉGÉTARIENNE (ni viande ni poisson, le parmesan admis, accompagnements
   compris ; test), toujours APRÈS l'avertissement « Avant de cuisiner » (`pages_especes.AVANT_DE_CUISINER` :
   récolte contrôlée, exemplaires sains, jamais cru, pas pour les jeunes enfants, photo avant cuisson)
   et le geste propre à l'espèce (morille : 20 minutes de cuisson au moins). Ni note ni recette pour

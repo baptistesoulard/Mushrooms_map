@@ -224,11 +224,11 @@ def test_portraits_complets():
 
 def test_recettes_vegetariennes():
     """Toutes les recettes sont végétariennes (demande du 2026-11-08) : ni viande, ni poisson, ni
-    fromage à présure animale (le parmesan), ni bouillon de viande, ni dans les accompagnements."""
+    bouillon de viande, ni dans les accompagnements ; le parmesan est admis (choix du 2026-11-08)."""
     from champi.portraits import PORTRAITS
     interdits = ("viande", "volaille", "poulet", "canard", "lardon", "jambon", "bacon", "porc", "bœuf", "veau",
                  "agneau", "saucisse", "chorizo", "poisson", "anchois", "saumon", "crevette", "gélatine",
-                 "parmesan", "bouillon de", "fond de", "graisse")
+                 "bouillon de", "fond de", "graisse")
     for code, p in PORTRAITS.items():
         if p.recette:
             texte = " ".join((p.recette.titre, *p.recette.ingredients, *p.recette.etapes)).lower()

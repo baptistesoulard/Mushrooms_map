@@ -1,6 +1,6 @@
 """Les portraits des espèces, pour leurs fiches (`pages_especes.py`) : où chacune pousse, des
 astuces pour la trouver, sa réputation en cuisine et une recette végétarienne (demandes du
-2026-11-08 : ni viande, ni poisson, ni fromage à présure animale ; test).
+2026-11-08 : ni viande ni poisson, le parmesan admis ; test).
 
 Rien ici ne sert au calcul : les règles restent dans `especes.py`, et `especes.json` (chargé par
 la carte) n'en reçoit rien. Les textes viennent des guides de terrain (`especes.REFERENCES`) ;
@@ -144,13 +144,13 @@ PORTRAITS: dict[str, Portrait] = {
             titre="Tagliatelles aux trompettes et à la crème", pour="4 personnes",
             ingredients=(f"300{U}g de tagliatelles", f"250{U}g de trompettes (ou 30{U}g séchées, "
                          "réhydratées 20 minutes dans l'eau tiède)", "1 échalote", f"20{U}g de beurre",
-                         f"20{U}cl de crème", "fromage râpé à présure végétale", "sel, poivre"),
+                         f"20{U}cl de crème", "parmesan, sel, poivre"),
             etapes=(
                 "Fendez, rincez et égouttez les trompettes ; coupez les plus grandes en lanières.",
                 "Faites suer l'échalote hachée dans le beurre, ajoutez les trompettes et laissez cuire 10 "
                 "minutes à feu moyen, jusqu'à ce que leur eau soit évaporée.",
                 "Versez la crème, salez, poivrez, laissez réduire 5 minutes.",
-                "Mêlez aux tagliatelles cuites et égouttées, servez avec le fromage râpé.",
+                "Mêlez aux tagliatelles cuites et égouttées, servez avec du parmesan râpé.",
             )),
     ),
     "pied_de_mouton": Portrait(
