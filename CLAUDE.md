@@ -291,7 +291,8 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   utile ; les huit centres antipoison (`avant-de-partir.html`, `carte.js` pour le plus
   proche), vérifiés sur centres-antipoison.net.
 - **Le site ne renvoie pas vers son dépôt (2026-11-08)** : les sources de données restent citées
-  (`a-propos.html`, les licences l'exigent), le code non ; pas de contact par les tickets GitHub.
+  (`a-propos.html`, les licences l'exigent), le code non ; le contact est contact@champimeteo.fr
+  (redirection d'e-mail OVH), pas les tickets GitHub.
   Le code servi est minifié au déploiement (étape « Minifier le code servi » de `carte.yml`,
   esbuild) : la source reste lisible dans le dépôt, les tests tournent sur elle.
 - **Aucun script tiers** :
