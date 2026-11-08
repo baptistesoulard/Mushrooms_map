@@ -225,8 +225,12 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   les espèces des prés gardent leurs communes ; Leaflet choisit ses tuiles au zoom ARRONDI et les
   retire au zoom exact : les seuils suivent le zoom arrondi ; du zoom 8 à 10,5, l'aperçu de 1,15 km, la MEILLEURE case de chaque
   pixel (`export_france.Apercu`, la règle des zones ; la moyenne diluée d'avant foncissait d'un
-  coup au zoom 11) ; dès le zoom 11 (`DETAIL`), les zones de 250 m ou les cases de 50 m. La légende
-  de l'onglet Ici suit le niveau. Rien de plus fin que 250 m en clair.
+  coup au zoom 11) ; dès le zoom 11 (`DETAIL`), les zones de 250 m, pour tous ; avec la carte fine,
+  les cases de 50 m dès le zoom 13 seulement (`FIN`, `carte.casesA`, décision du 2026-11-08 : du pixel
+  de 1,15 km à la case de 50 m d'un coup, l'écart était trop grand ; chaque niveau fait ~4-5 pixels à
+  son premier zoom), et la fenêtre d'une case suit ce qui est peint (zone avant, case après). Les
+  coins et l'exploration gardent la case de 50 m dès le zoom 11. La légende de l'onglet Ici suit le
+  niveau. Rien de plus fin que 250 m en clair.
 - **Le panneau de la carte** : l'espèce (bouton illustré, liste en boîte de dialogue, en saison
   d'abord), le jour, puis quatre onglets — Ici (que chercher ici, légende), Département (verdict,
   semaine, altitude, communes, France), L'espèce (fiche), Mes outils (coins, alertes, exploration).

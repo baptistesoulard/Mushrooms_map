@@ -1,8 +1,9 @@
 // Carte de l'indice de pousse, France entière.
 // Vue large (zoom < DETAIL) : l'aperçu national calculé chaque matin (pixels de 1,15 km).
 // Vue rapprochée : le navigateur calcule lui-même l'indice, bloc par bloc (data/meteo/*.bin,
-// modele.js) : par zones de 250 m pour tout le monde (data/zones/*.png, champi/zones.py), par
-// cases de 50 m avec le mot de passe de la carte fine (habitat/fin/, déchiffré par fin.js).
+// modele.js) : par zones de 250 m pour tout le monde (data/zones/*.png, champi/zones.py), puis,
+// de plus près (FIN), par cases de 50 m avec le mot de passe de la carte fine (habitat/fin/,
+// déchiffré par fin.js).
 import { installerAlertes } from "./alertes.js";
 import { installerCoins } from "./coins.js";
 import { installerFeuille } from "./feuille.js";
@@ -15,7 +16,8 @@ import { partager } from "./partage.js";
 
 const R = 6378137;
 const MONDE = 2 * Math.PI * R;
-const DETAIL = 11;                     // à partir de ce zoom, une case ≈ un pixel d'écran
+const DETAIL = 11;                     // à partir de ce zoom, la vue rapprochée : une zone de 250 m ≈ 5 pixels
+const FIN = 13;                        // … et dès ce zoom (arrondi), avec la carte fine, les cases de 50 m (≈ 4 pixels)
 const SYNTHESE = 8;                    // en dessous, la vue France : le verdict par carrés de 9,2 km
 const CARRES_FINS = 7;                 // … et dès ce zoom (jusqu'à SYNTHESE), par carrés de 4,6 km
 const CARRES_GROS = 5;                 // … et jusqu'à ce zoom, par carrés de 18,4 km
@@ -156,6 +158,10 @@ async function demarrer() {
     if (brut) await ouvrirFine(brut);
   }
   const modeFin = () => !Z || cleFine !== null;
+  // Ce que montre la vue rapprochée au zoom `z` (arrondi, celui des tuiles) : les cases de 50 m de la
+  // carte fine dès FIN, les zones de 250 m avant (2026-11-08 : du pixel de 1,15 km à la case de
+  // 50 m d'un coup, l'écart était trop grand). Sans carte fine, les zones à tout zoom.
+  const casesA = (z) => modeFin() && (!Z || z >= FIN);
   const leg = carte.legendes;
   const pal = couleurs(carte.classes.length);
 
@@ -332,7 +338,7 @@ async function demarrer() {
 
   // Codes d'un bloc pour l'espèce et le jour : un octet par case, comme l'aperçu. « Forêts
   // publiques seulement » laisse les autres sans couleur.
-  const cleCodes = (nom, esp, k, publiques) => `${nom}|${esp}|${k}|${publiques ? 1 : 0}|${modeFin() ? 1 : 0}`;
+  const cleCodes = (nom, esp, k, publiques, fin) => `${nom}|${esp}|${k}|${publiques ? 1 : 0}|${fin ? 1 : 0}`;
   const codesBlocs = memoire(60, async (cle) => {
     const [nom, esp, k, publiques, fin] = cle.split("|");
     if (fin === "0") return codesZones(nom, esp, Number(k), publiques === "1");
@@ -728,7 +734,7 @@ async function demarrer() {
       const codesDe = filtre
         ? (nom) => codesFiltre(`${nom}#${JSON.stringify(filtre)}`)
         : desPres(etat.espece) ? (nom) => codesCommunes(`${nom}|${etat.espece}|${etat.jour}`)
-          : (nom) => codesBlocs(cleCodes(nom, etat.espece, etat.jour, etat.publiques));
+          : (nom) => codesBlocs(cleCodes(nom, etat.espece, etat.jour, etat.publiques, casesA(coords.z)));
       const [er, eg, eb] = pal.exploration;
       const alpha = !filtre && desPres(etat.espece) ? OPACITE_COMMUNES : 0;
       const noms = new Set();
@@ -781,7 +787,7 @@ async function demarrer() {
     if (!blocsPresents.has(nom)) return null;
     const col = Math.floor((x - bx * B.cote) / B.pas), lig = Math.floor(((by + 1) * B.cote - y) / B.pas);
     if (!modeFin()) {               // la zone de 250 m du coin
-      const [z, codes, cc, communes] = await Promise.all([zonesBloc(nom), codesBlocs(cleCodes(nom, code, etat.jour, false)),
+      const [z, codes, cc, communes] = await Promise.all([zonesBloc(nom), codesBlocs(cleCodes(nom, code, etat.jour, false, false)),
         couchesC(nom), annexes("habitat/communes.json")]);
       const i = lig * B.taille + col;
       const protege = codes[i] === PROTEGE;
@@ -789,7 +795,7 @@ async function demarrer() {
                commune: communes[cc.commune[i] - 1]?.nom };
     }
     const [h, codes, communes] = await Promise.all([
-      habitats(nom), codesBlocs(cleCodes(nom, code, etat.jour, false)), annexes("habitat/communes.json")]);
+      habitats(nom), codesBlocs(cleCodes(nom, code, etat.jour, false, true)), annexes("habitat/communes.json")]);
     let s = 0, n = 0, protege = false;
     for (let l = Math.max(0, lig - 1); l <= Math.min(B.taille - 1, lig + 1); l++) {
       for (let c = Math.max(0, col - 1); c <= Math.min(B.taille - 1, col + 1); c++) {
@@ -1214,7 +1220,8 @@ async function demarrer() {
       "Sans couleur : indice très faible, ou hors forêt"));
     z.append(el("p", { class: "muet" }, `En vue régionale, chaque pixel d'environ 1 km prend la meilleure forêt qu'il ` +
       "contient ; zoomez pour voir " +
-      (modeFin() ? "les cases de 50 m." : "les zones de 250 m (l'habitat le plus favorable de chacune).")));
+      (!modeFin() ? "les zones de 250 m (l'habitat le plus favorable de chacune)."
+        : Z ? "les zones de 250 m, puis, de plus près, les cases de 50 m." : "les cases de 50 m.")));
   }
 
   // Venu par un lien d'accès : une annonce en tête du panneau (visible sur la feuille repliée),
@@ -1223,9 +1230,9 @@ async function demarrer() {
     if (!parLien) return;
     const z = $("annonce-fine");
     const fermer = () => { z.hidden = true; map.off("zoomend", vu); };
-    const vu = () => { if (map.getZoom() >= DETAIL) fermer(); };
+    const vu = () => { if (Math.round(map.getZoom()) >= FIN) fermer(); };
     z.replaceChildren({
-      ouverte: "Carte fine ouverte sur cet appareil : zoomez sur une forêt pour voir ses cases de 50 m.",
+      ouverte: "Carte fine ouverte sur cet appareil : zoomez sur une forêt, de près elle passe aux cases de 50 m.",
       refuse: "Ce lien n'ouvre plus la carte fine : il est incomplet, ou le mot de passe a changé depuis. " +
         "Demandez un nouveau lien.",
       absente: "La carte fine n'est pas publiée en ce moment : la carte montre des zones de 250 m.",
@@ -1243,7 +1250,8 @@ async function demarrer() {
     $("fine").hidden = false;
     const afficher = () => {
       $("fine-etat").textContent = cleFine
-        ? "Cases de 50 m sur cet appareil. La clé y reste gardée : le mot de passe ne se redemande pas."
+        ? "De près, la carte passe aux cases de 50 m sur cet appareil. La clé y reste gardée : le mot de passe " +
+          "ne se redemande pas."
         : "La carte montre des zones de 250 m. Avec le mot de passe, elle passe aux cases de 50 m, sur cet appareil.";
       $("fine-form").hidden = Boolean(cleFine);
       $("fine-lien").hidden = !cleFine;
@@ -1326,6 +1334,12 @@ async function demarrer() {
     afficherCase();
   });
   map.on("popupclose", (ev) => { if (ev.popup === caseCourante?.popup) caseCourante = null; });
+  // La fenêtre suit ce que montre la carte : franchir FIN (carte fine) passe de la zone à la case.
+  let casesVues = casesA(Math.round(map.getZoom()));
+  map.on("zoomend", () => {
+    const v = casesA(Math.round(map.getZoom()));
+    if (v !== casesVues) { casesVues = v; afficherCase(); }
+  });
 
   async function afficherCase() {
     const c = caseCourante;
@@ -1342,7 +1356,7 @@ async function demarrer() {
         montrer(fenetreCommune(commune[i], table[commune[i]], communes, c.ll));
         return;
       }
-      if (!modeFin()) {
+      if (!casesA(Math.round(map.getZoom()))) {
         const [z, m, cc, communes, infos] = await Promise.all([zonesBloc(nom), meteos(nom), couchesC(nom),
           annexes("habitat/communes.json"), annexes("habitat/blocs.json")]);
         montrer(fenetreZone(z, m, cc, i, communes, infos.blocs[nom], c.ll));
@@ -1532,7 +1546,7 @@ async function demarrer() {
     tuilesMeteo(tuile, e, r, jour, cas.lat);
     div.append(detailCase(tuiles, `Indice ${e.de}, ${carte.jours[etat.jour].libelle}. Zone de 250 m : l'habitat le ` +
       "plus favorable de la zone, la météo à son altitude moyenne (AROME à 2,5 km)." +
-      (carte.fine ? " Les cases de 50 m : carte fine, dans Mes outils." : "")));
+      (!carte.fine ? "" : cleFine ? " Zoomez pour les cases de 50 m." : " Les cases de 50 m : carte fine, dans Mes outils.")));
     return div;
   }
 
