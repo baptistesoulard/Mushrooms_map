@@ -547,6 +547,8 @@ dialog.guide #guide-etape { margin: 0; }
 .legende-guide[hidden] { display: none; }
 .legende-guide .pastille { width: 34px; height: 12px; }
 .legende-guide .pastille.n1 { background: var(--classe-1); }
+dialog.guide .guide-avertissement { font-size: .84rem; margin: 0 0 14px; }
+.guide-avertissement[hidden] { display: none; }
 .guide-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .guide-actions .lien[hidden] { visibility: hidden; display: inline; }
 button.bouton.principal { background: var(--accent); border-color: var(--accent); color: #fff; }

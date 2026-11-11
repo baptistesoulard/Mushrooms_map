@@ -180,7 +180,10 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   affichée au même verdict que les départements (`export_france.Vue` → `data/vue/<jour>.png`, grille
   de 9,2 km, `ici.js` : test Python/JS). Sur téléphone, la carte plein écran et le panneau en feuille
   qui glisse du bas (`feuille.js`), une case touchée s'y ouvre. Présentation de première visite
-  (`guide.js`, `champi-guide`).
+  (`guide.js`, `champi-guide`) : UN écran depuis le 2026-11-11 (cinq avant la carte, c'était trop) :
+  l'échelle des couleurs, comment s'en servir, l'avertissement, « Voir la carte » ; la visite guidée
+  (quatre écrans) à la demande, depuis cet écran ou « Revoir la présentation ». La demande de
+  position suit sa fermeture.
 - **Identité visuelle (2026-11-07)** : le logo est un cèpe en réserve dans une goutte de pluie (`icones.py`,
   une seule géométrie) : en ligne dans la barre, la goutte à l'accent et le cèpe aux couleurs du creux
   (le fond de la barre en mode sombre, classes `marque-*`), et en fichiers

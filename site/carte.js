@@ -1754,9 +1754,10 @@ async function demarrer() {
   }
   if (depDemande) onglet("departement");
   tout();
-  // Première visite : la présentation, puis la demande de position (elle attend la fermeture).
+  // Première visite : l'écran d'accueil (un seul), puis la demande de position (elle attend la
+  // fermeture). « Revoir la présentation » ouvre la visite complète.
   const guide = installerGuide($("guide"), { etroit: feuille.etroit });
-  $("revoir-guide").addEventListener("click", guide.ouvrir);
+  $("revoir-guide").addEventListener("click", () => guide.ouvrir({ visite: true }));
   if (guide.premiereVisite()) {
     $("guide").addEventListener("close", positionOuverture, { once: true });
     guide.ouvrir();
