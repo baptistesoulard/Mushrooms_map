@@ -166,19 +166,29 @@ PORTRAITS: dict[str, Portrait] = {
             "Sa couleur crème ressort sur les feuilles brunes : balayez le sol du regard, de loin.",
             "Les vers l'épargnent souvent : même tard dans la saison, il reste en bon état.",
         ),
-        saveur=3, saveur_texte="bon jeune, ferme ; il devient amer en vieillissant",
+        saveur=3, saveur_texte="meilleur jeune, quand il n'est pas encore amer ; sa chair ferme tient bien au vinaigre",
         cuisine="Gardez les jeunes exemplaires. Retirez les aiguillons des plus grands, qui s'effritent, "
-                "et faites-les blanchir 2 minutes à l'eau bouillante s'ils sont amers.",
+                "et faites-les blanchir 2 minutes à l'eau bouillante s'ils sont amers. Un bocal maison se "
+                "garde au réfrigérateur, couvert de vinaigre, jamais sous l'huile ni à température ambiante : "
+                "une conserve de champignons trop peu acide peut transmettre le botulisme.",
         recette=Recette(
-            titre="Pieds-de-mouton à la crème", pour="4 personnes",
-            ingredients=(f"500{U}g de pieds-de-mouton", "1 échalote", f"20{U}g de beurre", f"20{U}cl de crème",
-                         "quelques brins de persil", "sel, poivre"),
+            titre="Pickles de pieds-de-mouton au vinaigre", pour=f"un bocal de 50{U}cl",
+            ingredients=(f"400{U}g de jeunes pieds-de-mouton",
+                         f"25{U}cl de vinaigre de vin blanc (à 6{U}% d'acidité au moins)", f"10{U}cl d'eau",
+                         "1 cuillerée à café de sel et 1 de sucre", "1 échalote et 1 gousse d'ail",
+                         "1 brin de thym, 1 feuille de laurier, 6 grains de poivre, 1 cuillerée à café de "
+                         "graines de moutarde"),
             etapes=(
-                "Brossez les pieds-de-mouton et coupez-les en morceaux.",
-                "Faites-les revenir dans le beurre avec l'échalote hachée, 10 à 15 minutes à feu moyen, "
-                "jusqu'à évaporation de leur eau.",
-                "Ajoutez la crème, salez, poivrez, laissez réduire 5 minutes et parsemez de persil. Avec "
-                "du riz ou des pommes de terre vapeur.",
+                "Brossez les pieds-de-mouton, retirez les aiguillons des plus grands et coupez-les en "
+                "bouchées.",
+                "Ébouillantez le bocal et son couvercle, laissez-les sécher à l'air.",
+                "Portez à ébullition le vinaigre, l'eau, le sel, le sucre, l'échalote émincée, l'ail et les "
+                "aromates. Ajoutez les champignons et laissez frémir 10 minutes.",
+                "Remplissez le bocal de champignons et d'aromates, couvrez de liquide bouillant jusqu'en "
+                "haut et fermez.",
+                "Laissez refroidir, puis gardez au réfrigérateur : prêts après 2 ou 3 jours, à manger dans "
+                "les 3 semaines, toujours couverts de vinaigre. Jetez le bocal si le couvercle est bombé "
+                "ou si le liquide se trouble. En apéritif, ou avec une raclette.",
             )),
     ),
     "lactaire": Portrait(
