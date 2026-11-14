@@ -118,7 +118,8 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   `python -m champi.forets` : BD TOPO `foret_publique`, d'après l'ONF, contours simplifiés à 100 m),
   chacune jugée chaque nuit sur ses cases libres de l'échantillon comme un département
   (`export_france.verdict_foret`, `redaction.niveau`) : tableau « Où chercher : les forêts
-  publiques », questions fréquentes, description. Toujours la forêt entière, jamais une parcelle ;
+  publiques » (après les champignons de la semaine depuis le 2026-11-14, test), questions fréquentes,
+  description. Toujours la forêt entière, jamais une parcelle ;
   jamais une forêt privée ; les zones protégées restent hors calcul, et la page rappelle qu'une
   forêt publique peut avoir sa réserve ou son arrêté. Remplace « aucun coin » pour ces seules forêts.
 - **Adresses lisibles (2026-11-07)** : `departements/vendee/` (`pages.chemin_departement`, nom sans

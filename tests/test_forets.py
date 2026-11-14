@@ -98,4 +98,8 @@ def test_section_et_questions_des_forets():
     page = P.page_departement({"code": "85", "nom": "Vendée"}, ESPECES, r, JOURS, "2026-11-01T05:20+00:00",
                               forets=forets)
     assert "les forêts de Mervent, des Pays de Monts et d&#x27;Aizenay" in page     # la description
+    # Les champignons de la semaine d'abord, les forêts publiques ensuite (demande du 2026-11-14).
+    assert (page.index("<h2>La semaine, espèce par espèce</h2>") < page.index('<section class="carte-espece">')
+            < page.index("<h2>Où chercher en Vendée : les forêts publiques</h2>")
+            < page.index("<h2>Questions fréquentes</h2>"))
     assert '"mentions":[{"@type":"Place","name":"Forêt domaniale de Mervent"}' in page

@@ -300,7 +300,6 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
         lignes.append('  <div class="chiffres">' + "".join(
             f'<div class="chiffre"><span>{e(t)}</span><strong>{e(v)}</strong><span>{e(p)}</span></div>'
             for t, v, p in cles) + "</div>")
-    lignes += section_forets(forets or [], especes, jours, lieu)
 
     actuel = ' class="actuel"'
     colonnes = "".join(f'<th scope="col"{actuel if k == 0 else ""}>{JOURS_COURTS[d.weekday()]}<br>{d.day}</th>'
@@ -357,6 +356,9 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
                         (absentes, "Pas de forêt ni de pré calculé ici")):
         if liste:
             lignes.append(f'  <p class="muet">{quoi} : {enumerer(liste)}.</p>')
+
+    # Les forêts publiques après les champignons de la semaine (demande du 2026-11-14).
+    lignes += section_forets(forets or [], especes, jours, lieu)
 
     lignes += ['  <section class="faq">', "  <h2>Questions fréquentes</h2>"]
     for q, r in qr:
