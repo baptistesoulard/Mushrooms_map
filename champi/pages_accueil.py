@@ -17,7 +17,8 @@ from pathlib import Path
 
 from .carte_departements import cadre_une, charger as charger_contours
 from .config import PAS_FIN
-from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, cle_departement,
+from .pages import (JOURS_COURTS, NIVEAUX_COURTS, NOM, PARTAGER, article, calcule_pour, chemin_mois, cle_departement,
+                    de_mois,
                     date_courte, date_longue, departements_de, e, enumerer, habituel, icone, image_partage,
                     instant_paris,
                     meilleur_niveau, national, noms_especes, ordre_saison, page_web, pct, pied, site_web, tete,
@@ -433,7 +434,8 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
     lignes.append("  </ul>")
     if hors:
         lignes.append(f'  <p class="muet">Hors saison partout : {e(enumerer(hors))}.</p>')
-    lignes += [f'  <p class="actions"><a class="bouton" href="especes/">Toutes les espèces et leur calendrier</a>'
+    lignes += [f'  <p class="actions"><a class="bouton" href="{chemin_mois(jours[0].month)}">Les champignons '
+               f'{e(de_mois(jours[0].month))}</a><a class="bouton" href="especes/">Toutes les espèces</a>'
                f"{PARTAGER}</p>",
                "  </section>"]
 

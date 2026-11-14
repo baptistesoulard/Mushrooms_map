@@ -28,7 +28,7 @@ NIVEAUX_COURTS = ["hors saison", "défavorable", "possible", "par endroits", "bo
 JOURS_COURTS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
 # Le plan du pied de page, en chemins depuis la racine du site.
 PLAN = [("./", "Accueil"), ("carte/", "La carte"), ("en-ce-moment.html", "En ce moment"),
-        ("especes/", "Les espèces"), ("departements/", "Par département"),
+        ("especes/", "Les espèces"), ("calendrier/", "Calendrier"), ("departements/", "Par département"),
         ("methode.html", "Méthode"), ("validation.html", "Face aux observations"),
         ("avant-de-partir.html", "Avant de partir"), ("a-propos.html", "À propos")]
 
@@ -132,6 +132,17 @@ def chemin_departement(code: str, nom: str) -> str:
 def chemin_espece(code: str) -> str:
     """« especes/pied-de-mouton/ » : des tirets, que les moteurs lisent comme des espaces."""
     return f"especes/{code.replace('_', '-')}/"
+
+
+def de_mois(m: int) -> str:
+    """« de novembre », « d'avril », « d'août », « d'octobre »."""
+    nom = MOIS[m - 1]
+    return f"d'{nom}" if nom[0] in "aeiouéè" else f"de {nom}"
+
+
+def chemin_mois(m: int) -> str:
+    """« calendrier/novembre/ », « calendrier/fevrier/ » : la page des champignons d'un mois (1-12)."""
+    return f"calendrier/{slug(MOIS[m - 1])}/"
 
 
 def renvoi(vers: str, canonique: str, titre: str) -> str:

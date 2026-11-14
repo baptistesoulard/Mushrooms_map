@@ -6,7 +6,7 @@ import pytest
 
 SITE = Path(__file__).resolve().parent.parent / "site"
 # Écrits chaque matin par l'export (champi/pages*.py), hors git : vérifiés par tests/test_pages_accueil.py.
-GENERES = {"departements", "especes", "en-ce-moment.html", "index.html"}
+GENERES = {"departements", "especes", "calendrier", "en-ce-moment.html", "index.html"}
 # Les pages versionnées : pas celles de l'export, qu'un export local laisse dans site/.
 PAGES = sorted(p for p in [*SITE.glob("*.html"), *SITE.glob("carte/*.html")] if p.name not in GENERES)
 

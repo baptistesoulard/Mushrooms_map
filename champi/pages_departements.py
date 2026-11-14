@@ -15,6 +15,7 @@ import json
 import re
 
 from .carte_departements import charger as charger_contours, voisins as voisins_de
+from .terroirs import TERROIRS
 from .pages import (JOURS_COURTS, LEGENDE, NIVEAUX_COURTS, NOM, PARTAGER, article, bandeau, calcule_pour, chemin_departement,
                     chemin_espece, cle_departement, renvoi, slug,
                     dans, date_longue, e, enumerer, faq, fil_ariane, icone, image_partage, instant_paris,
@@ -357,7 +358,16 @@ def page_departement(dep: dict, especes: list[dict], resumes: dict, jours: list[
         if liste:
             lignes.append(f'  <p class="muet">{quoi} : {enumerer(liste)}.</p>')
 
-    # Les forêts publiques après les champignons de la semaine (demande du 2026-11-14).
+    # Le portrait du département (`terroirs.py`, dix départements), puis les forêts publiques, après
+    # les champignons de la semaine (demandes du 2026-11-14).
+    if (t := TERROIRS.get(code)):
+        lignes += [f"  <h2>Les champignons {e(lieu)} : forêts, espèces, saisons</h2>",
+                   f"  <p><strong>Les forêts.</strong> {e(t.forets)}</p>",
+                   f"  <p><strong>Les espèces.</strong> {e(t.especes)}</p>",
+                   f"  <p><strong>Où chercher.</strong> {e(t.ou)}</p>",
+                   f"  <p><strong>Bon à savoir.</strong> {e(t.savoir)} La cueillette peut aussi être encadrée par "
+                   f'arrêté préfectoral ou municipal : renseignez-vous en mairie (<a href="{R}avant-de-partir.html">'
+                   "avant de partir</a>).</p>"]
     lignes += section_forets(forets or [], especes, jours, lieu)
 
     lignes += ['  <section class="faq">', "  <h2>Questions fréquentes</h2>"]

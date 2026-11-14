@@ -22,7 +22,7 @@ l'habitat (release « habitat », copié dans `site/habitat/`) et de la météo 
 - `carte.json` (jours, classement des départements, légendes), `especes.json`, `validation.json`.
 
 Puis les pages lisibles sans JavaScript, à côté de la carte (`site/carte/`) : l'accueil et « en
-ce moment » (`pages_accueil`), les fiches espèces (`pages_especes`), les départements
+ce moment » (`pages_accueil`), les fiches espèces (`pages_especes`), le calendrier (`pages_mois`), les départements
 (`pages_departements`) ; et leurs images de partage, `partage/<département>.png`, `france.png`
 `carte-france.png` et `carte-france-<espèce>.png`, les cartes de l'accueil (`partage`) : le
 verdict des départements sur chaque carré de 9,2 km (`verdicts_carres`).
@@ -52,6 +52,7 @@ from . import pages_accueil
 from . import partage
 from . import pages_departements
 from . import pages_especes
+from . import pages_mois
 from . import prairies
 from . import redaction
 from .config import DATA, PAS_FIN, RACINE, SITE, SITE_DATA, VAPID_PUBLIQUE
@@ -618,6 +619,7 @@ def exporter(meteo: Meteo | None = None) -> dict:
                                     validation)
     chemins += pages_especes.ecrire(SITE, departements, regles, carte["legendes"], resumes, jours,
                                     carte["genere_le"], validation)
+    chemins += pages_mois.ecrire(SITE, regles["especes"], jours, carte["genere_le"])
     pages.ecrire_plan(SITE, chemins, jours[0])
     pixel_dep = np.full(apercu.nb, -1, dtype=np.int16)
     pixel_dep[apercu.pixel] = ech.departement

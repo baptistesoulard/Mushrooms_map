@@ -95,9 +95,9 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   visible, ne change jamais un département choisi entre-temps et ne quitte pas l'appareil.
   Le département vient de la commune de la case (blocs d'habitat).
 - **Pages du matin** (`pages.py` pour le socle : en-tête, pied, état national) : l'accueil et
-  « en ce moment » (`pages_accueil.py`), les fiches espèces (`pages_especes.py`), les
-  départements (`pages_departements.py`). Réécrites chaque matin par l'export, hors git
-  (`site/index.html`, `en-ce-moment.html`, `especes/`, `departements/`), lisibles sans
+  « en ce moment » (`pages_accueil.py`), les fiches espèces (`pages_especes.py`), le calendrier
+  (`pages_mois.py`), les départements (`pages_departements.py`). Réécrites chaque matin par l'export,
+  hors git (`site/index.html`, `en-ce-moment.html`, `especes/`, `calendrier/`, `departements/`), lisibles sans
   JavaScript, testées sur des résumés fabriqués (`tests/test_pages_accueil.py`, liens compris).
   Aucun coin : départements, altitudes, communes, comme le panneau. Rien en dur : seuils et
   saisons viennent des règles, les chiffres de fiabilité de `validation.json`. Indexées
@@ -137,6 +137,18 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   la saveur en étoiles (en tête, et sur la liste des espèces) et « En cuisine » à la fin, tirés de
   `portraits.py` (un portrait par espèce, test ; rien pour le calcul, rien dans `especes.json`).
   Exception assumée aux textes courts : c'est ce qu'on vient y lire.
+- **Calendrier (2026-11-14)** : `calendrier/` et une page par mois (`calendrier/novembre/`,
+  `pages.chemin_mois`, `pages_mois.py`), pour les recherches « quels champignons en novembre » : les
+  espèces en pleine saison (photo, saveur, milieu, une astuce) puis en début ou fin de saison, d'après
+  `pages.mois_saison` (le tableau de la page des espèces, dont chaque mois mène à sa page) ; un mois
+  creux dit ce qui dure au sud (`modele.dates_saison` à `LAT_SUD`, Perpignan) et ce qui revient. Liens :
+  pied de page (`pages.PLAN`), accueil (« Les champignons de novembre »), page des espèces. Test.
+- **Portraits des départements (2026-11-14)** : `terroirs.py`, dix départements (Haute-Savoie, Isère,
+  Jura, Doubs, Vosges, Corrèze, Puy-de-Dôme, Dordogne, Landes, Gironde : faute de chiffres de recherche
+  publiés par département, les grandes régions à champignons pondérées par la population ; la Search
+  Console dira lesquels ajouter). Forêts, espèces, où chercher, bon à savoir, à l'échelle des massifs et
+  des grandes forêts publiques ; une ligne commune renvoie aux arrêtés et à la mairie, rien de
+  réglementaire au cas par cas. Après les champignons de la semaine, avant les forêts publiques (test).
 - **Textes courts (2026-11-08), sur tout le site** : une légende reste une légende (pastilles,
   `legende-semaine`), jamais une phrase ; une explication tient en une phrase ; le calcul s'explique
   une fois, sur `methode.html`, et les autres pages y renvoient (« Calculé le … », sans redire sur

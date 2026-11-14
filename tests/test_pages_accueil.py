@@ -9,7 +9,7 @@ import numpy as np
 from champi import especes as E
 from champi import pages
 from champi import pages_accueil as A
-from champi import carte_departements, pages_departements, pages_especes, partage
+from champi import carte_departements, pages_departements, pages_especes, pages_mois, partage
 from champi.grille import Grille
 from champi.habitat import ESSENCES, ROCHES
 from champi.modele import CLASSES
@@ -279,7 +279,8 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
     chemins = pages_departements.ecrire(tmp_path, DEPS, ESPECES, r, JOURS, GENERE_LE)
     chemins += A.ecrire(tmp_path, DEPS, ESPECES, r, JOURS, GENERE_LE, None)
     chemins += pages_especes.ecrire(tmp_path, DEPS, REGLES, LEGENDES, r, JOURS, GENERE_LE, None)
-    assert len(chemins) == (1 + len(DEPS)) + 2 + (1 + len(ESPECES))
+    chemins += pages_mois.ecrire(tmp_path, ESPECES, JOURS, GENERE_LE)
+    assert len(chemins) == (1 + len(DEPS)) + 2 + (1 + len(ESPECES)) + (1 + 12)
     codes = np.full((30, 30), 100, dtype=np.uint8)                # une bande de forêt par département
     pixel_dep = np.repeat(np.arange(3, dtype=np.int16), 300)
     cadre = carte_departements.charger()["cadre"]

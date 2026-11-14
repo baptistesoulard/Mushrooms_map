@@ -16,7 +16,7 @@ from pathlib import Path
 from .pages import (MOIS_COURTS, NIVEAUX_COURTS, PARTAGER, calendrier_mois, credit_photo, date_courte,
                     departements_de, e, habituel, icone, image_partage, meilleur_niveau,
                     mois_saison, national, noms_especes, ordre_saison, pct, pied, tete, NOM, fil_ariane, page_web,
-                    chemin_espece, renvoi, bandeau)
+                    chemin_espece, chemin_mois, renvoi, bandeau)
 from .photos import charger as charger_photos
 from .portraits import PORTRAITS, SAVEURS
 from .pages_accueil import etat_espece
@@ -244,6 +244,26 @@ def page_espece(x: dict, legendes: dict, jours: list[date], validation: dict | N
     return haut + "\n".join(lignes) + "\n" + pied(R)
 
 
+def tableau_saisons(especes: list[dict], mois: int, racine: str) -> list[str]:
+    """Le calendrier de toutes les espèces, mois par mois (le mois `mois` entouré) : chaque espèce
+    mène à sa fiche, chaque mois à sa page (`calendrier/<mois>/`). `racine` : de la page à la racine."""
+    tete_mois = "".join(f'<th scope="col"{' class="actuel"' if k + 1 == mois else ""}>'
+                        f'<a href="{racine}{chemin_mois(k + 1)}">{m}</a></th>' for k, m in enumerate(MOIS_COURTS))
+    rangs = []
+    for x in sorted(especes, key=lambda x: (x.get("milieu") == "pre", x["saison"][1])):
+        cases = "".join(f'<td class="{c}{" actuel" if k + 1 == mois else ""}"></td>'
+                        for k, c in enumerate(mois_saison(x["saison"])))
+        rangs.append(f'<tr><th scope="row"><a href="{racine}{chemin_espece(x["code"])}">{icone(racine, x["code"], 24)}'
+                     f'{e(x["nom"])}</a></th>{cases}</tr>')
+    return [f'  <p class="muet">Dates {CENTRE} ; {SUD}. Une saison dit quand chercher, pas si ça pousse.</p>',
+            '  <div class="tableau"><table class="calendrier">',
+            f"  <thead><tr><th></th>{tete_mois}</tr></thead>",
+            f"  <tbody>{''.join(rangs)}</tbody>",
+            "  </table></div>",
+            '  <div class="legende-semaine"><span><span class="pastille cal-plein"></span>pleine saison</span>'
+            '<span><span class="pastille cal-possible"></span>possible</span></div>']
+
+
 def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, genere_le: str,
                photos: dict | None = None) -> str:
     """Toutes les espèces d'un coup d'œil : celle du moment, une fiche illustrée par espèce avec
@@ -311,25 +331,9 @@ def page_index(especes: list[dict], nat: dict, jours: list[date], noms: dict, ge
                '<button type="button" data-filtre="pre" aria-pressed="false">Prés</button></p>',
                '  <ul class="fiches-especes">'] + [fiche(x) for x in ordre] + ["  </ul>"]
 
-    # Le calendrier : toutes les espèces, mois par mois.
-    tete_mois = "".join(f'<th scope="col"{" class=\"actuel\"" if k + 1 == mois else ""}>{m}</th>'
-                        for k, m in enumerate(MOIS_COURTS))
-    rangs = []
-    for x in sorted(especes, key=lambda x: (x.get("milieu") == "pre", x["saison"][1])):
-        cases = "".join(f'<td class="{c}{" actuel" if k + 1 == mois else ""}"></td>'
-                        for k, c in enumerate(mois_saison(x["saison"])))
-        rangs.append(f'<tr><th scope="row"><a href="{x["code"].replace("_", "-")}/">{icone("../", x["code"], 24)}'
-                     f'{e(x["nom"])}</a></th>{cases}</tr>')
-    lignes += ["  <h2>Le calendrier des saisons</h2>",
-               f'  <p class="muet">Dates {CENTRE} ; {SUD}. Une saison dit quand chercher, pas si ça '
-               "pousse.</p>",
-
-               '  <div class="tableau"><table class="calendrier">',
-               f"  <thead><tr><th></th>{tete_mois}</tr></thead>",
-               f"  <tbody>{''.join(rangs)}</tbody>",
-               "  </table></div>",
-               '  <div class="legende-semaine"><span><span class="pastille cal-plein"></span>pleine saison</span>'
-               '<span><span class="pastille cal-possible"></span>possible</span></div>']
+    # Le calendrier : toutes les espèces, mois par mois ; chaque mois mène à sa page.
+    lignes += ["  <h2>Le calendrier des saisons</h2>"] + tableau_saisons(especes, mois, "../") + [
+        '  <p><a href="../calendrier/">Le calendrier, mois par mois</a></p>']
     if photos:
         lignes += ["  <h2>Crédits des photos</h2>", '  <ul class="credits">']
         lignes += [f"    <li>{e(x['nom'])} : {credit_photo(photos[x['code']])[len('Photo : '):]}</li>"
