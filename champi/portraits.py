@@ -318,6 +318,38 @@ PORTRAITS: dict[str, Portrait] = {
                 "champignons et faites cuire l'omelette.",
             )),
     ),
+    "sparassis": Portrait(
+        ou_pousse="Le sparassis crépu vit aux dépens des racines des pins, et plus rarement du douglas, de "
+                  "l'épicéa ou du mélèze : il les fait lentement pourrir et sort à leur pied, collé à la base "
+                  "du tronc ou sur une souche, de la fin de l'été à la fin de l'automne. Une même souche peut "
+                  "en donner plusieurs années de suite.",
+        astuces=(
+            "Faites le tour des vieux pins et des souches de pins : il sort collé à la base du tronc, "
+            "souvent à moitié caché dans les aiguilles.",
+            "Sa couleur crème se voit de loin dans la litière sombre des pinèdes.",
+            "Notez l'arbre (« Mes coins » sur la carte) : il revient souvent au même pied d'une année à "
+            "l'autre.",
+            "Coupez-le au couteau au-dessus du pied, sans l'arracher : la souche pourra en redonner.",
+        ),
+        saveur=4, saveur_texte="jeune, croquant, au léger goût de noisette ; il garde sa tenue à la cuisson",
+        cuisine="Seulement jeune, crème et ferme : vieux, jauni ou brunissant, il devient amer et "
+                "indigeste. Ses replis retiennent aiguilles, sable et insectes : détaillez-le en petits "
+                "bouquets et rincez-le à grande eau.",
+        recette=Recette(
+            titre="Sparassis poêlé en persillade", pour="4 personnes",
+            ingredients=(f"500{U}g de sparassis jeune", f"30{U}g de beurre et 1 cuillerée à soupe d'huile d'olive",
+                         "2 gousses d'ail", "1 petit bouquet de persil", "un trait de jus de citron",
+                         "sel, poivre"),
+            etapes=(
+                "Détaillez le sparassis en petits bouquets, rincez-les à grande eau et égouttez-les.",
+                "Plongez-les 3 minutes dans l'eau bouillante salée : ils finissent de se nettoyer et "
+                "s'attendrissent. Égouttez.",
+                "Faites-les dorer dans le beurre et l'huile, à feu moyen, 10 à 12 minutes, en les "
+                "retournant.",
+                "Ajoutez l'ail et le persil hachés 2 minutes avant la fin, salez, poivrez, finissez d'un "
+                "trait de citron. Avec des pâtes fraîches ou une polenta.",
+            )),
+    ),
     "coulemelle": Portrait(
         ou_pousse="La coulemelle n'est liée à aucun arbre : elle décompose la matière organique des prés "
                   "maigres, des pelouses, des lisières et des clairières. Elle pousse en lignes ou en ronds "

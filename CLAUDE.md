@@ -11,7 +11,10 @@ champignons (`especes.ESPECES`), aujourd'hui et à J+7. **Indice = habitat × m�
 calculé par cases de 50 m, montré au public par zones de 250 m (cases de 50 m avec mot de passe). Né en Haute-Savoie (2026-10-30), étendu à la France le 2026-10-31 ; bolet
 bai et lactaire délicieux ajoutés le même jour (bois acides du bocage, pinèdes du littoral) ;
 chanterelle en tube, oronge et hygrophore de mars le 2026-11-01, avec deux espèces des champs
-(coulemelle, rosé des prés) calculées par département et par commune seulement.
+(coulemelle, rosé des prés) calculées par département et par commune seulement ; sparassis crépu le
+2026-11-17 (au pied des pins ; ni photo ni vérification ni climatologie tant que `champi.photos`,
+`champi.validation` et `champi.climatologie` n'ont pas tourné depuis le poste : la fiche montre le
+dessin et « pas encore vérifiée »).
 
 ```
 champi.france (habitat.yml, rarement) → release « habitat » (blocs PNG, échantillon) — jamais dans git

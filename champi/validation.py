@@ -77,6 +77,7 @@ GROUPES = {
     "chanterelle_tube": ["Craterellus tubaeformis"],
     "oronge": ["Amanita caesarea"],
     "hygrophore_mars": ["Hygrophorus marzuolus"],
+    "sparassis": ["Sparassis crispa"],
     "coulemelle": ["Macrolepiota procera"],
     "rose_pres": ["Agaricus campestris"],
 }

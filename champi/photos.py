@@ -32,7 +32,8 @@ ARTICLES = {
     "trompette": "Trompette de la mort", "pied_de_mouton": "Hydnum repandum",
     "lactaire": "Lactaire délicieux", "morille": "Morchella esculenta",
     "chanterelle_tube": "Chanterelle en tube", "oronge": "Amanite des Césars",
-    "hygrophore_mars": "Hygrophore de mars", "coulemelle": "Coulemelle", "rose_pres": "Rosé des prés",
+    "hygrophore_mars": "Hygrophore de mars", "sparassis": "Sparassis crépu", "coulemelle": "Coulemelle",
+    "rose_pres": "Rosé des prés",
 }
 LIBRES = re.compile(r"^(CC[ -]BY(-SA)?( \d\.\d)?|CC0|Public domain|Domaine public)", re.I)
 

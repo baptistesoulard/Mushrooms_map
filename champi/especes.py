@@ -365,6 +365,38 @@ ESPECES: list[Espece] = [
                  "où il pousse justement."],
     ),
     Espece(
+        # Ajouté le 2026-11-17. Un parasite des racines de conifères, surtout des pins : les
+        # affinités suivent ses hôtes (guides de `REFERENCES`), la roche compte peu.
+        code="sparassis", nom="Sparassis crépu", de="du sparassis crépu", latin="Sparassis crispa",
+        saison=("07-20", "09-01", "10-31", "11-30"),
+        essences={0: 0.0, 1: 0.05, 2: 0.0, 3: 0.05, 4: 0.0, 5: 0.05, 6: 0.0, 7: 0.4, 8: 0.4,
+                  9: 0.4, 10: 1.0, 11: 0.6, 12: 0.7, 13: 0.2, 14: 0.3},
+        roches={0: 0.9, 1: 0.8, 2: 1.0, 3: 0.9},
+        altitude=(1500, 1900),
+        pluie_jours=(7, 25), pluie_mm=(15, 40),
+        sol=(8, 12, 18, 22), gel=0.6,
+        habitat_texte="Au pied des pins (sylvestre, maritime, noir), plus rarement du douglas, de "
+                      "l'épicéa ou du mélèze : il vit de leurs racines et sort à la base du tronc ou "
+                      "sur les souches, souvent au même pied plusieurs années de suite.",
+        meteo_texte="Une espèce de la fin de l'été et de l'automne, après les pluies, tant que le "
+                    "sol reste doux : un même exemplaire peut grossir et rester frais plusieurs "
+                    "semaines ; les gelées l'arrêtent.",
+        description="Une grosse boule frisée de 10 à 40 cm, parfois de plusieurs kilos, comme un "
+                    "chou-fleur ou une éponge : des lames aplaties, ondulées et ramifiées, serrées "
+                    "les unes contre les autres, sans chapeau. Crème à jaune pâle, "
+                    "il brunit en vieillissant. Attaché à la base d'un tronc ou à une racine par un "
+                    "pied court et épais, en partie enterré. Chair blanche et élastique, à l'odeur "
+                    "agréable.",
+        confusions="Peu de sosies dangereux. Les clavaires (Ramaria) forment des coraux de branches "
+                   "rondes et dressées, au sol ; certaines purgent violemment (clavaire élégante) : "
+                   "un champignon en branches rondes n'est pas un sparassis. Le sparassis laminé "
+                   "(Sparassis laminosa), aux lames plus larges et moins frisées, pousse plutôt au "
+                   "pied des chênes.",
+        limites=["La carte voit les pinèdes, pas les vieux pins isolés ni les souches dont il vit : "
+                 "elle dit où les conditions sont réunies, l'arbre reste à trouver.",
+                 "La BD Forêt ne distingue pas les pins entre eux : la carte les traite tous pareil."],
+    ),
+    Espece(
         code="coulemelle", nom="Coulemelle", de="de la coulemelle", latin="Macrolepiota procera",
         # Clairières et friches (324) à 0,4 seulement : Corine y range aussi les jeunes pins des Landes.
         milieu="pre", prairies={1: 0.8, 2: 1.0, 3: 0.6, 4: 0.7, 5: 0.4},
