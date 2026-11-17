@@ -366,15 +366,18 @@ ESPECES: list[Espece] = [
     ),
     Espece(
         # Ajouté le 2026-11-17. Un parasite des racines de conifères, surtout des pins : les
-        # affinités suivent ses hôtes (guides de `REFERENCES`), la roche compte peu.
+        # affinités suivent ses hôtes (guides de `REFERENCES`), la roche compte peu. Corrigé le même
+        # jour : les guides le donnent d'août à novembre, nord compris ; la première version finissait
+        # la saison fin octobre et coupait sous 8 °C de sol, ce qui l'éteignait en novembre au nord
+        # (signalé près de Strasbourg). Saison et sol alignés sur le bolet bai, du même automne.
         code="sparassis", nom="Sparassis crépu", de="du sparassis crépu", latin="Sparassis crispa",
-        saison=("07-20", "09-01", "10-31", "11-30"),
+        saison=("07-20", "09-01", "11-05", "12-10"),
         essences={0: 0.0, 1: 0.05, 2: 0.0, 3: 0.05, 4: 0.0, 5: 0.05, 6: 0.0, 7: 0.4, 8: 0.4,
                   9: 0.4, 10: 1.0, 11: 0.6, 12: 0.7, 13: 0.2, 14: 0.3},
         roches={0: 0.9, 1: 0.8, 2: 1.0, 3: 0.9},
         altitude=(1500, 1900),
         pluie_jours=(7, 25), pluie_mm=(15, 40),
-        sol=(8, 12, 18, 22), gel=0.6,
+        sol=(5, 9, 17, 22), gel=0.6,
         habitat_texte="Au pied des pins (sylvestre, maritime, noir), plus rarement du douglas, de "
                       "l'épicéa ou du mélèze : il vit de leurs racines et sort à la base du tronc ou "
                       "sur les souches, souvent au même pied plusieurs années de suite.",
@@ -394,6 +397,8 @@ ESPECES: list[Espece] = [
                    "pied des chênes.",
         limites=["La carte voit les pinèdes, pas les vieux pins isolés ni les souches dont il vit : "
                  "elle dit où les conditions sont réunies, l'arbre reste à trouver.",
+                 "Un exemplaire tient plusieurs semaines : sorti en octobre, il peut encore être là quand "
+                 "la carte ne voit plus de conditions pour de nouvelles pousses.",
                  "La BD Forêt ne distingue pas les pins entre eux : la carte les traite tous pareil."],
     ),
     Espece(
