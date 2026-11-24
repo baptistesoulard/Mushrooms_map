@@ -5,6 +5,7 @@
 // de plus près (FIN), par cases de 50 m avec le mot de passe de la carte fine (habitat/fin/,
 // déchiffré par fin.js).
 import { installerAlertes } from "./alertes.js";
+import { evenement } from "./compteur.js";
 import { installerCoins } from "./coins.js";
 import { installerFeuille } from "./feuille.js";
 import { cleDuLien, cleGardee, dechiffrer, deriver, garder, importer, lienAcces, lireLien, oublier } from "./fin.js";
@@ -155,7 +156,7 @@ async function demarrer() {
   if (lien.cle !== null && Z && !cleFine) {
     const brut = await cleDuLien(lien.cle, carte.fine);
     parLien = brut ? "ouverte" : carte.fine ? "refuse" : "absente";
-    if (brut) await ouvrirFine(brut);
+    if (brut) { await ouvrirFine(brut); evenement("carte-fine-par-lien"); }
   }
   const modeFin = () => !Z || cleFine !== null;
   // Ce que montre la vue rapprochée au zoom `z` (arrondi, celui des tuiles) : les cases de 50 m de la
@@ -1027,6 +1028,7 @@ async function demarrer() {
   function choisirEspece(code) {
     etat.espece = code;
     ecrire(CLE_ESPECE, code);
+    evenement(`espece-${code}`);
     tout();
   }
 
@@ -1277,6 +1279,7 @@ async function demarrer() {
           return;
         }
         await ouvrirFine(brut);
+        evenement("carte-fine-par-mot-de-passe");
         $("fine-mot").value = "";
         $("fine-message").textContent = "";
         basculer();
@@ -1287,8 +1290,11 @@ async function demarrer() {
         bouton.disabled = false;
       }
     });
-    $("fine-envoyer").addEventListener("click", (ev) => partager({ titre: "Champimétéo, la carte fine",
-      url: lienAcces(location.origin + location.pathname, brutFine) }, ev.currentTarget));
+    $("fine-envoyer").addEventListener("click", (ev) => {
+      evenement("lien-acces-envoye");
+      partager({ titre: "Champimétéo, la carte fine",
+        url: lienAcces(location.origin + location.pathname, brutFine) }, ev.currentTarget);
+    });
     $("fine-oublier").addEventListener("click", () => {
       if (!confirm("Revenir aux zones de 250 m sur cet appareil ? Les cases de 50 m redemanderont le mot de passe " +
         "ou le lien d'accès.")) return;

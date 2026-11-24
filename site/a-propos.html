@@ -71,7 +71,10 @@
 
   <h2>Ce que le site garde et ce qu'il appelle</h2>
   <ul>
-    <li>Le site ne dépose aucun cookie et ne mesure pas l'audience.</li>
+    <li>Le site ne dépose aucun cookie. Il compte ses visites avec GoatCounter
+    (<code>soulabat.goatcounter.com</code>), sans cookie ni donnée personnelle : la page vue, le site
+    d'où vous venez, la largeur de l'écran et, sur la carte, l'espèce choisie. GoatCounter ne garde ni
+    votre adresse IP ni rien qui vous identifie.</li>
     <li>Il garde dans votre navigateur, sans jamais les envoyer : la dernière espèce
     (<code>champi-espece</code>) et le dernier département (<code>champi-departement</code>)
     consultés, la présentation déjà vue (<code>champi-guide</code>) et le fond de carte choisi
@@ -193,5 +196,6 @@
       `Habitat construit le ${d(c.habitat_construit_le)} ; météo du ${d(c.genere_le)}.`;
   }).catch(() => {});
 </script>
+<script type="module" src="compteur.js"></script>
 </body>
 </html>

@@ -337,7 +337,12 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 - **Aucun script tiers** :
  Leaflet est servi depuis `site/vendor/`. Seuls les fonds de carte
   IGN sont appelés depuis le navigateur, plus `api.github.com` si la synchro des coins est
-  active (déclarés dans `a-propos.html`). Toute nouvelle clé `localStorage` se déclare dans
+  active, et le compteur de visites (déclarés dans `a-propos.html`). **Compteur (2026-11-24)** :
+  GoatCounter, `soulabat.goatcounter.com`, sans cookie ni donnée personnelle ; pas son script mais
+  `site/compteur.js` (une image vers `/count` : page, titre, site d'origine, largeur d'écran), chargé
+  par `pages.js`, `carte.js` et les pages écrites à la main qui n'ont pas `pages.js` ; seulement sur
+  champimeteo.fr. Événements de la carte : `espece-<code>` (choix au toucher), `carte-fine-par-lien`,
+  `carte-fine-par-mot-de-passe`, `lien-acces-envoye`. Le tableau de bord est chez GoatCounter. Toute nouvelle clé `localStorage` se déclare dans
   `a-propos.html` (test).
 
 ## Calcul

@@ -1,6 +1,7 @@
 // Pages Méthode et Face aux observations : tableaux construits depuis les JSON publiés,
 // pour qu'un seuil changé dans champi/especes.py ne laisse jamais une page en retard.
 // Chargé aussi par les pages générées chaque matin (champi/pages.py), qui se lisent sans lui.
+import "./compteur.js";
 import { partager } from "./partage.js";
 
 const fr = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
