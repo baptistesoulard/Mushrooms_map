@@ -213,6 +213,11 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   la barre, test). Le sous-bois dessiné est en fichiers (`img/sous-bois[-sombre].svg`, `icones.py`),
   posé en fond par le jeton `--sous-bois` des deux thèmes. Un trait à l'accent devant les titres de section. La hauteur de la barre est `--hauteur-barre` ; `--barre` est la couleur des tranches
   d'altitude (le même nom pour les deux vidait la carte sur téléphone en mode sombre).
+- **Conçu en Haute-Savoie (2026-11-25)** : « Conçu en Haute-Savoie, pour toute la France » dans le
+  pied commun, une phrase dans « Comment ça marche » de l'accueil, « D'où vient le site » dans
+  `a-propos.html`, chacun avec un lien vers `departements/haute-savoie/` (le poids de la page, et un
+  angle pour la presse locale). « Conçu », pas « fabriqué » ni « hébergé » : GitHub Pages est aux
+  États-Unis. Jamais le nom de l'auteur (choix du 2026-11-24).
 - **Barre du haut, sur toutes les pages** (`pages.barre`, rubriques `pages.BARRE`) : les pages du
   matin l'écrivent ; celles écrites à la main (`pages.STATIQUES`, la carte comprise) la portent
   entre `<!-- barre -->` et `<!-- /barre -->`, réécrite par `python -m champi.pages barre` (test).

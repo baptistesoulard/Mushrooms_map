@@ -304,13 +304,20 @@ def test_pages_generees_completes_et_liens_valides(tmp_path):
         for cible in re.findall(r'(?:href|src)="([^"#:?]+)["#?]', html):
             chemin = (page.parent / cible).resolve()
             rel = chemin.relative_to(tmp_path.resolve())
-            assert chemin.exists() or (SITE / rel).exists(), f"{page.relative_to(tmp_path)} → {cible}"
+            # Une page de département hors des départements d'essai (le pied mène à la Haute-Savoie) :
+            # elle existe en ligne, l'export écrit les 96.
+            reel = rel.parts[:1] == ("departements",) and len(rel.parts) == 2 and rel.parts[1] in TOUS_DEPS
+            assert chemin.exists() or (SITE / rel).exists() or reel, f"{page.relative_to(tmp_path)} → {cible}"
         assert not liens_imbriques(html), f"{page.relative_to(tmp_path)} : un lien dans un lien"
     # Les pages du jour se datent : pages.js prévient quand la mise à jour de la nuit manque.
     assert renvois == len(DEPS) + len(ESPECES)                    # chaque ancienne adresse renvoie
     for nom in ("index.html", "en-ce-moment.html", "departements/index.html", "departements/vendee/index.html"):
         html = (tmp_path / nom).read_text(encoding="utf-8")
         assert html.count(f'data-premier-jour="{JOURS[0].isoformat()}"') == 1, nom
+
+
+TOUS_DEPS = {pages.slug(nom) for nom in
+             json.loads((SITE.parent / "data" / "departements.json").read_text(encoding="utf-8")).values()}
 
 
 def liens_imbriques(html: str) -> list[str]:

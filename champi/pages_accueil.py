@@ -459,6 +459,9 @@ def page_accueil(departements: list[dict], especes: list[dict], nat: dict, phase
                "  </ol>",
                "  <p>L'indice multiplie les trois : un seul facteur contraire l'éteint. Il dit où les "
                'conditions sont réunies, pas ce que vous trouverez. <a href="methode.html">La méthode</a>.</p>',
+               '  <p>Né en Haute-Savoie à l\'automne 2026, au pied des pessières du Chablais et des Aravis, '
+               '<a href="departements/haute-savoie/">pour savoir où chercher là-bas</a>, puis étendu à toute la '
+               "France.</p>",
                "  <h2>Ce que vous pouvez faire</h2>",
                '  <ul class="fonctions">']
     lignes += [f"    <li>{trait(i)}<strong>{e(t)}</strong> {e(d)}</li>" for i, t, d in FONCTIONS]
