@@ -10,7 +10,7 @@
 // - l'habitat (habitat/) : la copie d'abord, il ne change qu'avec une reconstruction.
 //   Changer le format des blocs (france.FORMAT) = incrémenter VERSION, sinon les copies restent.
 const VERSION = "champi-hors-ligne-1";
-const COQUILLE = ["carte/", "./", "carte.js", "coins.js", "alertes.js", "modele.js", "partage.js", "itineraire.js", "ici.js", "feuille.js", "fin.js", "guide.js", "pages.js", "compteur.js", "style.css",
+const COQUILLE = ["carte/", "./", "carte.js", "modele.js", "partage.js", "itineraire.js", "ici.js", "feuille.js", "fin.js", "guide.js", "pages.js", "compteur.js", "style.css",
   "favicon.svg", "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css", "manifest.webmanifest",
   "icone-192.png", "avant-de-partir.html", "a-propos.html"];
 const LIMITES = { coquille: 100, donnees: 400, habitat: 600 };   // entrées gardées par cache
@@ -24,25 +24,6 @@ self.addEventListener("activate", (ev) => {
   ev.waitUntil(caches.keys()
     .then((cles) => Promise.all(cles.filter((k) => !k.startsWith(`${VERSION}-`)).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
-});
-
-// Alertes (champi/alertes.py) : le contenu arrive chiffré, le navigateur le déchiffre et le montre.
-self.addEventListener("push", (ev) => {
-  let d = {};
-  try { d = ev.data ? ev.data.json() : {}; } catch { d = { texte: ev.data?.text() || "" }; }
-  ev.waitUntil(self.registration.showNotification(d.titre || "Champimétéo", {
-    body: d.texte || "", icon: "icone-192.png", badge: "icone-192.png", tag: d.tag, data: { lien: d.lien },
-  }));
-});
-
-// Un appui sur la notification ouvre la page qu'elle annonce, dans l'appli si elle est ouverte.
-self.addEventListener("notificationclick", (ev) => {
-  ev.notification.close();
-  const lien = ev.notification.data?.lien || self.registration.scope;
-  ev.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((fenetres) => {
-    const ici = fenetres.find((f) => f.url.startsWith(self.registration.scope));
-    return ici ? ici.navigate(lien).then((f) => f?.focus()) : self.clients.openWindow(lien);
-  }));
 });
 
 self.addEventListener("fetch", (ev) => {

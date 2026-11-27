@@ -21,18 +21,13 @@ on:
     workflows: ["Habitat de la France", "pH du sol dans l'habitat"]
     types: [completed]
   workflow_dispatch:
-    inputs:
-      essai_alertes:
-        description: "Envoyer une notification d'essai à chaque abonné aux alertes"
-        type: boolean
-        default: false
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# L'adresse du site publié, pour la garde, les alertes et les aperçus (champi/config.ADRESSE).
+# L'adresse du site publié, pour la garde et les aperçus (champi/config.ADRESSE).
 # Vide : GitHub Pages. À renseigner (variable du dépôt) en même temps que DEPLOI_HOTE.
 env:
   CHAMPI_ADRESSE: ${{ vars.SITE_ADRESSE }}
@@ -78,9 +73,6 @@ jobs:
           tar -xf "$RUNNER_TEMP/habitat.tar" -C site/habitat
           du -sh site/habitat
       - name: Calculer la carte du jour
-        env:
-          # Le site dit si les alertes sont branchées, sans jamais voir les secrets eux-mêmes.
-          ALERTES_ACTIVES: ${{ secrets.VAPID_PRIVEE != '' && secrets.ALERTES_JETON != '' && vars.ALERTES_DEPOT != '' }}
         run: |
           python -m champi.export_france
           rm site/habitat/echantillon.npz   # lu par l'export seulement : pas à publier
@@ -93,15 +85,6 @@ jobs:
         run: |
           python -m champi.zones
           python -m champi.chiffre
-      # Avant le déploiement : le site en ligne est encore la publication précédente, à laquelle
-      # les alertes se comparent. Une alerte manquée n'empêche jamais la carte de paraître.
-      - name: Alertes personnalisées
-        continue-on-error: true
-        env:
-          ALERTES_DEPOT: ${{ vars.ALERTES_DEPOT }}
-          ALERTES_JETON: ${{ secrets.ALERTES_JETON }}
-          VAPID_PRIVEE: ${{ secrets.VAPID_PRIVEE }}
-        run: python -m champi.alertes ${{ inputs.essai_alertes && '--essai' || '' }}
       # Le code servi, minifié : sans commentaires ni noms parlants (les tests ont tourné sur la
       # source, qui reste telle quelle dans le dépôt). Les modules ES gardent leurs exports ; sw.js,
       # script classique, ne perd que les blancs. Leaflet (vendor/) n'est pas touché.

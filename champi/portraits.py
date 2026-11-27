@@ -51,7 +51,7 @@ PORTRAITS: dict[str, Portrait] = {
             "Un cèpe trouvé en annonce souvent d'autres à quelques mètres : fouillez les alentours "
             "avant de repartir.",
             "Passez tôt, dans les premiers jours de la pousse : les limaces et les vers vont vite.",
-            "Notez vos coins sur la carte (« Mes coins ») : un bon coin revient d'une année à l'autre.",
+            "Notez vos coins : un bon coin revient d'une année à l'autre.",
         ),
         saveur=5, saveur_texte="la référence des bolets, ferme et parfumé",
         cuisine="Gardez les exemplaires jeunes et fermes ; chez les plus grands, retirez les tubes s'ils "
@@ -327,7 +327,7 @@ PORTRAITS: dict[str, Portrait] = {
             "Faites le tour des vieux pins et des souches de pins : il sort collé à la base du tronc, "
             "souvent à moitié caché dans les aiguilles.",
             "Sa couleur crème se voit de loin dans la litière sombre des pinèdes.",
-            "Notez l'arbre (« Mes coins » sur la carte) : il revient souvent au même pied d'une année à "
+            "Notez l'arbre : il revient souvent au même pied d'une année à "
             "l'autre.",
             "Coupez-le au couteau au-dessus du pied, sans l'arracher : la souche pourra en redonner.",
         ),

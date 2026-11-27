@@ -4,9 +4,7 @@
 // modele.js) : par zones de 250 m pour tout le monde (data/zones/*.png, champi/zones.py), puis,
 // de plus près (FIN), par cases de 50 m avec le mot de passe de la carte fine (habitat/fin/,
 // déchiffré par fin.js).
-import { installerAlertes } from "./alertes.js";
 import { evenement } from "./compteur.js";
-import { installerCoins } from "./coins.js";
 import { installerFeuille } from "./feuille.js";
 import { cleDuLien, cleGardee, dechiffrer, deriver, garder, importer, lienAcces, lireLien, oublier } from "./fin.js";
 import { installerGuide } from "./guide.js";
@@ -122,7 +120,7 @@ function classeDe(v, classes) {
 
 async function demarrer() {
   // Le lien d'accès à la carte fine (#fine=…) : lu avant tout, et retiré aussitôt de la barre
-  // d'adresse (le reste, un lien de groupe, est laissé à coins.js).
+  // d'adresse.
   const lien = lireLien(location.hash);
   if (lien.cle !== null) {
     history.replaceState(null, "", location.pathname + location.search + (lien.reste ? `#${lien.reste}` : ""));
@@ -448,7 +446,7 @@ async function demarrer() {
   };
   let fond = fonds[lire(CLE_FOND)] ? lire(CLE_FOND) : "plan";
   for (const c of fonds[fond]) c.addTo(map);
-  // L'indice dans son calque, entre le fond et les marques (position, coins) : en mode « produit »
+  // L'indice dans son calque, entre le fond et la marque de position : en mode « produit »
   // sur le plan et le relief, les noms et les routes du plan restent lisibles sous les couleurs
   // (style.css) ; pas sur les photos, qu'il assombrirait.
   map.createPane("indice").style.zIndex = 350;
@@ -778,46 +776,6 @@ async function demarrer() {
   // zoom exact sous minZoom ; à DETAIL, le zoom 10,5 restait vide (ni aperçu, ni détail).
   const calqueDetail = new Detail({ pane: "indice", minZoom: DETAIL - 0.5, updateWhenZooming: false, keepBuffer: 1 }).addTo(map);
 
-  // Indice d'un coin noté par l'utilisateur, pour le jour affiché : moyenne des cases boisées
-  // à moins de 75 m (3 × 3 cases), tirée des mêmes codes que la carte.
-  async function indiceEn(lat, lon, code) {
-    if (desPres(code)) return { pre: true };
-    const [x, y] = versMerc(lat, lon);
-    const bx = Math.floor(x / B.cote), by = Math.floor(y / B.cote);
-    const nom = `${bx}_${by}`;
-    if (!blocsPresents.has(nom)) return null;
-    const col = Math.floor((x - bx * B.cote) / B.pas), lig = Math.floor(((by + 1) * B.cote - y) / B.pas);
-    if (!modeFin()) {               // la zone de 250 m du coin
-      const [z, codes, cc, communes] = await Promise.all([zonesBloc(nom), codesBlocs(cleCodes(nom, code, etat.jour, false, false)),
-        couchesC(nom), annexes("habitat/communes.json")]);
-      const i = lig * B.taille + col;
-      const protege = codes[i] === PROTEGE;
-      return { indice: !protege && z.rang[zoneDe(lig, col)] >= 0 ? codes[i] / carte.echelle : null, protege,
-               commune: communes[cc.commune[i] - 1]?.nom };
-    }
-    const [h, codes, communes] = await Promise.all([
-      habitats(nom), codesBlocs(cleCodes(nom, code, etat.jour, false, true)), annexes("habitat/communes.json")]);
-    let s = 0, n = 0, protege = false;
-    for (let l = Math.max(0, lig - 1); l <= Math.min(B.taille - 1, lig + 1); l++) {
-      for (let c = Math.max(0, col - 1); c <= Math.min(B.taille - 1, col + 1); c++) {
-        const i = l * B.taille + c;
-        if (h.protege[i]) protege = true;
-        else if (h.essence[i] > 0 && !h.urbain[i]) { s += codes[i] / carte.echelle; n++; }
-      }
-    }
-    return { indice: n ? s / n : null, protege, commune: communes[h.commune[lig * B.taille + col] - 1]?.nom };
-  }
-
-  const coins = installerCoins({
-    map, especes, ordre: carte.especes.map((e) => e.code),
-    etat: () => ({ espece: etat.espece, libelle: carte.jours[etat.jour].libelle }),
-    indiceEn,
-    decrire: (v) => {
-      const k = classeDe(v, carte.classes);
-      return { nom: carte.classes[k].nom, couleur: k > 0 ? `rgb(${pal.classes[k].join(",")})` : null };
-    },
-  });
-  const alertes = installerAlertes({ carte, etat: () => ({ departement: etat.departement, espece: etat.espece }) });
 
   // --- Ma position ------------------------------------------------------------------
   // Demandée à l'ouverture pour choisir le département, puis montrée et suivie tant que la
@@ -1265,7 +1223,6 @@ async function demarrer() {
       legende();
       calqueDetail.redraw();
       afficherCase();
-      coins.rafraichir();
     };
     $("fine-form").addEventListener("submit", async (ev) => {
       ev.preventDefault();
@@ -1411,7 +1368,7 @@ async function demarrer() {
     if (f < 0) {
       div.append(el("p", {}, h.urbain[i] && h.essence[i]
         ? "Bois en zone urbanisée (parc, quartier, zone d'activités) : pas d'indice."
-        : "Hors forêt : pas d'indice."), boutonCoin(ll));
+        : "Hors forêt : pas d'indice."));
       return div;
     }
     const k = h.cases;
@@ -1499,7 +1456,7 @@ async function demarrer() {
   }
 
   function actionsCase(ll, com) {
-    const actions = el("p", { class: "actions-case" }, boutonCoin(ll), " · ", el("a", {
+    const actions = el("p", { class: "actions-case" }, el("a", {
       href: `https://www.geoportail.gouv.fr/carte?c=${ll.lng.toFixed(5)},${ll.lat.toFixed(5)}&z=16&permalink=yes`,
       target: "_blank", rel: "noopener",
     }, "Géoportail (IGN)"));
@@ -1527,7 +1484,7 @@ async function demarrer() {
       return div;
     }
     if (f < 0) {
-      div.append(el("p", {}, "Pas de forêt dans cette zone de 250 m : pas d'indice."), boutonCoin(ll));
+      div.append(el("p", {}, "Pas de forêt dans cette zone de 250 m : pas d'indice."));
       return div;
     }
     const k = z.cases;
@@ -1567,7 +1524,7 @@ async function demarrer() {
     }
     div.append(el("h4", {}, `${com.nom} (${com.dep})`));
     if (code > carte.echelle) {
-      div.append(el("p", {}, `Trop peu de prés dans cette commune pour noter les conditions ${e.de}.`), boutonCoin(ll));
+      div.append(el("p", {}, `Trop peu de prés dans cette commune pour noter les conditions ${e.de}.`));
       return div;
     }
     const v = code / carte.echelle, kc = classeDe(v, carte.classes);
@@ -1579,7 +1536,6 @@ async function demarrer() {
     div.append(el("p", {}, "Les prés sont presque tous privés : la carte ne les note pas un par un. Dans un pré, " +
       "les champignons appartiennent au propriétaire, il faut son accord. ",
       el("a", { href: "avant-de-partir.html#proprietaire" }, "Les règles")));
-    div.append(el("p", { class: "actions-case" }, boutonCoin(ll)));
     return div;
   }
 
@@ -1636,10 +1592,6 @@ async function demarrer() {
     if (r.indice >= carte.classes[2].seuil) return [el("strong", {}, "Tout est réuni : "),
       "forêt, sol, pluie et température conviennent."];
     return [el("strong", {}, "Rien ne bloque, "), `mais des facteurs moyens se cumulent : ${facteurs.slice(0, 2).map(([, t]) => t).join(" ; ")}.`];
-  }
-
-  function boutonCoin(ll) {
-    return el("button", { type: "button", class: "lien", onclick: () => coins.formulaire(ll) }, "Noter une trouvaille ici");
   }
 
   function panneau() {
@@ -1744,7 +1696,6 @@ async function demarrer() {
     afficherCase();
     if (feuille.etat() === "bas") feuille.poser("bas");      // les choix ont pu changer de hauteur
     rafraichirCalques();
-    coins.rafraichir();
   }
 
   legende();
@@ -1816,7 +1767,7 @@ function proposerInstallation() {
   });
   if (/iPhone|iPad/.test(navigator.userAgent)) {
     zone.textContent = "Sur iPhone : bouton Partager, puis « Sur l'écran d'accueil »" + pourquoi +
-      " Safari n'y efface plus vos coins.";
+      "";
     zone.hidden = false;
   }
 }

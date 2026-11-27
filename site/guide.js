@@ -16,10 +16,7 @@ const ETAPES = (etroit) => [
   [etroit ? "Tirez le panneau vers le haut" : "Le panneau, à gauche",
     "En haut, l'espèce (un toucher ouvre la liste illustrée) et le jour. Puis quatre onglets : « Ici » " +
     "classe les espèces pour la zone affichée ; « Département » donne le verdict, la semaine et les " +
-    "communes ; « L'espèce », sa fiche ; « Mes outils », vos coins et l'exploration des forêts."],
-  ["Vos coins",
-    `${etroit ? "Un appui long" : "Un clic droit"} sur la carte note une trouvaille, gardée dans ce navigateur. ` +
-    "Vous pouvez les sauvegarder, les envoyer à un proche, ou les partager avec un groupe par un lien privé."],
+    "communes ; « L'espèce », sa fiche ; « Mes outils », la carte fine et l'exploration des forêts."],
 ];
 
 function dejaVu() {

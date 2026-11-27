@@ -147,7 +147,7 @@ def chemin_mois(m: int) -> str:
 
 def renvoi(vers: str, canonique: str, titre: str) -> str:
     """La page laissée à une ancienne adresse : elle renvoie aussitôt (`vers`, relatif) et dit aux
-    moteurs où est la page (`canonique`, depuis la racine). Les liens déjà partagés, les alertes et
+    moteurs où est la page (`canonique`, depuis la racine). Les liens déjà partagés et
     les applis installées continuent de marcher."""
     return f"""<!doctype html>
 <html lang="fr">

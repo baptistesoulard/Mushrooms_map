@@ -135,6 +135,6 @@ def test_le_lien_d_acces(tmp_path):
     seul, avec_groupe, groupe = res["lus"]
     assert seul == {"reste": "", "cle": cle.hex(), "refait": lien}
     assert avec_groupe["cle"] == cle.hex()
-    assert avec_groupe["reste"] == "depot=moi%2Fchampi-coins&jeton=github_pat_x1"   # coins.js le relit
+    assert avec_groupe["reste"] == "depot=moi%2Fchampi-coins&jeton=github_pat_x1"   # le reste de l'adresse, intact
     assert groupe["cle"] is None and groupe["reste"] == "depot=moi%2Fchampi-coins&jeton=github_pat_x1"
     assert res["cles"] == [True, False, False, False, False]

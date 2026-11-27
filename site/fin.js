@@ -65,8 +65,8 @@ export function lienAcces(adresse, brut) {
   return `${adresse.split("#")[0]}#fine=${hex(brut)}`;
 }
 
-// Ce que porte l'adresse après # : la clé d'un lien d'accès (son texte, ou null) et le reste (le
-// lien de groupe, lu par coins.js), à remettre tel quel.
+// Ce que porte l'adresse après # : la clé d'un lien d'accès (son texte, ou null) et le reste, à
+// remettre tel quel.
 export function lireLien(hash) {
   const p = new URLSearchParams(hash.replace(/^#/, ""));
   const cle = p.get("fine");

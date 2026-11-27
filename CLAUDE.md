@@ -66,32 +66,18 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   fichiers change (`habitat/fin/<id>/`), chacun le redonne. **Lien d'accès (2026-11-08)**, pour un
   proche peu à l'aise avec l'informatique : `carte/#fine=<clé en hexadécimal>` (`fin.lienAcces`,
   `chiffre.lien`), envoyé par « Envoyer le lien d'accès » une fois la carte fine ouverte ; la carte
-  garde la clé et la retire de l'adresse (un lien de groupe à côté reste pour `coins.js`). Il vaut
+  garde la clé et la retire de l'adresse. Il vaut
   le mot de passe sans le révéler, et meurt avec lui. « Revenir aux zones » demande confirmation.
   Exploration et fenêtre d'une case (essence, roche, pente) : carte fine seulement. Limite assumée : la release « habitat » (données
   ouvertes retraitées) et le code restent publics ; la protection vise la carte affichée, pas un
   développeur décidé. Aucune observation publique ponctuelle n'est affichée. Un passage éventuel
   en service payant est décidé ailleurs : voir `CLAUDE.local.md` s'il existe.
-- **Mes coins (`site/coins.js`) : les trouvailles de l'utilisateur restent dans SON
-  navigateur** (`champi-coins`). Pas de serveur, pas de carte communautaire (décision du
-  2026-10-31) : elle demanderait comptes, modération et données personnelles, et
-  enverrait tout le monde aux mêmes coins, souvent en forêt privée. Le partage passe par un
-  fichier que l'utilisateur envoie lui-même, et ne contient que SES coins : jamais ceux
-  qu'un ami lui a confiés (la sauvegarde, elle, garde tout).
-- **Synchro de ses coins entre SES appareils : un dépôt GitHub privé à lui**, lu et écrit par
-  le navigateur (API « contents », fichier `coins.json`), ouvert par un lien
-  `#depot=compte/dépôt&jeton=…` gardé dans `champi-synchro` puis retiré de l'adresse. Le
-  jeton est créé par l'utilisateur, limité à ce dépôt (Contents, lecture et écriture) ; il ne
-  passe jamais par la conversation ni par le dépôt du site. Fusion par id, la version la plus
-  récente (`maj`) gagne, effacements gardés (`champi-coins-effaces`) pour qu'un coin effacé
-  ne revienne pas d'un autre appareil (`coins.fusionner`, testé sous Node). Pas de serveur à
-  nous : ce n'est pas un pas vers la carte communautaire.
-- **Groupe = ceux à qui l'utilisateur donne le lien** (décision du 2026-10-31), jamais
-  l'adresse du site ni un dépôt public. Chacun signe ses coins de son prénom (`champi-nom`,
-  `auteur`), demandé avant toute synchro : pas de coin non signé dans le dépôt. On n'efface
-  que les siens. Ne partent jamais au dépôt (`coins.aEnvoyer`) : les coins confiés par
-  fichier (`de`) et ceux gardés pour soi (`prive`, choisi en rejoignant ou en notant). Un
-  jeton en lecture seule (403 à l'écriture) donne un lien qui lit sans écrire.
+- **Ni coins ni alertes (décision du 2026-11-27)** : « Mes coins » (noter, sauvegarder, partager,
+  importer, synchro et groupe par dépôt GitHub) et les alertes Web Push sont retirés pour simplifier
+  le site : ni `coins.js`, ni `alertes.js`, ni `champi/alertes.py`, ni secrets VAPID ou ALERTES, ni
+  pywebpush. Les données déjà gardées dans les navigateurs (`champi-coins`, `champi-synchro`…) restent
+  inertes. « Mes outils » garde la carte fine et l'exploration. L'accueil renvoie encore un ancien
+  lien `#depot=…` vers la carte, qui l'ignore.
 - **La position est demandée à l'ouverture** (choix de l'utilisateur, 2026-10-31) pour se
   placer sur son département, sauf si le navigateur l'a déjà refusée (`navigator.permissions`) :
   on n'insiste pas, le bouton dit comment réautoriser. Elle est suivie tant que la page est
@@ -128,8 +114,8 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 - **Adresses lisibles (2026-11-07)** : `departements/vendee/` (`pages.chemin_departement`, nom sans
   accents), `especes/pied-de-mouton/` (`pages.chemin_espece`, des tirets). Les anciennes adresses
   (`departements/85.html`, `especes/pied_de_mouton.html`) restent écrites chaque matin en pages de
-  renvoi (`pages.renvoi` : refresh immédiat, canonical, `noindex, follow`) : liens partagés, alertes
-  et applis installées continuent de marcher. `carte.json` donne la page de chaque département
+  renvoi (`pages.renvoi` : refresh immédiat, canonical, `noindex, follow`) : liens partagés et applis
+  installées continuent de marcher. `carte.json` donne la page de chaque département
   (`page`), l'accueil la met sur ses options (`data-page`) : le JavaScript ne fabrique pas d'adresse.
 - **Pages légères (2026-11-08)** : « en ce moment » met la semaine en tableau d'abord, puis une carte
   courte par espèce en saison (`pages_accueil.carte_moment` : étiquette, cinq départements, les autres
@@ -181,7 +167,7 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   matin sur l'échantillon des prés (`prairies.py` → `data/prairies.npz`, versionné : un point
   tous les 576 m dans les prairies, pelouses et mosaïques agricoles de Corine Land Cover, avec
   altitude et commune), publiées dans les résumés par département et par commune comme les
-  autres (pages, semaine, alertes, images). Affinités par milieu (`prairies.MILIEUX`), pas
+  autres (pages, semaine, images). Affinités par milieu (`prairies.MILIEUX`), pas
   d'essence, de roche ni de pente. Sur la carte, COMMUNE PAR COMMUNE (jamais un pré) : l'indice
   moyen des prés de chaque commune (`export_france.indices_communes`, rien sous 25 ha de prés),
   publié en table (`data/communes/<espèce>_<k>.png`, peinte de près avec la couche « c » des
@@ -198,7 +184,7 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   qui glisse du bas (`feuille.js`), une case touchée s'y ouvre. Présentation de première visite
   (`guide.js`, `champi-guide`) : UN écran depuis le 2026-11-11 (cinq avant la carte, c'était trop) :
   l'échelle des couleurs, comment s'en servir, l'avertissement, « Voir la carte » ; la visite guidée
-  (quatre écrans) à la demande, depuis cet écran ou « Revoir la présentation ». La demande de
+  (trois écrans) à la demande, depuis cet écran ou « Revoir la présentation ». La demande de
   position suit sa fermeture.
 - **Identité visuelle (2026-11-07)** : le logo est un cèpe en réserve dans une goutte de pluie (`icones.py`,
   une seule géométrie) : en ligne dans la barre, la goutte à l'accent et le cèpe aux couleurs du creux
@@ -262,7 +248,7 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   niveau. Rien de plus fin que 250 m en clair.
 - **Le panneau de la carte** : l'espèce (bouton illustré, liste en boîte de dialogue, en saison
   d'abord), le jour, puis quatre onglets — Ici (que chercher ici, légende), Département (verdict,
-  semaine, altitude, communes, France), L'espèce (fiche), Mes outils (coins, alertes, exploration).
+  semaine, altitude, communes, France), L'espèce (fiche), Mes outils (carte fine, exploration).
   Fonds : plan IGN grisé par défaut (l'indice ressort), relief (estompage IGN), photos ; le choix
   est gardé (`champi-fond`). L'indice a son calque (« indice ») en mode produit sur le plan et le relief
   (pas sur les photos) ; par-dessus, les contours des départements (calque « contours »,
@@ -275,22 +261,8 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   `python -m champi.carte_departements fin`, sans réseau ; publié en `contours_fins/`, la carte ne
   charge que les limites et le département choisi). Le tracé à ~2 km s'arrête au zoom 11 :
   simplifiés à ~2 km, ils s'écarteraient des vraies limites de plus près), puis les marques
-  (position, coins). Les noms de lieux de l'IGN (`GEOGRAPHICALNAMES.NAMES`) ont été essayés
+  (position). Les noms de lieux de l'IGN (`GEOGRAPHICALNAMES.NAMES`) ont été essayés
   par-dessus le 2026-11-07, puis retirés : doublés par ceux du plan, peu satisfaisants.
-- **Alertes réservées au groupe (décision du 2026-11-07)** : sans lien de groupe sur l'appareil, la
-  section « Mes alertes » de la carte reste cachée (sauf alertes encore à retirer) ; ni l'accueil ni le
-  guide ne les annoncent. Une version publique gratuite passerait par un petit service (Worker
-  Cloudflare) pour ranger les abonnements : écartée pour l'instant.
-- **Alertes personnalisées** (`site/alertes.js` → `alertes.json` du dépôt privé du lien de groupe
-  → `alertes.py`, étape de `carte.yml` avant le déploiement) : un département, des espèces, un
-  seuil (« bon » ou « par endroits ») ; notification Web Push quand une espèce DEVIENT favorable
-  dans les 7 jours (par différence avec la publication en ligne, sans état gardé), rappel la
-  veille, « à confirmer » au-delà de 3 jours. Clé publique dans `config.VAPID_PUBLIQUE`, clé privée
-  en secret `VAPID_PRIVEE` (jamais dans git ; la changer oblige à se réabonner) ; lecture du dépôt
-  par `ALERTES_JETON` et `ALERTES_DEPOT`. L'envoi (pywebpush) ne tourne que dans Actions : ce poste
-  bloque la DLL de `cryptography`. `continue-on-error` : une alerte manquée n'empêche jamais la
-  carte de paraître. Plus de ntfy (décision du 2026-11-01). Le rappel ne sonne qu'à la première
-  publication du jour (le workflow peut en faire plusieurs).
 - **GitHub part en retard, ou pas du tout** : ses départs programmés sont « au mieux » (6 et 7 h
   de retard les 31 octobre et 1er novembre 2026, rien à 7 h 15 le 2 novembre). `carte.yml` prend
   donc trois rendez-vous par nuit, tous après 23 h UTC (avant, `publication.jour_de_la_carte`
@@ -304,14 +276,14 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   réglages Pages, pas de fichier CNAME : le déploiement passe par Actions ; DNS chez OVH). L'ancienne
   adresse `baptistesoulard.github.io/Mushrooms_map/` y renvoie ; le bandeau de déménagement est
   retiré. `config.ADRESSE` vaut le domaine (la variable `SITE_ADRESSE` peut la remplacer) : un
-  site injoignable fait comparer les alertes à vide, donc tout renvoyer. Un hébergeur en France
+  site injoignable fausse la garde de la nuit. Un hébergeur en France
   plus tard ne change que le DNS : l'adresse, donc ce que gardent les navigateurs, reste la même.
 - **Hébergeur à soi** (job `heberger` de `carte.yml`, en plus de GitHub Pages) : `rsync` par SSH du
   site déployé, rien ne tourne tant que la variable `DEPLOI_HOTE` est vide (`DEPLOI_COMPTE`,
   `DEPLOI_DOSSIER`, `DEPLOI_CONNU` = ligne de `ssh-keyscan` ; secret `DEPLOI_CLE`, créé par
   l'utilisateur). `SITE_ADRESSE` (→ `CHAMPI_ADRESSE` → `config.ADRESSE`) se renseigne en même temps :
-  la garde, les alertes et les aperçus regardent cette adresse. Changer d'adresse remet chaque
-  navigateur à zéro (coins, lien de groupe, alertes : le stockage suit l'adresse du site). Zones
+  la garde et les aperçus regardent cette adresse. Changer d'adresse remet chaque
+  navigateur à zéro (carte fine, préférences : le stockage suit l'adresse du site). Zones
   publiques et couches chiffrées ne changent pas avec l'hébergeur. Mentions légales (`a-propos.html`) : nom
   et adresse de l'hébergeur effectif.
 - **Une page du jour porte sa date** (`pages.calcule_pour`, sur sa ligne « Calculé le ») : quand
@@ -319,7 +291,7 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
 - **Appli installable et hors ligne** (`manifest.webmanifest`, `sw.js`) : le site et les données
   du jour en « réseau d'abord » (copie au-delà de 5 s), l'habitat en « copie d'abord ». Changer
   le format des blocs (`france.FORMAT`) oblige à incrémenter `sw.VERSION`, sinon les anciennes
-  copies restent. Ni fonds IGN, ni GitHub, ni coins dans ces caches.
+  copies restent. Ni fonds IGN ni compteur dans ces caches.
 - **Zones protégées : hachurées, sans indice** (réserves, arrêtés de biotope, cœurs de parcs
   nationaux). Leur règlement varie ; le site ne dit jamais qu'on peut y cueillir.
 - **La rédaction ne lit pas de données** : `redaction.rediger(espèce, faits)`, testable sur
@@ -341,8 +313,7 @@ champi.validation (à la main, France et trois régions) → data/validation.jso
   esbuild) : la source reste lisible dans le dépôt, les tests tournent sur elle.
 - **Aucun script tiers** :
  Leaflet est servi depuis `site/vendor/`. Seuls les fonds de carte
-  IGN sont appelés depuis le navigateur, plus `api.github.com` si la synchro des coins est
-  active, et le compteur de visites (déclarés dans `a-propos.html`). **Compteur (2026-11-24)** :
+  IGN sont appelés depuis le navigateur, et le compteur de visites (déclarés dans `a-propos.html`). **Compteur (2026-11-24)** :
   GoatCounter, `soulabat.goatcounter.com`, sans cookie ni donnée personnelle ; pas son script mais
   `site/compteur.js` (une image vers `/count` : page, titre, site d'origine, largeur d'écran), chargé
   par `pages.js`, `carte.js` et les pages écrites à la main qui n'ont pas `pages.js` ; seulement sur

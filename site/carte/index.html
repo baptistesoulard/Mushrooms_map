@@ -163,42 +163,6 @@
         <p class="muet" id="fine-message" aria-live="polite"></p>
       </div>
 
-      <div class="section coins">
-        <h3>Mes coins</h3>
-        <p class="muet" id="coins-resume"></p>
-        <ul class="communes" id="coins-liste"></ul>
-        <div class="coins-actions">
-          <button type="button" id="coin-ici">Noter une trouvaille à ma position</button>
-          <button type="button" id="coins-partager">Partager mes coins</button>
-          <button type="button" id="coins-sauver">Sauvegarder</button>
-          <label class="bouton">Importer un fichier<input type="file" id="coins-importer" accept=".json,application/json" hidden></label>
-        </div>
-        <label class="case"><input type="checkbox" id="coins-voir" checked> Afficher les coins sur la carte</label>
-        <ul class="muet" id="coins-sources"></ul>
-        <p class="muet" id="coins-message" aria-live="polite"></p>
-        <p class="muet" id="coins-synchro" aria-live="polite" hidden></p>
-        <p class="muet">Un appui long sur la carte note une trouvaille. Vos coins restent sur cet
-        appareil ; pour les avoir partout, <a href="a-propos.html#synchro">la synchronisation</a>.</p>
-      </div>
-
-      <!-- Réservées au groupe : alertes.js ne montre la section qu'avec un lien de groupe. -->
-      <details class="section alertes" id="alertes" hidden>
-        <summary><h3>Mes alertes</h3></summary>
-        <p class="muet">Prévenu quand une espèce devient favorable dans les 7 jours, puis la veille.</p>
-        <ul class="communes" id="alertes-liste"></ul>
-        <p class="muet" id="alertes-etat" aria-live="polite"></p>
-        <form id="alertes-form" hidden>
-          <label class="departement"><span>Département</span><select id="alertes-dep"></select></label>
-          <fieldset><legend>Espèces</legend><div class="cases" id="alertes-especes"></div></fieldset>
-          <fieldset><legend>Prévenir pour</legend>
-            <label class="case"><input type="radio" name="seuil" value="bon" checked> de bonnes conditions</label>
-            <label class="case"><input type="radio" name="seuil" value="endroits"> de bonnes conditions par endroits (plus souvent)</label>
-          </fieldset>
-          <button type="submit">Ajouter cette alerte</button>
-        </form>
-        <button type="button" class="lien" id="alertes-arreter" hidden>Ne plus être prévenu sur cet appareil</button>
-      </details>
-
       <details class="section explorer" id="explorer">
         <summary><h3>Explorer les forêts</h3></summary>
         <p class="muet">Les forêts selon vos critères, sans météo ni saison.</p>

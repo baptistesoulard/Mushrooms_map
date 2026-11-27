@@ -3,7 +3,7 @@
 L'accueil répond d'abord à la question du visiteur, où chercher cette semaine, puis dit comment
 la carte calcule, ce que vaut sa vérification, ce qu'on peut y faire, les espèces et les
 départements. La carte est sous /carte/ depuis le 2026-11-01 ; les anciens liens de la racine
-(`?departement=…`, lien de groupe `#depot=…`, appli installée avant cette date) y sont renvoyés
+(`?departement=…`, ancien lien de groupe `#depot=…`, appli installée avant cette date) y sont renvoyés
 par un script en tête de page, avant tout affichage, comme un lien d'accès (`#fine=…`) mal recopié.
 
 Ne lit aucune donnée : reçoit les résumés (`export_france`) et la validation, rend du HTML.
@@ -71,7 +71,6 @@ def trait(nom: str) -> str:
 FONCTIONS = [
     ("carte", "La carte à 250 m", "Chaque zone de forêt, du pâle au foncé ; un clic dit pourquoi."),
     ("semaine", "Les 7 prochains jours", "Si la pousse arrive, dure ou s'arrête, jour par jour."),
-    ("coin", "Mes coins", "Vos trouvailles, gardées sur votre appareil ou partagées avec vos proches."),
     ("explorer", "Explorer les forêts", "Les forêts selon vos critères : essences, roche, altitude, exposition."),
     ("hors_ligne", "Sans réseau", "Installée sur le téléphone, la carte s'ouvre en forêt sans réseau."),
 ]
